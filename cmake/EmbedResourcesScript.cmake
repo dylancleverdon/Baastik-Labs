@@ -1,8 +1,16 @@
 # Script mode helper for EmbedResources.cmake. Inputs: NAMESPACE, HEADER,
-# SOURCE, FILES, NAMES (parallel lists joined with '|').
+# SOURCE, LIST_FILE (one "path|name" line per resource).
 
-string(REPLACE "|" ";" FILES "${FILES}")
-string(REPLACE "|" ";" NAMES "${NAMES}")
+file(STRINGS "${LIST_FILE}" entries)
+set(FILES "")
+set(NAMES "")
+foreach(entry IN LISTS entries)
+    string(REPLACE "|" ";" parts "${entry}")
+    list(GET parts 0 file)
+    list(GET parts 1 name)
+    list(APPEND FILES "${file}")
+    list(APPEND NAMES "${name}")
+endforeach()
 
 get_filename_component(header_name "${HEADER}" NAME)
 string(REPLACE "::" "/" ns_dir "${NAMESPACE}")

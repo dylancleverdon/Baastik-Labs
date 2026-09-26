@@ -25,9 +25,14 @@ function(baastik_embed_resources target)
         list(APPEND names "${rel}")
     endforeach()
 
-    # Pass lists with a separator that survives shell quoting.
-    string(REPLACE ";" "|" files_arg "${ARG_FILES}")
-    string(REPLACE ";" "|" names_arg "${names}")
+    # The file list goes through a file: long command lines break on Windows.
+    set(list_file "${out_dir}/${ns_dir}/resources.list")
+    set(list_content "")
+    foreach(file name IN ZIP_LISTS ARG_FILES names)
+        string(APPEND list_content "${file}|${name}\n")
+    endforeach()
+    file(WRITE "${list_file}.tmp" "${list_content}")
+    configure_file("${list_file}.tmp" "${list_file}" COPYONLY)
 
     add_custom_command(
         OUTPUT "${header}" "${source}"
@@ -35,10 +40,9 @@ function(baastik_embed_resources target)
             "-DNAMESPACE=${ARG_NAMESPACE}"
             "-DHEADER=${header}"
             "-DSOURCE=${source}"
-            "-DFILES=${files_arg}"
-            "-DNAMES=${names_arg}"
-            -P "${_BAASTIK_EMBED_SCRIPT}"
-        DEPENDS ${ARG_FILES} "${_BAASTIK_EMBED_SCRIPT}"
+            "-DLIST_FILE=${list_file}"
+        -P "${_BAASTIK_EMBED_SCRIPT}"
+        DEPENDS ${ARG_FILES} "${list_file}" "${_BAASTIK_EMBED_SCRIPT}"
         COMMENT "Embedding resources for ${target}"
         VERBATIM)
 

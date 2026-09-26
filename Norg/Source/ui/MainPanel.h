@@ -3,6 +3,7 @@
 #include "AboutPanel.h"
 #include "FxPanels.h"
 #include "NorgKeyboard.h"
+#include "ProgramPanel.h"
 #include "SectionPanels.h"
 #include "Widgets.h"
 
@@ -36,7 +37,7 @@ namespace norg::ui
         NorgProcessor& processor;
 
         NorgLogo logo;
-        Oled display;
+        ProgramPanel programs;
         ChoiceButtons modeButtons;
         Knob masterVolume;
         LedButton systemButton { "System" };

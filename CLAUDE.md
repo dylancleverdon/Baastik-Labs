@@ -38,6 +38,11 @@ Linux needs the ALSA/X11/freetype `-dev` packages (see `.github/workflows/norg-b
   Stage, Sample in Electro). Comp and Reverb work on the panel mix; a safety limiter sits on the
   output. Delay and reverb tails ring on after they're switched off. `MasterClock` follows the
   host tempo (or `clock_bpm`) for synced effects.
+- Programs (`perform/`): `Program` is a sparse snapshot of every program parameter (both panels)
+  plus library choices; `ProgramLibrary` is the shared on-disk program memory (override the file
+  with `NORG_PROGRAM_LIBRARY`; tests use an empty one). Loads go through
+  `NorgProcessor::applySound`, which bumps a generation that the audio thread turns into a seamless
+  switch in `EngineSlots` (two engines per panel; releases go to the engine that got the note-on).
 - UI: `ui/MainPanel` is laid out at a fixed logical size (1400x780) and scaled by the editor.
   Colours, fonts and drawing helpers are in `ui/NorgTheme.*` and `ui/NorgLookAndFeel.*`.
 - Updates: `Norg/Updater` (the `NorgUpdater` helper) installs builds only from this repo's `norg-*`

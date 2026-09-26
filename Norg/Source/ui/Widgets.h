@@ -91,10 +91,20 @@ namespace norg::ui
     {
     public:
         void setText (juce::String title, juce::String subtitle, juce::String footer = {});
+
+        // A heading and up to five numbered lines (e.g. the programs on a page), one highlighted.
+        void setList (juce::String heading, juce::StringArray lines, int highlighted);
+
         void paint (juce::Graphics&) override;
+
+        std::function<void()> onClick;
+        void mouseUp (const juce::MouseEvent&) override { if (onClick) onClick(); }
 
     private:
         juce::String titleText, subtitleText, footerText;
+        juce::StringArray listLines;
+        int listHighlight = -1;
+        bool listMode = false;
     };
 
     // A section outline with its title in the top-left corner.

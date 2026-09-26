@@ -3,13 +3,18 @@
 #include "engine/MasterClock.h"
 #include "engine/NorgEngine.h"
 #include "params/Parameters.h"
+#include "perform/EngineSlots.h"
+#include "perform/ProgramLibrary.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_utils/juce_audio_utils.h>
 
 namespace norg
 {
-    class NorgProcessor final : public juce::AudioProcessor, private juce::Timer
+    class NorgProcessor final : public juce::AudioProcessor,
+                                public juce::ChangeBroadcaster, // program, name or "modified" changed
+                                private juce::Timer,
+                                private juce::AudioProcessorParameter::Listener
     {
     public:
         // Bumped whenever the saved-state format changes; older states are upgraded on load.
@@ -36,7 +41,7 @@ namespace norg
         int getNumPrograms() override { return 1; }
         int getCurrentProgram() override { return 0; }
         void setCurrentProgram (int) override {}
-        const juce::String getProgramName (int) override { return "Norg"; }
+        const juce::String getProgramName (int) override { return currentProgramName(); }
         void changeProgramName (int, const juce::String&) override {}
 
         void getStateInformation (juce::MemoryBlock& destData) override;
@@ -55,6 +60,38 @@ namespace norg
         // The on-screen keyboard feeds notes in through this.
         juce::MidiKeyboardState& keyboardState() { return keyboard; }
 
+        // --- Programs (message thread) ------------------------------------------------------------
+        // Program changes are seamless: held notes, pedals and effect tails keep the old sound.
+        perform::ProgramLibrary& programLibrary() { return *library; }
+        perform::Location currentLocation() const;
+        juce::String currentProgramName() const;
+        bool isModified() const { return modified.load(); }
+        bool isLiveMode() const { return currentLocation().live; }
+
+        void loadProgram (const perform::Location&);
+        void storeProgram (const perform::Location&, const juce::String& name);
+        void setLiveMode (bool);
+        void initSound(); // an edit: every parameter back to its default (undoable)
+        perform::Program currentSound() { return perform::capture (parameters); }
+
+        // Undo and redo cover edits since the program was loaded (one step per knob turn or press).
+        bool canUndo() const { return ! undoStack.empty(); }
+        bool canRedo() const { return ! redoStack.empty(); }
+        void undo();
+        void redo();
+
+        // Compare: listen to the stored program, then back to the edited one.
+        bool isComparing() const { return comparing; }
+        void toggleCompare();
+
+        // Copy a part (organ, piano ...) of this sound, and paste it into another program.
+        void copyPart (perform::Part);
+        bool canPaste (perform::Part) const;
+        void pastePart (perform::Part);
+
+        // Loads a program asked for by MIDI Program Change (the timer calls this; tests may too).
+        void processPendingProgramChange();
+
         // The master clock as of the last block, for the tempo LED and display.
         double clockTempo() const { return uiTempo.load(); }
         double clockBeat() const { return uiBeat.load(); }
@@ -62,18 +99,42 @@ namespace norg
 
     private:
         void syncLibraries();
-        void timerCallback() override; // picks up sample libraries that arrive while Norg is open
+        void timerCallback() override; // program changes from MIDI, Live autosave, new sample libraries
+        void parameterValueChanged (int, float) override;
+        void parameterGestureChanged (int, bool starting) override;
+
+        void applySound (const perform::Program&, bool seamless);
+        void pushUndo();
+        void flushLiveEdits();
 
         sfz::LibraryManager libraries;
         juce::AudioProcessorValueTreeState parameters;
         ParamTable paramTable;
         ParamSnapshot snapshot;
-        NorgEngine engine { 0, &libraries };
+        ParamSnapshot captureScratch;
+        perform::EngineSlots panelA { 0, &libraries };
         MasterClock clock;
         fx::Limiter limiter;
         juce::MidiKeyboardState keyboard;
         std::atomic<double> uiTempo { 120.0 }, uiBeat { 0.0 };
         std::atomic<bool> uiHostTempo { false };
+
+        // Programs. A load bumps the generation once every parameter is set; the audio thread
+        // switches engines when it sees a new generation, and never captures a half-loaded sound.
+        juce::SharedResourcePointer<perform::ProgramLibrary> library;
+        std::atomic<int> programGeneration { 0 };
+        std::atomic<bool> programLoading { false }, applying { false }, modified { false };
+        std::atomic<int> pendingProgram { -1 };
+        int seenGeneration = 0, bankSelect = 0;
+
+        mutable juce::CriticalSection metaLock; // location and name are also read by getStateInformation
+        perform::Location location, lastBankLocation;
+        juce::String programName;
+
+        std::vector<perform::Program> undoStack, redoStack;
+        perform::Program compareStash;
+        bool comparing = false, lastModifiedSent = false;
+        int timerTicks = 0, liveSaveTicks = 0;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NorgProcessor)
     };

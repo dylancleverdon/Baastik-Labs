@@ -52,6 +52,23 @@ Click **System** on Norg's panel, then **Uninstall...** and confirm. That remove
 app, the background helper, the downloaded sample libraries and their caches. Your DAW projects
 aren't touched (they keep their Norg settings, should you install again).
 
+## Programs
+
+Norg has 400 program slots (Banks A-H, 10 pages of 5) plus 5 **Live** slots, shared by every Norg
+on your Mac: the one in each DAW project and the standalone app. Bank A starts with a set of
+factory sounds.
+
+- Press **1-5** to play a program; **Page** and **Bank** browse (the display lists that page).
+- Changing program is seamless: notes you're holding, the sustain pedal, delay repeats and reverb
+  keep the old sound while new notes play the new one.
+- **Store** blinks: choose where with the same buttons, press **Store** again and name it.
+- **Live** mode keeps every tweak automatically, with no storing needed.
+- Click the display for the full program list, **Undo/Redo**, **Compare** (hear the stored
+  version), copy and paste a section (say, the organ) between programs, and **Rename**.
+- MIDI Program Change picks programs 1-50 of a bank; Bank Select (CC 0) picks the bank.
+
+A DAW project keeps its own copy of the sound, so it always opens sounding the way you left it.
+
 ## Effects
 
 Each panel has a Nord-style effects section: **Effect 1** (tremolo, pan, ring mod, wah, auto-wah),

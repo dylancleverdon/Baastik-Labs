@@ -159,11 +159,23 @@ namespace norg::ui
     //==============================================================================
     void Oled::setText (juce::String title, juce::String subtitle, juce::String footer)
     {
-        if (title == titleText && subtitle == subtitleText && footer == footerText)
+        if (! listMode && title == titleText && subtitle == subtitleText && footer == footerText)
             return;
+        listMode = false;
         titleText = std::move (title);
         subtitleText = std::move (subtitle);
         footerText = std::move (footer);
+        repaint();
+    }
+
+    void Oled::setList (juce::String heading, juce::StringArray lines, int highlighted)
+    {
+        if (listMode && heading == subtitleText && lines == listLines && highlighted == listHighlight)
+            return;
+        listMode = true;
+        subtitleText = std::move (heading);
+        listLines = std::move (lines);
+        listHighlight = highlighted;
         repaint();
     }
 
@@ -185,6 +197,32 @@ namespace norg::ui
         g.setColour (colours::oledDim);
         g.setFont (Fonts::display (12.0f));
         g.drawText (subtitleText, text.removeFromTop (14.0f), juce::Justification::centredLeft, true);
+
+        if (listMode)
+        {
+            // Two columns: 1-3 on the left, 4-5 on the right.
+            g.setFont (Fonts::display (11.0f));
+            const float lineHeight = juce::jmin (13.0f, text.getHeight() / 3.0f);
+            for (int i = 0; i < listLines.size(); ++i)
+            {
+                const float x = text.getX() + (i < 3 ? 0.0f : text.getWidth() * 0.5f);
+                const auto line = juce::Rectangle<float> (x, text.getY() + static_cast<float> (i % 3) * lineHeight,
+                                                          text.getWidth() * 0.5f - 4.0f, lineHeight);
+                if (i == listHighlight)
+                {
+                    g.setColour (colours::oledText);
+                    g.fillRect (line.expanded (2.0f, 0.0f));
+                    g.setColour (colours::oledBack);
+                }
+                else
+                    g.setColour (colours::oledText.withAlpha (0.85f));
+                g.drawText (juce::String (i + 1) + " " + listLines[i], line, juce::Justification::centredLeft, true);
+            }
+
+            g.setColour (juce::Colours::white.withAlpha (0.025f));
+            g.fillRect (screen.withHeight (screen.getHeight() * 0.45f));
+            return;
+        }
 
         g.setColour (colours::oledText);
         g.setFont (Fonts::labelBold (24.0f));

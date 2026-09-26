@@ -1,5 +1,4 @@
 #include "MainPanel.h"
-#include "NorgVersion.h"
 #include "PluginProcessor.h"
 
 namespace norg::ui
@@ -15,6 +14,7 @@ namespace norg::ui
 
     MainPanel::MainPanel (NorgProcessor& p)
         : processor (p),
+          programs (p),
           modeButtons (p.state(), paramId (P::mode), { "Stage", "Electro" }),
           masterVolume (p.state(), paramId (P::masterVolume), "Master Level"),
           tempo (p),
@@ -23,7 +23,8 @@ namespace norg::ui
           keyboard (p.keyboardState())
     {
         addAndMakeVisible (logo);
-        addAndMakeVisible (display);
+        addAndMakeVisible (programs);
+        modeButtons.setColumns (1);
         addAndMakeVisible (modeButtons);
         addAndMakeVisible (masterVolume);
         addAndMakeVisible (systemButton);
@@ -58,8 +59,6 @@ namespace norg::ui
         stagePanel.setVisible (stage);
         electroPanel.setVisible (! stage);
         logo.setModel (stage ? "stage" : "electro");
-        display.setText ("Norg Init", stage ? "STAGE  |  PROGRAM A:11" : "ELECTRO  |  PROGRAM 1:1",
-                         "v" + juce::String (version::string));
         repaint();
     }
 
@@ -81,13 +80,15 @@ namespace norg::ui
         area.removeFromLeft (14);
 
         logo.setBounds (left.removeFromTop (58));
-        left.removeFromTop (10);
-        display.setBounds (left.removeFromTop (78));
-        left.removeFromTop (16);
-        modeButtons.setBounds (left.removeFromTop (48).withSizeKeepingCentre (150, 48));
-        left.removeFromTop (14);
-        masterVolume.setBounds (left.removeFromTop (100).withSizeKeepingCentre (96, 100));
-        left.removeFromTop (18);
+        left.removeFromTop (8);
+        programs.setBounds (left.removeFromTop (78 + 6 + 44 + 4 + 44));
+        left.removeFromTop (12);
+
+        // Master level beside the Stage / Electro switch.
+        auto levelRow = left.removeFromTop (100);
+        masterVolume.setBounds (levelRow.removeFromLeft (110).withSizeKeepingCentre (96, 100));
+        modeButtons.setBounds (levelRow.withSizeKeepingCentre (juce::jmin (levelRow.getWidth(), 120), 92));
+        left.removeFromTop (12);
         tempo.setBounds (left.removeFromTop (92));
         systemButton.setBounds (left.removeFromBottom (48).withSizeKeepingCentre (64, 48));
 

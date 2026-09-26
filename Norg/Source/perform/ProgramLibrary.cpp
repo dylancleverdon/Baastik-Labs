@@ -5,6 +5,14 @@ namespace norg::perform
     namespace
     {
         const juce::Identifier libraryType ("NorgPrograms"), liveType ("Live"), versionId ("version"), indexId ("index");
+
+        // The slot number is only needed in the file; in memory a program is just its sound.
+        juce::ValueTree withoutIndex (const juce::ValueTree& stored)
+        {
+            auto tree = Program (stored).toValueTree();
+            tree.removeProperty (indexId, nullptr);
+            return tree;
+        }
     }
 
     //==============================================================================
@@ -12,6 +20,22 @@ namespace norg::perform
     {
         index = juce::jlimit (0, numPrograms - 1, index);
         return program (index / programsPerBank, (index / slots) % pages, index % slots);
+    }
+
+    std::optional<Location> Location::fromLabel (const juce::String& text)
+    {
+        const auto t = text.trim().toUpperCase();
+        if (t.startsWith ("LIVE"))
+        {
+            const auto loc = liveSlot (t.fromFirstOccurrenceOf ("LIVE", false, false).trim().getIntValue() - 1);
+            return loc.isValid() ? std::optional<Location> (loc) : std::nullopt;
+        }
+
+        const auto parts = juce::StringArray::fromTokens (t, ":", {});
+        if (parts.size() != 3 || parts[0].length() != 1)
+            return std::nullopt;
+        const auto loc = program (parts[0][0] - 'A', parts[1].getIntValue() - 1, parts[2].getIntValue() - 1);
+        return loc.isValid() ? std::optional<Location> (loc) : std::nullopt;
     }
 
     juce::String Location::label() const
@@ -72,14 +96,14 @@ namespace norg::perform
         {
             const int index = child.getProperty (indexId, -1);
             if (child.hasType (Program::type) && juce::isPositiveAndBelow (index, Location::numPrograms))
-                programs[static_cast<size_t> (index)] = Program (child).toValueTree();
+                programs[static_cast<size_t> (index)] = withoutIndex (child);
         }
 
         for (const auto& child : tree.getChildWithName (liveType))
         {
             const int index = child.getProperty (indexId, -1);
             if (juce::isPositiveAndBelow (index, Location::liveSlots))
-                live[static_cast<size_t> (index)] = Program (child).toValueTree();
+                live[static_cast<size_t> (index)] = withoutIndex (child);
         }
 
         loadedTime = file.getLastModificationTime();

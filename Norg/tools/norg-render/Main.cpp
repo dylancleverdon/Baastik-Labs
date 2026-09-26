@@ -1,6 +1,7 @@
 // norg-render: plays MIDI through the real Norg processor and writes a WAV file.
 //
 //   norg-render --out demo.wav [--seconds 8] [--rate 48000] [--block 256]
+//               [--program A:1:3 | "Live 2" | init]  (the sound to start from; default: init, every parameter at its default)
 //               [--set param_id=value ...]      (plain parameter values, e.g. --set mode=1 --set organ_volume=0.6)
 //               [--midi song.mid]               (otherwise a short built-in demo phrase is played)
 //               [--library grand=/path/x.sfz]   (sample library for the grand / upright / sample slot)
@@ -75,6 +76,17 @@ int main (int argc, char* argv[])
     auto* norg = dynamic_cast<norg::NorgProcessor*> (plugin.get());
     if (norg == nullptr)
         return 1;
+
+    // Start from a known sound: Init unless a program is named.
+    if (const auto name = argValue (args, "--program", "init"); name.equalsIgnoreCase ("init"))
+        norg::perform::apply (norg::perform::Program(), norg->state());
+    else if (const auto location = norg::perform::Location::fromLabel (name))
+        norg->loadProgram (*location);
+    else
+    {
+        std::cerr << "unknown program: " << name << " (use A:1:1 .. H:10:5, \"Live 1\" .. \"Live 5\" or init)" << std::endl;
+        return 1;
+    }
 
     for (int i = 0; i < args.size(); ++i)
     {

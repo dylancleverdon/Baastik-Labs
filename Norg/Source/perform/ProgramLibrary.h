@@ -2,6 +2,7 @@
 
 #include "Program.h"
 
+#include <optional>
 #include <vector>
 
 namespace norg::perform
@@ -19,6 +20,7 @@ namespace norg::perform
         static Location program (int bank, int page, int slot) { return { false, bank, page, slot }; }
         static Location liveSlot (int slot) { return { true, 0, 0, slot }; }
         static Location fromIndex (int index); // 0..numPrograms-1
+        static std::optional<Location> fromLabel (const juce::String&); // "A:1:3", "Live 3"
 
         int index() const { return (bank * pages + page) * slots + slot; }
         juce::String label() const; // "A:1:3" or "Live 3"

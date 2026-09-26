@@ -158,8 +158,11 @@ std::optional<KnobSpec> KnobSet::effective(std::string_view name) const
         for (const auto& [k, w] : mine)
             out.choices.emplace_back(k, blended[k]);
         for (const auto& [k, w] : theirs)
-            if (std::none_of(mine.begin(), mine.end(), [&](const auto& c) { return c.first == k; }))
-                out.choices.emplace_back(k, blended[k]);
+        {
+            const std::string& key = k; // lambdas can't capture structured bindings on Apple Clang 15
+            if (std::none_of(mine.begin(), mine.end(), [&](const auto& c) { return c.first == key; }))
+                out.choices.emplace_back(key, blended[key]);
+        }
         return out;
     }
     const auto lowOf = [](const KnobSpec& s) { return s.kind == KnobSpec::Kind::Range ? s.lo : s.value; };

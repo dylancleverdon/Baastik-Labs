@@ -71,7 +71,7 @@ jobs:
       build: ${{ steps.plan.outputs.build }}
       content_only: ${{ steps.plan.outputs.content_only }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -142,7 +142,7 @@ jobs:
     needs: plan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Configure
         run: >
@@ -178,7 +178,7 @@ jobs:
     env:
       HAS_SIGNING_CERTS: ${{ secrets.MACOS_CERTS_P12 != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Configure
         run: >
@@ -229,12 +229,16 @@ jobs:
     needs: plan
     if: needs.plan.outputs.build == 'true'
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
+      # No -G: CMake picks the newest Visual Studio on the runner.
       - name: Configure
         run: >
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+          cmake -S . -B build -A x64
           -DBAASTIK_BUILD_TESTS=OFF -DBAASTIK_BUILD_TOOLS=OFF
           -DSPG_VERSION=${{ needs.plan.outputs.version }}
           -DSERUMGEN_CONTENT_VERSION=${{ needs.plan.outputs.content_version }}
@@ -278,7 +282,7 @@ jobs:
       CONTENT_VERSION: ${{ needs.plan.outputs.content_version }}
       CONTENT_ONLY: ${{ needs.plan.outputs.content_only }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/download-artifact@v4
         with:

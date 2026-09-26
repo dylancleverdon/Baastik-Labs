@@ -10,6 +10,9 @@ FetchContent_Declare(nlohmann_json
     URL_HASH SHA256=42f6e95cad6ec532fd372391373363b62a14af6d771056dbfc86160e6dfff7aa
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
+# No implicit json -> T conversions: they make comparisons ambiguous under
+# MSVC's C++20 rewritten operators. Use .get<T>() explicitly.
+set(JSON_ImplicitConversions OFF CACHE INTERNAL "")
 set(JSON_Install OFF CACHE INTERNAL "")
 FetchContent_MakeAvailable(nlohmann_json)
 

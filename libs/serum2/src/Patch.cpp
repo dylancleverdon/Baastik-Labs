@@ -203,7 +203,7 @@ void PatchEditor::setFlag(const Module& m, std::string_view key, bool value)
 void PatchEditor::setText(const Module& m, std::string_view key, std::string_view value)
 {
     if (const auto* d = def(m, key))
-        if (auto fallback = d->defaultFor(m.slot); fallback && fallback->is_string() && *fallback == value)
+        if (auto fallback = d->defaultFor(m.slot); fallback && fallback->is_string() && fallback->get_ref<const std::string&>() == value)
         {
             erase(m, key);
             return;

@@ -1,0 +1,31 @@
+#!/bin/bash
+# Runs after Norg's files are in place: starts the background updater and refreshes the AU list.
+set -u
+
+TARGET_USER="${USER:-}"
+if [ -z "$TARGET_USER" ] || [ "$TARGET_USER" = "root" ]; then
+    TARGET_USER=$(/usr/bin/stat -f%Su /dev/console)
+fi
+USER_HOME=$(/usr/bin/dscl . -read "/Users/$TARGET_USER" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}')
+[ -n "$USER_HOME" ] || USER_HOME="$HOME"
+SUPPORT="$USER_HOME/Library/Application Support/Norg"
+
+run_as_user() {
+    if [ "$(/usr/bin/id -u)" = "0" ]; then
+        /bin/launchctl asuser "$(/usr/bin/id -u "$TARGET_USER")" /usr/bin/sudo -u "$TARGET_USER" "$@"
+    else
+        "$@"
+    fi
+}
+
+if [ "$(/usr/bin/id -u)" = "0" ]; then
+    # Only if the installer ran as root: make sure the user owns their files.
+    for p in "$SUPPORT" "$USER_HOME/Library/Audio/Plug-Ins/Components/Norg.component" \
+             "$USER_HOME/Library/Audio/Plug-Ins/VST3/Norg.vst3" "$USER_HOME/Applications/Norg.app"; do
+        [ -e "$p" ] && /usr/sbin/chown -R "$TARGET_USER" "$p"
+    done
+fi
+
+run_as_user "$SUPPORT/NorgUpdater" --install-agent || echo "Norg: the background updater could not be started"
+/usr/bin/killall -9 AudioComponentRegistrar 2>/dev/null || true
+exit 0

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Norg installer. Installs into the current user's home folder only, so no admin password is
+     needed and the background updater can replace the files later without one. -->
+<installer-gui-script minSpecVersion="2">
+    <title>Norg</title>
+    <organization>com.baastiklabs</organization>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <conclusion file="conclusion.html" mime-type="text/html"/>
+    <allowed-os-versions>
+        <os-version min="11.0"/>
+    </allowed-os-versions>
+    <domains enable_anywhere="false" enable_currentUserHome="true" enable_localSystem="false"/>
+    <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+    <choices-outline>
+        <line choice="norg"/>
+    </choices-outline>
+    <choice id="norg" title="Norg" visible="false">
+        <pkg-ref id="com.baastiklabs.norg"/>
+    </choice>
+    <pkg-ref id="com.baastiklabs.norg" version="@VERSION@" onConclusion="none">Norg-component.pkg</pkg-ref>
+</installer-gui-script>

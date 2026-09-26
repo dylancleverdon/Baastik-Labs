@@ -1,0 +1,260 @@
+# Builds, tests, validates and packages Norg. Called by norg-release.yml (publishes) and
+# norg-ci.yml (build + test only).
+name: Norg build
+
+on:
+  workflow_call:
+    inputs:
+      publish:
+        description: Publish the build as a release and update the norg-channel
+        type: boolean
+        default: false
+
+env:
+  PLUGINVAL_VERSION: v1.0.4
+
+jobs:
+  linux:
+    name: Linux build + tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build xvfb libasound2-dev libjack-jackd2-dev libfreetype-dev \
+            libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
+            libxrandr-dev libxrender-dev libxi-dev libglu1-mesa-dev libegl-dev mesa-common-dev
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DNORG_BUILD_NUMBER=${{ github.run_number }} -DNORG_COMMIT=${{ github.sha }}
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: pluginval (VST3, strictness 8)
+        run: |
+          curl -fsSL -o pluginval.zip "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Linux.zip"
+          unzip -q pluginval.zip
+          chmod +x pluginval
+          xvfb-run -a ./pluginval --strictness-level 8 --validate-in-process --validate build/Norg/Norg_artefacts/Release/VST3/Norg.vst3
+
+  macos:
+    name: macOS build, validate, package
+    runs-on: macos-15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version
+        id: version
+        run: |
+          VERSION="$(head -n1 VERSION).${{ github.run_number }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "BUILD=${{ github.run_number }}" >> "$GITHUB_ENV"
+          echo "Building Norg $VERSION"
+
+      - name: Install Ninja
+        run: command -v ninja || brew install ninja
+
+      - name: Configure (universal)
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+          -DNORG_BUILD_NUMBER=${BUILD} -DNORG_COMMIT=${{ github.sha }}
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Stage and sign the payload
+        run: |
+          ART=build/Norg/Norg_artefacts/Release
+          PAYLOAD="dist/Norg-${VERSION}"
+          mkdir -p "$PAYLOAD"
+          ditto "$ART/AU/Norg.component" "$PAYLOAD/Norg.component"
+          ditto "$ART/VST3/Norg.vst3" "$PAYLOAD/Norg.vst3"
+          ditto "$ART/Standalone/Norg.app" "$PAYLOAD/Norg.app"
+          ditto build/Norg/Updater/NorgUpdater_artefacts/Release/NorgUpdater "$PAYLOAD/NorgUpdater"
+          for item in Norg.component Norg.vst3 Norg.app NorgUpdater; do
+            codesign --force --deep --sign - "$PAYLOAD/$item"
+            codesign --verify --deep --strict "$PAYLOAD/$item"
+          done
+          python3 scripts/ci/norg_release.py notes --out dist/notes.md
+          python3 scripts/ci/norg_release.py release-json --version "$VERSION" --build "$BUILD" \
+            --commit "${{ github.sha }}" --notes-file dist/notes.md --out "$PAYLOAD/release.json"
+          echo "PAYLOAD=$PAYLOAD" >> "$GITHUB_ENV"
+          cat dist/notes.md
+
+      - name: Package (installer + update zip)
+        run: |
+          mkdir -p out
+          installer/macos/build-pkg.sh "$PAYLOAD" "$VERSION" out
+          ditto -c -k --keepParent "$PAYLOAD" "out/Norg-${VERSION}-mac.zip"
+          cp installer/install.sh installer/uninstall.sh out/
+          ls -la out
+
+      - name: Installer smoke test
+        run: |
+          installer -pkg out/Norg-Installer.pkg -target CurrentUserHomeDirectory
+          test -d "$HOME/Library/Audio/Plug-Ins/Components/Norg.component"
+          test -d "$HOME/Library/Audio/Plug-Ins/VST3/Norg.vst3"
+          test -d "$HOME/Applications/Norg.app"
+          test -x "$HOME/Library/Application Support/Norg/NorgUpdater"
+          test -f "$HOME/Library/Application Support/Norg/installed.json"
+          "$HOME/Library/Application Support/Norg/NorgUpdater" --status
+          ls -la "$HOME/Library/LaunchAgents" || true
+          # Don't let the background updater run on the CI machine.
+          launchctl bootout "gui/$(id -u)/com.baastiklabs.norg.updater" 2>/dev/null || true
+
+      - name: auval (installed AU)
+        run: |
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          sleep 2
+          auval -a | grep -i norg || true
+          auval -v aumu Norg Bstk
+
+      - name: pluginval (installed VST3, strictness 8)
+        run: |
+          curl -fsSL -o pluginval.zip "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_macOS.zip"
+          ditto -x -k pluginval.zip pluginval
+          pluginval/pluginval.app/Contents/MacOS/pluginval --strictness-level 8 --validate-in-process \
+            --validate "$HOME/Library/Audio/Plug-Ins/VST3/Norg.vst3"
+
+      - name: Sign the update manifest
+        env:
+          NORG_UPDATE_SIGNING_KEY: ${{ secrets.NORG_UPDATE_SIGNING_KEY }}
+          PUBLISH: ${{ inputs.publish }}
+        run: |
+          SIGN=build/Norg/tools/norg-sign
+          if [ -z "${NORG_UPDATE_SIGNING_KEY}" ]; then
+            if [ "$PUBLISH" = "true" ]; then
+              echo "::error::The NORG_UPDATE_SIGNING_KEY repository secret is missing. Add it under Settings > Secrets and variables > Actions, then re-run."
+              exit 1
+            fi
+            echo "::warning::No signing key available; skipping manifest signing and the updater end-to-end test."
+            echo "SIGNED=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          if [ "$($SIGN public)" != "$(head -n1 Norg/Updater/update-public-key.txt)" ]; then
+            echo "::error::NORG_UPDATE_SIGNING_KEY does not match Norg/Updater/update-public-key.txt"
+            exit 1
+          fi
+          ZIP="out/Norg-${VERSION}-mac.zip"
+          URL="https://github.com/${{ github.repository }}/releases/download/norg-v${VERSION}/Norg-${VERSION}-mac.zip"
+          SHA=$(python3 scripts/ci/norg_release.py sha256 "$ZIP")
+          SIG=$($SIGN sign --version "$VERSION" --build "$BUILD" --zip-name "$(basename "$ZIP")" --url "$URL" --sha256 "$SHA")
+          python3 scripts/ci/norg_release.py manifest --version "$VERSION" --build "$BUILD" --commit "${{ github.sha }}" \
+            --notes-file dist/notes.md --zip "$ZIP" --zip-url "$URL" --signature "$SIG" --out out/norg-update.json
+          cat out/norg-update.json
+          echo "SIGNED=true" >> "$GITHUB_ENV"
+
+      - name: Updater end-to-end test (local manifest)
+        if: env.SIGNED == 'true'
+        env:
+          NORG_UPDATE_SIGNING_KEY: ${{ secrets.NORG_UPDATE_SIGNING_KEY }}
+        run: |
+          SIGN=build/Norg/tools/norg-sign
+          UPDATER="$PAYLOAD/NorgUpdater"
+          E2E_HOME="$RUNNER_TEMP/e2e-home"
+          SUPPORT="$E2E_HOME/Library/Application Support/Norg"
+          mkdir -p "$SUPPORT"
+          # Pretend the previous build is installed.
+          python3 - "$PAYLOAD/release.json" "$SUPPORT/installed.json" <<'PY'
+          import json, sys
+          d = json.load(open(sys.argv[1])); d["build"] -= 1; d["version"] += "-previous"
+          json.dump(d, open(sys.argv[2], "w"))
+          PY
+          # Work on a copy of the zip, so the one being published is never touched.
+          mkdir -p "$RUNNER_TEMP/e2e-feed"
+          ZIP="$RUNNER_TEMP/e2e-feed/Norg-${VERSION}-mac.zip"
+          cp "out/Norg-${VERSION}-mac.zip" "$ZIP"
+          URL="file://$ZIP"
+          SHA=$(python3 scripts/ci/norg_release.py sha256 "$ZIP")
+          SIG=$($SIGN sign --version "$VERSION" --build "$BUILD" --zip-name "$(basename "$ZIP")" --url "$URL" --sha256 "$SHA")
+          python3 scripts/ci/norg_release.py manifest --version "$VERSION" --build "$BUILD" --commit test \
+            --notes-file dist/notes.md --zip "$ZIP" --zip-url "$URL" --signature "$SIG" --out "$RUNNER_TEMP/local-manifest.json"
+
+          "$UPDATER" --home "$E2E_HOME" --check-now --manifest-url "file://$RUNNER_TEMP/local-manifest.json" --allow-url-prefix "file://"
+          test -d "$E2E_HOME/Library/Audio/Plug-Ins/Components/Norg.component"
+          test -d "$E2E_HOME/Applications/Norg.app"
+          python3 -c "import json,sys; assert json.load(open(sys.argv[1]))['build'] == int(sys.argv[2])" "$SUPPORT/installed.json" "$BUILD"
+
+          "$UPDATER" --home "$E2E_HOME" --rollback
+          python3 -c "import json,sys; assert json.load(open(sys.argv[1]))['build'] == int(sys.argv[2]) - 1" "$SUPPORT/installed.json" "$BUILD"
+
+          # A tampered zip must be refused.
+          echo tampered >> "$ZIP"
+          if "$UPDATER" --home "$E2E_HOME" --check-now --manifest-url "file://$RUNNER_TEMP/local-manifest.json" --allow-url-prefix "file://"; then
+            echo "::error::the updater accepted a tampered update"; exit 1
+          fi
+          echo "Updater end-to-end test passed"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: norg-${{ steps.version.outputs.version }}-mac
+          path: |
+            out/
+            dist/notes.md
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    if: inputs.publish
+    needs: [linux, macos]
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ needs.macos.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: norg-${{ needs.macos.outputs.version }}-mac
+
+      - name: Publish norg-v${{ env.VERSION }} and refresh norg-channel
+        run: |
+          ls -la out
+          test -f out/norg-update.json
+
+          # 1. The versioned release (never marked "Latest", so other programs in this repo are unaffected)
+          gh release create "norg-v${VERSION}" \
+            --target "${{ github.sha }}" --prerelease --latest=false \
+            --title "Norg ${VERSION}" --notes-file dist/notes.md \
+            "out/Norg-${VERSION}-mac.zip" out/Norg-Installer.pkg
+
+          # 2. The rolling channel that the download link and the updater read from
+          if ! gh release view norg-channel >/dev/null 2>&1; then
+            gh release create norg-channel --target "${{ github.sha }}" --prerelease --latest=false \
+              --title "Norg (latest build)" --notes "Norg's install link and update feed."
+          fi
+          {
+            echo "## Norg ${VERSION}"
+            echo
+            echo "**Install:** download [Norg-Installer.pkg](https://github.com/${GH_REPO}/releases/download/norg-channel/Norg-Installer.pkg) and open it."
+            echo "The first time, macOS may say it can't verify the developer: open **System Settings > Privacy & Security** and click **Open Anyway**."
+            echo
+            echo "Or in Terminal: \`curl -fsSL https://github.com/${GH_REPO}/releases/download/norg-channel/install.sh | bash\`"
+            echo
+            echo "Norg updates itself in the background after that."
+            echo
+            echo "### What's new"
+            cat dist/notes.md
+          } > channel-notes.md
+          gh release edit norg-channel --notes-file channel-notes.md --prerelease --latest=false
+
+          # Installer and scripts first, manifest last, so the feed never points at a missing file.
+          gh release upload norg-channel out/Norg-Installer.pkg out/install.sh out/uninstall.sh --clobber
+          gh release upload norg-channel out/norg-update.json --clobber
+          echo "Published Norg ${VERSION}"

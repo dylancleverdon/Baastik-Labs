@@ -1,0 +1,25 @@
+// Every Norg parameter, in one place. Included several times with different NORG_PARAM
+// definitions to generate the ID enum and the host parameter layout.
+//
+// NORG_PARAM(enumName, "stable-id", "Host name", Kind, min, max, default, centre, "choice|list", "unit", versionHint, scope)
+//
+//   Kind:   Float | Bool | Choice | Int
+//   centre: value at the middle of the knob travel (skews the range), or -1 for linear
+//   scope:  Global (one copy) or Panel (a copy for Panel A, plus a "b_"-prefixed copy for Panel B)
+//
+// IDs are stable forever: never rename or reuse one, or saved projects break. New parameters
+// get the versionHint of the phase that adds them.
+
+// --- Global ---------------------------------------------------------------------------------
+NORG_PARAM(mode,          "mode",           "Mode",           Choice, 0, 1,   0,    -1, "Stage|Electro", "",   1, Global)
+NORG_PARAM(masterVolume,  "master_volume",  "Master Volume",  Float,  0, 1,   0.8f, -1, "",              "",   1, Global)
+
+// --- Section on/off + level -------------------------------------------------------------------
+NORG_PARAM(organOn,       "organ_on",       "Organ On",       Bool,   0, 1,   1,    -1, "",              "",   1, Panel)
+NORG_PARAM(organVolume,   "organ_volume",   "Organ Volume",   Float,  0, 1,   0.75f,-1, "",              "",   1, Panel)
+NORG_PARAM(pianoOn,       "piano_on",       "Piano On",       Bool,   0, 1,   0,    -1, "",              "",   1, Panel)
+NORG_PARAM(pianoVolume,   "piano_volume",   "Piano Volume",   Float,  0, 1,   0.75f,-1, "",              "",   1, Panel)
+NORG_PARAM(synthOn,       "synth_on",       "Synth On",       Bool,   0, 1,   0,    -1, "",              "",   1, Panel)
+NORG_PARAM(synthVolume,   "synth_volume",   "Synth Volume",   Float,  0, 1,   0.75f,-1, "",              "",   1, Panel)
+NORG_PARAM(sampleOn,      "sample_on",      "Sample On",      Bool,   0, 1,   0,    -1, "",              "",   1, Panel)
+NORG_PARAM(sampleVolume,  "sample_volume",  "Sample Volume",  Float,  0, 1,   0.75f,-1, "",              "",   1, Panel)

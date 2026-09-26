@@ -1,0 +1,24 @@
+# Build + test only (never publishes): pull requests into `norg`, and Claude session branches
+# that carry Norg's code.
+name: Norg CI
+
+on:
+  pull_request:
+    branches: [norg]
+  push:
+    branches: ['claude/**']
+  workflow_dispatch:
+
+concurrency:
+  group: norg-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/norg-build.yml
+    with:
+      publish: false
+    secrets: inherit

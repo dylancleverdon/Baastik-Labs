@@ -1,0 +1,10 @@
+/build*/
+/out/
+.DS_Store
+*.swp
+.idea/
+.vscode/
+CMakeUserPresets.json
+# never commit update-signing private keys
+*.seed
+*private*.key

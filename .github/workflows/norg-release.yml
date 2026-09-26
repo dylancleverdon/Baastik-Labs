@@ -1,0 +1,22 @@
+# Every push to the `norg` branch that builds, passes its tests and validates becomes a Norg
+# update: installed Norgs pick it up within the hour. Nothing on other branches triggers this.
+name: Norg release
+
+on:
+  push:
+    branches: [norg]
+  workflow_dispatch:
+
+concurrency:
+  group: norg-release
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: ./.github/workflows/norg-build.yml
+    with:
+      publish: true
+    secrets: inherit

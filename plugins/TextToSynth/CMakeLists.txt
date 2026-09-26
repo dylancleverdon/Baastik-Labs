@@ -28,6 +28,10 @@ add_library(baastik::texttosynth ALIAS texttosynth_core)
 target_include_directories(texttosynth_core PUBLIC core/include)
 target_link_libraries(texttosynth_core PUBLIC baastik::serum2 baastik::serumgen)
 baastik_set_warnings(texttosynth_core)
+set(TTS_CONTENT_VERSION "" CACHE STRING "Vocabulary version stamped by release builds (empty = vocabulary.json)")
+if(TTS_CONTENT_VERSION)
+    target_compile_definitions(texttosynth_core PRIVATE TTS_CONTENT_VERSION=${TTS_CONTENT_VERSION})
+endif()
 baastik_embed_resources(texttosynth_core
     NAMESPACE tts::embedded
     BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Resources/content"

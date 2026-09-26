@@ -16,6 +16,10 @@ int main (int argc, char* argv[])
     const std::filesystem::path selfPath (std::u8string (self.toUTF8().getAddress(),
                                                          self.toUTF8().getAddress() + self.getNumBytesAsUTF8()));
 
+    const auto documents = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory).getFullPathName();
+    tts::Paths::setDocumentsFolder (std::filesystem::path (std::u8string (
+        documents.toUTF8().getAddress(), documents.toUTF8().getAddress() + documents.getNumBytesAsUTF8())));
+
     if (! tts::wantsServer (argc, argv))
         return tts::runApp (argc, argv, TTS_VERSION_STRING, nullptr, selfPath);
 

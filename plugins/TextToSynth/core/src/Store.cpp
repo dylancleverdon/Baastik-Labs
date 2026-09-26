@@ -1,6 +1,7 @@
 #include "tts/Store.h"
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -91,8 +92,24 @@ fs::path Paths::home()
     return fs::current_path();
 }
 
+namespace
+{
+fs::path& documentsOverride()
+{
+    static fs::path folder;
+    return folder;
+}
+} // namespace
+
+void Paths::setDocumentsFolder(fs::path folder)
+{
+    documentsOverride() = std::move(folder);
+}
+
 fs::path Paths::documents()
 {
+    if (!documentsOverride().empty())
+        return documentsOverride();
     return home() / "Documents";
 }
 

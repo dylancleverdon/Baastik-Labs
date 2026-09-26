@@ -14,7 +14,13 @@ const Json& Content::builtin()
         const auto text = embedded::find("vocabulary.json");
         if (!text)
             throw std::runtime_error("missing embedded vocabulary.json");
-        return Json::parse(*text);
+        auto parsed = Json::parse(*text);
+#ifdef TTS_CONTENT_VERSION
+        // Release builds stamp the workflow run number, so a later
+        // content-only release always counts as newer.
+        parsed["version"] = TTS_CONTENT_VERSION;
+#endif
+        return parsed;
     }();
     return bundle;
 }

@@ -26,6 +26,9 @@ struct Paths
     static Paths defaults();
     static fs::path home();
     static fs::path documents();
+    // The shipped app sets the OS's real Documents folder (it can be
+    // redirected, e.g. to OneDrive on Windows); otherwise ~/Documents.
+    static void setDocumentsFolder(fs::path folder);
     static fs::path appData(); // the per-user application data root
 };
 

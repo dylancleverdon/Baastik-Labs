@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>Text To Synth @VERSION@</title>
+    <organization>com.baastiklabs</organization>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <conclusion file="conclusion.html" mime-type="text/html"/>
+    <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+    <domains enable_localSystem="true"/>
+    <choices-outline>
+        <line choice="default"/>
+    </choices-outline>
+    <choice id="default" title="Text To Synth">
+        <pkg-ref id="com.baastiklabs.texttosynth"/>
+    </choice>
+    <pkg-ref id="com.baastiklabs.texttosynth" version="@VERSION@" onConclusion="none">component.pkg</pkg-ref>
+</installer-gui-script>

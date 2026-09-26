@@ -1,0 +1,10 @@
+#!/bin/sh
+# Register Text To Synth with Claude for the person who ran the installer.
+# The installer runs as root, so switch to the console user (their HOME holds
+# the Claude configs).
+BIN="/Library/Application Support/Baastik Labs/Text To Synth/TextToSynth"
+user=$(stat -f%Su /dev/console 2>/dev/null)
+if [ -n "$user" ] && [ "$user" != "root" ] && [ "$user" != "loginwindow" ]; then
+    sudo -u "$user" -H "$BIN" --register || true
+fi
+exit 0

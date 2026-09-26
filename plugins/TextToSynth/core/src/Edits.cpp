@@ -1,6 +1,7 @@
 #include "tts/Edits.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
@@ -414,7 +415,7 @@ void PresetEditor::setTarget(const std::string& name, const Json& edit, EditRepo
     const bool isSet = edit.contains("set");
     const bool isAdd = edit.contains("add");
     const bool isScale = edit.contains("scale");
-    if (isSet + isAdd + isScale != 1)
+    if (int(isSet) + int(isAdd) + int(isScale) != 1)
         throw std::invalid_argument("give exactly one of set, add or scale");
 
     const auto dot = name.rfind('.');

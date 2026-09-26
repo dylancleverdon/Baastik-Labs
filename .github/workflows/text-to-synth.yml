@@ -1,0 +1,365 @@
+name: Text To Synth
+
+# Everything here is scoped to Text To Synth: its own paths, version, GitHub
+# environment and release channel ("text-to-synth-latest"). Other plugins in
+# the repo have their own workflows, so a change to one never rebuilds,
+# releases or auto-updates another.
+#
+# Every push that touches Text To Synth builds and tests it. Pushes to its own
+# branches (text-to-synth*, claude/text-to-synth*, release/text-to-synth) or
+# `main`, and manual runs, also publish:
+#   - code changed       -> new installers + update.json (the app offers the update)
+#   - vocabulary changed -> new content.json only (pulled silently, no reinstall)
+
+on:
+  push:
+    paths:
+      - "plugins/TextToSynth/**"
+      - "plugins/SerumPresetGenerator/core/**"
+      - "plugins/SerumPresetGenerator/Resources/content/**"
+      - "libs/serum2/**"
+      - "modules/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "tests/**"
+      - "tools/release/**"
+      - "packaging/text-to-synth/**"
+      - ".github/workflows/text-to-synth.yml"
+  pull_request:
+    paths:
+      - "plugins/TextToSynth/**"
+      - "plugins/SerumPresetGenerator/core/**"
+      - "plugins/SerumPresetGenerator/Resources/content/**"
+      - "libs/serum2/**"
+      - "modules/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "tests/**"
+      - "tools/release/**"
+      - "packaging/text-to-synth/**"
+      - ".github/workflows/text-to-synth.yml"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish a release from this branch
+        type: boolean
+        default: true
+      force_build:
+        description: Build new installers even if only the vocabulary changed
+        type: boolean
+        default: false
+
+concurrency:
+  group: text-to-synth-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PLUGIN_ID: text-to-synth
+  CHANNEL: text-to-synth-latest
+  PRODUCT: Text To Synth
+  FILE_STEM: TextToSynth
+  ARTEFACTS: build/plugins/TextToSynth/TextToSynth_artefacts/Release
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      content_version: ${{ steps.plan.outputs.content_version }}
+      publish: ${{ steps.plan.outputs.publish }}
+      build: ${{ steps.plan.outputs.build }}
+      content_only: ${{ steps.plan.outputs.content_only }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          INPUT_PUBLISH: ${{ inputs.publish }}
+          INPUT_FORCE: ${{ inputs.force_build }}
+          RUN: ${{ github.run_number }}
+          REPO: ${{ github.repository }}
+        run: |
+          base_version=$(tr -d '[:space:]' < plugins/TextToSynth/VERSION)
+          version="$base_version.$RUN"
+
+          # Pushes to Text To Synth's own branches publish; anything else only
+          # builds and tests.
+          publish=false
+          if [[ "$EVENT" == "workflow_dispatch" && "$INPUT_PUBLISH" == "true" ]]; then publish=true; fi
+          if [[ "$EVENT" == "push" ]]; then
+            case "$REF" in
+              refs/heads/main | refs/heads/release/text-to-synth | \
+              refs/heads/text-to-synth* | refs/heads/claude/text-to-synth*)
+                publish=true ;;
+            esac
+          fi
+
+          # What changed since the last published release?
+          code_changed=true
+          content_changed=true
+          previous=$(curl -sfL "https://github.com/$REPO/releases/download/$CHANNEL/update.json" || true)
+          previous_commit=$(jq -r '.commit // empty' <<< "${previous:-"{}"}" 2>/dev/null || true)
+          if [[ -n "$previous_commit" ]] && git cat-file -e "$previous_commit^{commit}" 2>/dev/null; then
+            code=$(git diff --name-only "$previous_commit" HEAD -- \
+              plugins/TextToSynth plugins/SerumPresetGenerator/core plugins/SerumPresetGenerator/Resources/content \
+              libs/serum2 modules cmake CMakeLists.txt packaging/text-to-synth \
+              ':(exclude)plugins/TextToSynth/Resources/content')
+            content=$(git diff --name-only "$previous_commit" HEAD -- plugins/TextToSynth/Resources/content)
+            [[ -z "$code" ]] && code_changed=false
+            [[ -z "$content" ]] && content_changed=false
+          fi
+          [[ "$INPUT_FORCE" == "true" ]] && code_changed=true
+
+          content_only=false
+          if [[ "$publish" == "true" ]]; then
+            if [[ "$code_changed" == "false" && "$content_changed" == "false" ]]; then
+              echo "Nothing new since the last release; not publishing."
+              publish=false
+            elif [[ "$code_changed" == "false" ]]; then
+              content_only=true
+              version=$(jq -r '.version' <<< "$previous")
+            fi
+          fi
+
+          # Branch and PR runs always build the installers to catch breakage.
+          build=true
+          [[ "$content_only" == "true" ]] && build=false
+
+          {
+            echo "version=$version"
+            echo "content_version=$RUN"
+            echo "publish=$publish"
+            echo "build=$build"
+            echo "content_only=$content_only"
+          } >> "$GITHUB_OUTPUT"
+          echo "version=$version content=$RUN publish=$publish build=$build content_only=$content_only"
+
+  test:
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBAASTIK_BUILD_PLUGINS=OFF
+          -DTTS_VERSION=${{ needs.plan.outputs.version }}
+          -DTTS_CONTENT_VERSION=${{ needs.plan.outputs.content_version }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Smoke test the MCP server
+        env:
+          TEXT_TO_SYNTH_PRESETS_DIR: ${{ runner.temp }}/presets
+          TEXT_TO_SYNTH_DATA_DIR: ${{ runner.temp }}/data
+        run: |
+          python3 - <<'EOF'
+          import json, subprocess
+          server = "build/plugins/TextToSynth/text-to-synth-dev"
+          recipes = ["reese", "supersaw", "808", "warm_analog_pad", "noise_pluck", "wobble_bass"]
+          msgs = [{"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {}},
+                  {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "sound_design_guide", "arguments": {}}}]
+          for i, r in enumerate(recipes):
+              name = f"Smoke {r}"
+              msgs.append({"jsonrpc": "2.0", "id": 10 + i, "method": "tools/call", "params": {"name": "create_preset", "arguments": {
+                  "name": name, "start": {"recipe": r, "seed": i},
+                  "edits": [{"add_fx": "reverb", "params": {"mix": 25}}, {"mod": {"source": "lfo1", "target": "filter1.cutoff", "amount": 20}}]}}})
+              msgs.append({"jsonrpc": "2.0", "id": 100 + i, "method": "tools/call", "params": {"name": "edit_preset", "arguments": {
+                  "preset": name, "note": "drier, less harsh",
+                  "edits": [{"target": "fx.reverb.mix", "scale": 0.6}, {"target": "filter1.resonance", "scale": 0.6}]}}})
+          out = subprocess.run([server], input="\n".join(json.dumps(m) for m in msgs) + "\n",
+                               capture_output=True, text=True, check=True).stdout
+          responses = [json.loads(l) for l in out.splitlines()]
+          assert len(responses) == len(msgs), out
+          for r in responses:
+              assert "error" not in r, r
+              if "content" in r["result"]:
+                  assert not r["result"]["isError"], r["result"]["content"][0]["text"]
+          print(f"{len(responses)} MCP calls OK")
+          EOF
+          for f in "$RUNNER_TEMP"/presets/*.SerumPreset; do build/tools/serumtool/serumtool dump "$f" > /dev/null; done
+
+      - name: Content bundle
+        run: build/plugins/TextToSynth/text-to-synth-dev --content-bundle content.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: content
+          path: content.json
+
+  macos:
+    needs: plan
+    if: needs.plan.outputs.build == 'true'
+    runs-on: macos-15
+    env:
+      HAS_SIGNING_CERTS: ${{ secrets.MACOS_CERTS_P12 != '' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          -DBAASTIK_BUILD_TESTS=OFF -DBAASTIK_BUILD_TOOLS=OFF
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+          -DTTS_VERSION=${{ needs.plan.outputs.version }}
+          -DTTS_CONTENT_VERSION=${{ needs.plan.outputs.content_version }}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel --target TextToSynth
+
+      - name: Check the binary
+        run: |
+          "$ARTEFACTS/TextToSynth" --version
+          echo '{"jsonrpc":"2.0","id":1,"method":"ping"}' | TEXT_TO_SYNTH_UPDATE_URL=file:///dev/null "$ARTEFACTS/TextToSynth" | grep -q '"result"'
+
+      - name: Import signing certificates
+        if: env.HAS_SIGNING_CERTS == 'true'
+        env:
+          MACOS_CERTS_P12: ${{ secrets.MACOS_CERTS_P12 }}
+          MACOS_CERTS_PASSWORD: ${{ secrets.MACOS_CERTS_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p ci "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p ci "$keychain"
+          echo "$MACOS_CERTS_P12" | base64 --decode > "$RUNNER_TEMP/certs.p12"
+          security import "$RUNNER_TEMP/certs.p12" -k "$keychain" -P "$MACOS_CERTS_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productsign
+          security set-key-partition-list -S apple-tool:,apple: -s -k ci "$keychain"
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+
+      - name: Package
+        env:
+          MACOS_APP_IDENTITY: ${{ secrets.MACOS_APP_IDENTITY }}
+          MACOS_INSTALLER_IDENTITY: ${{ secrets.MACOS_INSTALLER_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          mkdir -p dist
+          packaging/text-to-synth/macos/build_pkg.sh "$ARTEFACTS/TextToSynth" "${{ needs.plan.outputs.version }}" \
+            "dist/$FILE_STEM-${{ needs.plan.outputs.version }}-macOS.pkg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-macos
+          path: dist/*.pkg
+
+  windows:
+    needs: plan
+    if: needs.plan.outputs.build == 'true'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+
+      # No -G: CMake picks the newest Visual Studio on the runner.
+      - name: Configure
+        run: >
+          cmake -S . -B build -A x64
+          -DBAASTIK_BUILD_TESTS=OFF -DBAASTIK_BUILD_TOOLS=OFF
+          -DTTS_VERSION=${{ needs.plan.outputs.version }}
+          -DTTS_CONTENT_VERSION=${{ needs.plan.outputs.content_version }}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel --target TextToSynth
+
+      - name: Check the binary
+        run: |
+          "$ARTEFACTS/TextToSynth.exe" --version
+          echo '{"jsonrpc":"2.0","id":1,"method":"ping"}' | TEXT_TO_SYNTH_UPDATE_URL=file:///nul "$ARTEFACTS/TextToSynth.exe" | grep -q '"result"'
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          $version = "${{ needs.plan.outputs.version }}"
+          $binary = "$env:GITHUB_WORKSPACE\$($env:ARTEFACTS -replace '/', '\')\TextToSynth.exe"
+          & $iscc "/DAppVersion=$version" "/DBinary=$binary" `
+            "/DOutputDir=$env:GITHUB_WORKSPACE\dist" "/DOutputName=$env:FILE_STEM-$version-Windows" `
+            packaging\text-to-synth\windows\installer.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-windows
+          path: dist/*.exe
+
+  release:
+    needs: [plan, test, macos, windows]
+    if: >
+      always() && needs.plan.outputs.publish == 'true' && needs.test.result == 'success' &&
+      (needs.macos.result == 'success' || needs.macos.result == 'skipped') &&
+      (needs.windows.result == 'success' || needs.windows.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: text-to-synth
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.plan.outputs.version }}
+      CONTENT_VERSION: ${{ needs.plan.outputs.content_version }}
+      CONTENT_ONLY: ${{ needs.plan.outputs.content_only }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish
+        run: |
+          set -euo pipefail
+          repo="${{ github.repository }}"
+          sha="${{ github.sha }}"
+          notes=$(git log -1 --pretty=%s)
+
+          # The channel release holds the files the app reads. Create it once.
+          if ! gh release view "$CHANNEL" > /dev/null 2>&1; then
+            gh release create "$CHANNEL" --target "$sha" --latest=false \
+              --title "$PRODUCT (latest)" \
+              --notes "Always the newest $PRODUCT by Baastik Labs: describe a sound to Claude, get a Serum 2 preset. Download TextToSynth-macOS.pkg or TextToSynth-Windows.exe below; it updates itself after that."
+          fi
+
+          if [[ "$CONTENT_ONLY" == "true" ]]; then
+            curl -sfL "https://github.com/$repo/releases/download/$CHANNEL/update.json" -o previous.json
+            python3 tools/release/make_manifest.py --plugin "$PLUGIN_ID" --repo "$repo" \
+              --previous previous.json --content-version "$CONTENT_VERSION" --commit "$sha" > dist/update.json
+            gh release upload "$CHANNEL" dist/update.json dist/content.json --clobber
+            echo "Published vocabulary v$CONTENT_VERSION (installers unchanged at $VERSION)"
+            exit 0
+          fi
+
+          tag="$PLUGIN_ID-v$VERSION"
+          mac="$FILE_STEM-$VERSION-macOS.pkg"
+          win="$FILE_STEM-$VERSION-Windows.exe"
+          gh release create "$tag" --target "$sha" --latest=false \
+            --title "$PRODUCT $VERSION" --notes "$notes" \
+            "dist/$mac" "dist/$win"
+
+          python3 tools/release/make_manifest.py --plugin "$PLUGIN_ID" --repo "$repo" \
+            --version "$VERSION" --tag "$tag" --mac "$mac" --windows "$win" \
+            --content-version "$CONTENT_VERSION" --commit "$sha" --notes "$notes" > dist/update.json
+
+          # Stable names for the "always latest" one-click download links.
+          cp "dist/$mac" "dist/$FILE_STEM-macOS.pkg"
+          cp "dist/$win" "dist/$FILE_STEM-Windows.exe"
+          gh release upload "$CHANNEL" --clobber \
+            dist/update.json dist/content.json "dist/$FILE_STEM-macOS.pkg" "dist/$FILE_STEM-Windows.exe"
+          echo "Published $PRODUCT $VERSION"

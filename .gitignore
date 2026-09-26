@@ -7,4 +7,3 @@ dist/
 .idea/
 CMakeUserPresets.json
 __pycache__/
-build-juce/

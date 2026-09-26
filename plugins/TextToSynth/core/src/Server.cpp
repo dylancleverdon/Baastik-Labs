@@ -1,5 +1,7 @@
 #include "tts/Server.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <random>
 #include <sstream>

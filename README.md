@@ -7,6 +7,7 @@ never touches the others.
 | Plugin | What it does | Download |
 |---|---|---|
 | [Serum Preset Generator](plugins/SerumPresetGenerator) | Generates Serum 2 presets: random, or guided by sound type and genre | [macOS](https://github.com/dylancleverdon/Baastik-Labs/releases/download/serum-preset-generator-latest/SerumPresetGenerator-macOS.pkg) · [Windows](https://github.com/dylancleverdon/Baastik-Labs/releases/download/serum-preset-generator-latest/SerumPresetGenerator-Windows.exe) |
+| [Text To Synth](plugins/TextToSynth) | Claude plugin: describe a sound, get a Serum 2 preset, then refine it in plain English ("drier", "too harsh") | [macOS](https://github.com/dylancleverdon/Baastik-Labs/releases/download/text-to-synth-latest/TextToSynth-macOS.pkg) · [Windows](https://github.com/dylancleverdon/Baastik-Labs/releases/download/text-to-synth-latest/TextToSynth-Windows.exe) |
 
 ## Repo layout
 

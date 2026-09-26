@@ -31,6 +31,7 @@ namespace norg::ui
         juce::TextButton checkNowButton { "Check now" };
         juce::TextButton rollbackButton { "Roll back" };
         juce::TextButton closeButton { "Close" };
+        juce::TextButton uninstallButton { "Uninstall..." };
         juce::TextEditor notes;
     };
 }

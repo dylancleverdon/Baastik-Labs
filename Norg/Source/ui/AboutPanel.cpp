@@ -35,6 +35,27 @@ namespace norg::ui
 
         closeButton.onClick = [this] { if (onClose) onClose(); };
 
+        uninstallButton.onClick = [this]
+        {
+            auto options = juce::MessageBoxOptions::makeOptionsOkCancel (
+                juce::MessageBoxIconType::WarningIcon, "Uninstall Norg?",
+                "This removes Norg (AU, VST3 and app), its background updater, and its sample libraries. "
+                "Close your DAW afterwards to finish.",
+                "Uninstall", "Cancel", this);
+            juce::AlertWindow::showAsync (options, [this] (int result)
+            {
+                if (result != 1)
+                    return;
+                actionMessage = "Uninstalling...";
+                refresh();
+                bridge.run ({ "--uninstall" }, [this] (bool ok, juce::String)
+                {
+                    actionMessage = ok ? "Norg has been removed. Close your DAW to finish." : "Uninstall didn't complete.";
+                    refresh();
+                });
+            });
+        };
+
         notes.setMultiLine (true);
         notes.setReadOnly (true);
         notes.setScrollbarsShown (true);
@@ -42,7 +63,7 @@ namespace norg::ui
         notes.setFont (Fonts::display (14.0f));
 
         for (auto* c : std::initializer_list<juce::Component*> { &autoUpdateButton, &checkNowButton,
-                                                                 &rollbackButton, &closeButton, &notes })
+                                                                 &rollbackButton, &closeButton, &uninstallButton, &notes })
             addAndMakeVisible (c);
     }
 
@@ -67,6 +88,7 @@ namespace norg::ui
         autoUpdateButton.setEnabled (status.available);
         checkNowButton.setEnabled (status.available && ! bridge.isBusy());
         rollbackButton.setEnabled (status.available && status.previousAvailable && ! bridge.isBusy());
+        uninstallButton.setEnabled (status.available && ! bridge.isBusy());
 
         juce::String text;
         if (status.installed && status.installed->notes.isNotEmpty())
@@ -105,6 +127,8 @@ namespace norg::ui
         area.removeFromTop (34);
         auto bottom = area.removeFromBottom (44);
         closeButton.setBounds (bottom.removeFromRight (110).withSizeKeepingCentre (110, 32));
+        bottom.removeFromRight (10);
+        uninstallButton.setBounds (bottom.removeFromRight (110).withSizeKeepingCentre (110, 32));
         notes.setBounds (area.withTrimmedBottom (8));
     }
 
@@ -170,7 +194,7 @@ namespace norg::ui
         g.drawText (line2, statusArea.removeFromTop (24.0f), juce::Justification::centredLeft, true);
 
         // Credits along the bottom
-        auto credits = box.reduced (28.0f).removeFromBottom (44.0f).withTrimmedRight (130.0f);
+        auto credits = box.reduced (28.0f).removeFromBottom (44.0f).withTrimmedRight (250.0f);
         g.setFont (Fonts::display (12.0f));
         g.setColour (colours::oledDim);
         g.drawFittedText ("Norg by Baastik Labs. Handmade in Sweden-ish. A fan project, not affiliated with Clavia.\n"

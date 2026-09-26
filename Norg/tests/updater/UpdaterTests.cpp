@@ -133,6 +133,7 @@ namespace
         void refreshAudioComponents() override {}
         void notify (const juce::String&, const juce::String&) override { ++notifications; }
         bool installLaunchAgent (const Layout&, juce::String&) override { return true; }
+        void removeLaunchAgent (const Layout&) override {}
     };
 
     // A published "release" on disk: a signed manifest plus the zip it points at.

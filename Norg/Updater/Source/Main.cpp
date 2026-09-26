@@ -6,6 +6,7 @@
 //   NorgUpdater --set-auto-update on|off
 //   NorgUpdater --install-agent        (re)install the launchd agent; run by the installer
 //   NorgUpdater --status               print what's installed, as JSON
+//   NorgUpdater --uninstall            remove Norg, its helper, sample libraries and caches
 //
 // Every --auto / --check-now run also installs any sample library (pack) that's missing, so the
 // sampled instruments work without anyone downloading anything by hand.
@@ -15,6 +16,7 @@
 #include "SamplePacks.h"
 #include "Updater.h"
 #include "NorgVersion.h"
+#include "engine/sfz/SampleCache.h"
 
 #include <iostream>
 
@@ -72,6 +74,20 @@ int main (int argc, char* argv[])
         settings.autoUpdate = argValue (args, "--set-auto-update") != "off";
         updater.saveSettings (settings);
         log (juce::String ("auto-update ") + (settings.autoUpdate ? "on" : "off"));
+        return 0;
+    }
+
+    if (args.contains ("--uninstall"))
+    {
+        log ("uninstalling Norg");
+        platform->removeLaunchAgent (layout);
+        for (const auto& item : layout.items())
+            fileOps.removeRecursively (item.destination);
+        fileOps.removeRecursively (layout.supportDir());
+        fileOps.removeRecursively (norg::sfz::cache::folder());
+        platform->refreshAudioComponents();
+        platform->notify ("Norg removed", "Norg and its sample libraries have been uninstalled.");
+        fileOps.removeRecursively (layout.logsDir());
         return 0;
     }
 

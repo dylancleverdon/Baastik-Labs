@@ -22,6 +22,7 @@ namespace norg::update
         virtual void refreshAudioComponents() = 0;
         virtual void notify (const juce::String& title, const juce::String& message) = 0;
         virtual bool installLaunchAgent (const Layout&, juce::String& error) = 0;
+        virtual void removeLaunchAgent (const Layout&) = 0;
     };
 
     // The real implementation: curl, ditto, codesign, launchctl, osascript on macOS.

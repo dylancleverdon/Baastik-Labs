@@ -163,6 +163,16 @@ namespace norg::update
                #endif
             }
 
+            void removeLaunchAgent (const Layout& layout) override
+            {
+               #if JUCE_MAC
+                const auto domain = "gui/" + juce::String (static_cast<int> (getuid()));
+                runQuiet ({ "/bin/launchctl", "bootout", domain + "/" + Layout::launchAgentLabel }, 20000);
+                runQuiet ({ "/usr/sbin/pkgutil", "--volume", layout.home.getFullPathName(), "--forget", "com.baastiklabs.norg" }, 20000);
+               #endif
+                layout.launchAgentPlist().deleteFile();
+            }
+
             bool installLaunchAgent (const Layout& layout, juce::String& error) override
             {
                 const auto plist = layout.launchAgentPlist();

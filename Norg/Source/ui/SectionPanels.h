@@ -27,10 +27,10 @@ namespace norg::ui
     };
 
     class OrganPanel;
-    class RotaryPanel;
     class PianoPanel;
+    class EffectsRows;
 
-    // Norg Stage: Organ | Piano | Synth, with the rotary and effects strip underneath.
+    // Norg Stage: Organ | Piano | Synth, with the two rows of effects underneath.
     class StagePanel final : public juce::Component
     {
     public:
@@ -42,11 +42,10 @@ namespace norg::ui
         std::unique_ptr<OrganPanel> organ;
         std::unique_ptr<PianoPanel> piano;
         InstrumentSection synth;
-        std::unique_ptr<RotaryPanel> rotary;
-        SectionFrame effects { "Effects" };
+        std::unique_ptr<EffectsRows> effects;
     };
 
-    // Norg Electro: Organ | Piano | Sample, with the rotary and effects row along the bottom.
+    // Norg Electro: Organ | Piano | Sample, with the two rows of effects underneath.
     class ElectroPanel final : public juce::Component
     {
     public:
@@ -58,7 +57,6 @@ namespace norg::ui
         std::unique_ptr<OrganPanel> organ;
         std::unique_ptr<PianoPanel> piano;
         InstrumentSection sample;
-        std::unique_ptr<RotaryPanel> rotary;
-        SectionFrame effects { "Effects" };
+        std::unique_ptr<EffectsRows> effects;
     };
 }

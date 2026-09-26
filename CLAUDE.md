@@ -33,7 +33,12 @@ Linux needs the ALSA/X11/freetype `-dev` packages (see `.github/workflows/norg-b
   engine fading out after a program change keeps its old sound.
 - `engine/NorgEngine` = one panel's complete instrument; `engine/Section.h` is the interface each
   section (organ, piano, synth, sample) implements. No allocation, locks or I/O on the audio thread.
-- UI: `ui/MainPanel` is laid out at a fixed logical size (1400x640) and scaled by the editor.
+- Effects (`engine/fx/`): each section renders into its own buffer, then Effect 1, Effect 2, Amp/EQ,
+  Rotary and Delay process the section their `*_source` switch picks (the third source is Synth in
+  Stage, Sample in Electro). Comp and Reverb work on the panel mix; a safety limiter sits on the
+  output. Delay and reverb tails ring on after they're switched off. `MasterClock` follows the
+  host tempo (or `clock_bpm`) for synced effects.
+- UI: `ui/MainPanel` is laid out at a fixed logical size (1400x780) and scaled by the editor.
   Colours, fonts and drawing helpers are in `ui/NorgTheme.*` and `ui/NorgLookAndFeel.*`.
 - Updates: `Norg/Updater` (the `NorgUpdater` helper) installs builds only from this repo's `norg-*`
   releases over HTTPS, and only when they match the manifest's SHA-256. It also installs the sample

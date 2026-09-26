@@ -68,6 +68,24 @@ namespace norg::ui
         int numColumns = 0; // 0 = all in one row
     };
 
+    // A button that steps through a choice parameter's values, showing the current one (e.g. V1-C3), showing it as the label.
+    class StepButton final : public juce::Component
+    {
+    public:
+        StepButton (juce::AudioProcessorValueTreeState&, const juce::String& paramId, juce::String caption);
+        void resized() override { button.setBounds (getLocalBounds()); }
+
+        // Show different names for the choices (e.g. "Sample" for the third source in Electro).
+        void setDisplayNames (juce::StringArray names);
+
+    private:
+        LedButton button;
+        juce::StringArray choices;
+        juce::String captionText;
+        int current = 0;
+        std::unique_ptr<juce::ParameterAttachment> attachment;
+    };
+
     // The small black OLED display.
     class Oled final : public juce::Component
     {

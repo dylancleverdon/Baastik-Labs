@@ -4,12 +4,12 @@
 #include "ScannerVibrato.h"
 #include "TonewheelOrgan.h"
 #include "engine/Section.h"
-#include "engine/fx/RotarySpeaker.h"
 
 namespace norg::organ
 {
     // The organ section: B3 tonewheels or Vox/Farf/Pipe, drawbar presets I/II, organ split with
-    // lower manual and bass pedals, percussion, scanner vibrato, swell and the rotary speaker.
+    // lower manual and bass pedals, percussion, scanner vibrato and swell. Its output is mono
+    // (the same on both channels); the rotary speaker is in the panel's effects chain.
     class OrganSection final : public Section
     {
     public:
@@ -40,9 +40,6 @@ namespace norg::organ
         TonewheelOrgan tonewheels;
         ComboOrgan combo;
         ScannerVibrato upperVibrato, lowerVibrato;
-        fx::RotarySpeaker rotary;
-
-        std::vector<float> mono, left, right;
 
         Model model = Model::b3;
         bool split = false, pedals = true, sustainToOrgan = false;

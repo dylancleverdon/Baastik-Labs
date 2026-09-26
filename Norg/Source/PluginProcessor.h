@@ -1,5 +1,6 @@
 #pragma once
 
+#include "engine/MasterClock.h"
 #include "engine/NorgEngine.h"
 #include "params/Parameters.h"
 
@@ -30,7 +31,7 @@ namespace norg
         bool acceptsMidi() const override { return true; }
         bool producesMidi() const override { return false; }
         bool isMidiEffect() const override { return false; }
-        double getTailLengthSeconds() const override { return 2.0; }
+        double getTailLengthSeconds() const override { return 4.0; }
 
         int getNumPrograms() override { return 1; }
         int getCurrentProgram() override { return 0; }
@@ -54,6 +55,11 @@ namespace norg
         // The on-screen keyboard feeds notes in through this.
         juce::MidiKeyboardState& keyboardState() { return keyboard; }
 
+        // The master clock as of the last block, for the tempo LED and display.
+        double clockTempo() const { return uiTempo.load(); }
+        double clockBeat() const { return uiBeat.load(); }
+        bool clockFollowingHost() const { return uiHostTempo.load(); }
+
     private:
         void syncLibraries();
         void timerCallback() override; // picks up sample libraries that arrive while Norg is open
@@ -63,7 +69,11 @@ namespace norg
         ParamTable paramTable;
         ParamSnapshot snapshot;
         NorgEngine engine { 0, &libraries };
+        MasterClock clock;
+        fx::Limiter limiter;
         juce::MidiKeyboardState keyboard;
+        std::atomic<double> uiTempo { 120.0 }, uiBeat { 0.0 };
+        std::atomic<bool> uiHostTempo { false };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NorgProcessor)
     };

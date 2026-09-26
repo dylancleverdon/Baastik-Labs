@@ -19,8 +19,10 @@ namespace norg::fx
         void setSpeed (bool fast, bool stopMode);
         void setDrive (float amount) { drive = juce::jlimit (0.0f, 1.0f, amount); }
 
-        // Mono in, stereo out (overwrites outL/outR). `in` may alias outL.
-        void process (const float* in, float* outL, float* outR, int numSamples);
+        // Stereo, in place. The cabinet is fed the mono sum; switched off, it cross-fades back to
+        // the untouched stereo input and then stops processing.
+        void process (float* left, float* right, int numSamples);
+        bool isRunning() const { return targetOn > 0.0f || onMix > 0.0f; }
 
         float hornSpeedHz() const { return hornSpeed; }
         float drumSpeedHz() const { return drumSpeed; }

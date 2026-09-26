@@ -7,7 +7,7 @@ namespace norg::ui
     namespace
     {
         constexpr int cheekWidth = 24;
-        constexpr int panelHeight = 462;
+        constexpr int panelHeight = 602;
         constexpr int leftColumnWidth = 240;
         constexpr int lowestKey = 28;  // E0..E6: a 73-key board
         constexpr int highestKey = 100;
@@ -17,6 +17,7 @@ namespace norg::ui
         : processor (p),
           modeButtons (p.state(), paramId (P::mode), { "Stage", "Electro" }),
           masterVolume (p.state(), paramId (P::masterVolume), "Master Level"),
+          tempo (p),
           stagePanel (p),
           electroPanel (p),
           keyboard (p.keyboardState())
@@ -26,6 +27,7 @@ namespace norg::ui
         addAndMakeVisible (modeButtons);
         addAndMakeVisible (masterVolume);
         addAndMakeVisible (systemButton);
+        addAndMakeVisible (tempo);
         addChildComponent (stagePanel);
         addChildComponent (electroPanel);
 
@@ -85,6 +87,8 @@ namespace norg::ui
         modeButtons.setBounds (left.removeFromTop (48).withSizeKeepingCentre (150, 48));
         left.removeFromTop (14);
         masterVolume.setBounds (left.removeFromTop (100).withSizeKeepingCentre (96, 100));
+        left.removeFromTop (18);
+        tempo.setBounds (left.removeFromTop (92));
         systemButton.setBounds (left.removeFromBottom (48).withSizeKeepingCentre (64, 48));
 
         stagePanel.setBounds (area);

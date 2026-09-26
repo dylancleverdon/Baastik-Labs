@@ -125,6 +125,38 @@ namespace norg::ui
     }
 
     //==============================================================================
+    StepButton::StepButton (juce::AudioProcessorValueTreeState& s, const juce::String& paramId, juce::String caption)
+        : button (caption), captionText (std::move (caption))
+    {
+        addAndMakeVisible (button);
+        if (auto* param = dynamic_cast<juce::AudioParameterChoice*> (s.getParameter (paramId)))
+        {
+            choices = param->choices;
+            attachment = std::make_unique<juce::ParameterAttachment> (*param, [this] (float v)
+            {
+                current = juce::roundToInt (v);
+                button.setButtonText (choices[current]);
+                button.setLedOverride (true);
+                repaint();
+            });
+            button.onClick = [this]
+            {
+                attachment->setValueAsCompleteGesture (static_cast<float> ((current + 1) % juce::jmax (1, choices.size())));
+            };
+            attachment->sendInitialUpdate();
+        }
+    }
+
+    void StepButton::setDisplayNames (juce::StringArray names)
+    {
+        if (names.size() == choices.size())
+        {
+            choices = std::move (names);
+            button.setButtonText (choices[current]);
+        }
+    }
+
+    //==============================================================================
     void Oled::setText (juce::String title, juce::String subtitle, juce::String footer)
     {
         if (title == titleText && subtitle == subtitleText && footer == footerText)

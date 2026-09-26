@@ -39,6 +39,8 @@ namespace norg
     void NorgProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     {
         engine.prepare (sampleRate, samplesPerBlock);
+        clock.prepare (sampleRate);
+        limiter.prepare (sampleRate);
         keyboard.reset();
     }
 
@@ -60,7 +62,17 @@ namespace norg
         keyboard.processNextMidiBuffer (midi, 0, buffer.getNumSamples(), true);
         paramTable.capture (snapshot);
 
+        clock.advance (getPlayHead(), snapshot.getBool (P::clockHostSync), snapshot.get (P::clockBpm), buffer.getNumSamples());
+        engine.setTempo (clock.bpm());
         engine.process (buffer, midi, snapshot);
+
+        // A safety limiter on the output; it only acts on peaks near full scale.
+        limiter.process (buffer.getWritePointer (0), buffer.getNumChannels() > 1 ? buffer.getWritePointer (1) : nullptr,
+                         buffer.getNumSamples());
+
+        uiTempo.store (clock.bpm());
+        uiBeat.store (clock.beat());
+        uiHostTempo.store (clock.followingHost());
     }
 
     juce::AudioProcessorEditor* NorgProcessor::createEditor()

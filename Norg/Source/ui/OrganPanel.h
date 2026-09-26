@@ -37,21 +37,6 @@ namespace norg::ui
         std::unique_ptr<juce::ParameterAttachment> attachment;
     };
 
-    // A button that steps through a choice parameter's values, showing the current one (e.g. V1-C3).
-    class StepButton final : public juce::Component
-    {
-    public:
-        StepButton (juce::AudioProcessorValueTreeState&, const juce::String& paramId, juce::String caption);
-        void resized() override { button.setBounds (getLocalBounds()); }
-
-    private:
-        LedButton button;
-        juce::StringArray choices;
-        juce::String captionText;
-        int current = 0;
-        std::unique_ptr<juce::ParameterAttachment> attachment;
-    };
-
     // The organ section: model, drawbar presets, drawbars, percussion, vibrato and organ split.
     class OrganPanel final : public SectionFrame
     {
@@ -84,17 +69,5 @@ namespace norg::ui
         bool split = false;
         juce::StringArray footageLabels;
         std::unique_ptr<juce::ParameterAttachment> modelWatch, presetWatch, splitWatch;
-    };
-
-    // Rotary speaker: on, slow/fast, stop mode and drive.
-    class RotaryPanel final : public SectionFrame
-    {
-    public:
-        explicit RotaryPanel (juce::AudioProcessorValueTreeState&);
-        void resized() override;
-
-    private:
-        ParamLedButton on, fast, stop;
-        Knob drive;
     };
 }

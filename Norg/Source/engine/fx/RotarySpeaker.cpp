@@ -79,12 +79,15 @@ namespace norg::fx
         oversampling->processSamplesDown (block);
     }
 
-    void RotarySpeaker::process (const float* in, float* outL, float* outR, int n)
+    void RotarySpeaker::process (float* left, float* right, int n)
     {
         jassert (n <= maxBlock);
+        if (! isRunning())
+            return;
+
         auto* driven = driveBuffer.data();
         for (int i = 0; i < n; ++i)
-            driven[i] = preampTone.process (in[i]);
+            driven[i] = preampTone.process (0.5f * (left[i] + right[i]));
         applyDrive (driven, n);
 
         const float sr = static_cast<float> (sampleRate);
@@ -140,9 +143,8 @@ namespace norg::fx
             const float wetR = 0.95f * hornMic (micAngleR, hornToneR) + drumMic (micAngleR);
 
             onMix += (targetOn > onMix ? 1.0f : -1.0f) * juce::jmin (fadeStep, std::abs (targetOn - onMix));
-            const float dry = in[i];
-            outL[i] = onMix * wetL + (1.0f - onMix) * dry;
-            outR[i] = onMix * wetR + (1.0f - onMix) * dry;
+            left[i] = onMix * wetL + (1.0f - onMix) * left[i];
+            right[i] = onMix * wetR + (1.0f - onMix) * right[i];
         }
     }
 }

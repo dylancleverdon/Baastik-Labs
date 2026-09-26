@@ -32,11 +32,6 @@ namespace norg::organ
         combo.prepare (sampleRate);
         upperVibrato.prepare (sampleRate);
         lowerVibrato.prepare (sampleRate);
-        rotary.prepare (sampleRate, maxBlock);
-
-        mono.assign (static_cast<size_t> (maxBlock), 0.0f);
-        left.assign (static_cast<size_t> (maxBlock), 0.0f);
-        right.assign (static_cast<size_t> (maxBlock), 0.0f);
 
         swellCoeff = static_cast<float> (1.0 - std::exp (-1.0 / (0.01 * sampleRate)));
         reset();
@@ -48,7 +43,6 @@ namespace norg::organ
         combo.reset();
         upperVibrato.reset();
         lowerVibrato.reset();
-        rotary.reset();
         held.fill (false);
         sustained.fill (false);
         pedalDown = false;
@@ -98,10 +92,6 @@ namespace norg::organ
         vibLower = p.getBool (P::organVibLower, panel);
         upperVibrato.set (vibOn, vibMode);
         lowerVibrato.set (vibOn && vibLower, vibMode);
-
-        rotary.setEnabled (p.getBool (P::rotaryOn, panel));
-        rotary.setSpeed (p.getBool (P::rotaryFast, panel), p.getBool (P::rotaryStop, panel));
-        rotary.setDrive (p.get (P::rotaryDrive, panel));
     }
 
     int OrganSection::busForNote (int note) const
@@ -183,41 +173,31 @@ namespace norg::organ
 
     void OrganSection::render (juce::AudioBuffer<float>& buffer, int start, int num)
     {
-        for (int offset = 0; offset < num; offset += maxBlock)
+        auto* outL = buffer.getWritePointer (0, start);
+        auto* outR = buffer.getWritePointer (1, start);
+
+        for (int chunk = 0; chunk < num; chunk += TonewheelOrgan::maxChunk)
         {
-            const int blockLength = juce::jmin (maxBlock, num - offset);
+            const int n = juce::jmin (TonewheelOrgan::maxChunk, num - chunk);
+            float upper[TonewheelOrgan::maxChunk] {}, lower[TonewheelOrgan::maxChunk] {}, pedal[TonewheelOrgan::maxChunk] {};
 
-            for (int chunk = 0; chunk < blockLength; chunk += TonewheelOrgan::maxChunk)
+            tonewheels.render (upper, lower, pedal, n);
+            combo.render (upper, lower, n);
+            upperVibrato.process (upper, n);
+            lowerVibrato.process (lower, n);
+
+            for (int i = 0; i < n; ++i)
             {
-                const int n = juce::jmin (TonewheelOrgan::maxChunk, blockLength - chunk);
-                float upper[TonewheelOrgan::maxChunk] {}, lower[TonewheelOrgan::maxChunk] {}, pedal[TonewheelOrgan::maxChunk] {};
-
-                tonewheels.render (upper, lower, pedal, n);
-                combo.render (upper, lower, n);
-                upperVibrato.process (upper, n);
-                lowerVibrato.process (lower, n);
-
-                for (int i = 0; i < n; ++i)
-                {
-                    swell += swellCoeff * (swellTarget - swell);
-                    mono[static_cast<size_t> (chunk + i)] = outputGain * swell * (upper[i] + lower[i] + pedal[i]);
-                }
-            }
-
-            rotary.process (mono.data(), left.data(), right.data(), blockLength);
-
-            auto* outL = buffer.getWritePointer (0, start + offset);
-            auto* outR = buffer.getWritePointer (1, start + offset);
-            for (int i = 0; i < blockLength; ++i)
-            {
-                outL[i] += left[static_cast<size_t> (i)];
-                outR[i] += right[static_cast<size_t> (i)];
+                swell += swellCoeff * (swellTarget - swell);
+                const float y = outputGain * swell * (upper[i] + lower[i] + pedal[i]);
+                outL[chunk + i] += y;
+                outR[chunk + i] += y;
             }
         }
 
-        // Keep running briefly after the last key, so vibrato and rotary tails ring out.
+        // Keep running briefly after the last key, so the vibrato scanner's delay line empties.
         if (tonewheels.isActive() || combo.isActive())
-            tailSamples = static_cast<int> (0.5 * sampleRate);
+            tailSamples = static_cast<int> (0.1 * sampleRate);
         else
             tailSamples = juce::jmax (0, tailSamples - num);
     }

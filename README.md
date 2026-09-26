@@ -48,11 +48,17 @@ only if they match the SHA-256 checksum published with them. It logs to
 
 ## Uninstall
 
-```
-curl -fsSL https://github.com/dylancleverdon/Baastik-Labs/releases/download/norg-channel/uninstall.sh | bash
-```
+Click **System** on Norg's panel, then **Uninstall...** and confirm. That removes the plugins, the
+app, the background helper, the downloaded sample libraries and their caches. Your DAW projects
+aren't touched (they keep their Norg settings, should you install again).
 
-This removes the plugins, app and updater. Your saved programs and sample libraries are kept.
+## Effects
+
+Each panel has a Nord-style effects section: **Effect 1** (tremolo, pan, ring mod, wah, auto-wah),
+**Effect 2** (phaser, flanger, chorus, vibe), **Amp/EQ** (Twin, Small and JC amps, 3-band EQ with a
+sweepable mid), the **Rotary** speaker, and a **Delay** that syncs to your DAW's tempo (or tap
+tempo). Each of those processes the section chosen with its **Source** button. **Comp** and
+**Reverb** (room, stage, hall) work on the whole mix.
 
 ## Building from source
 

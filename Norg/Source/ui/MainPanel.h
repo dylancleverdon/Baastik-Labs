@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AboutPanel.h"
+#include "FxPanels.h"
 #include "NorgKeyboard.h"
 #include "SectionPanels.h"
 #include "Widgets.h"
@@ -19,7 +20,7 @@ namespace norg::ui
     {
     public:
         static constexpr int logicalWidth = 1400;
-        static constexpr int logicalHeight = 640;
+        static constexpr int logicalHeight = 780;
 
         explicit MainPanel (NorgProcessor&);
         ~MainPanel() override;
@@ -39,6 +40,7 @@ namespace norg::ui
         ChoiceButtons modeButtons;
         Knob masterVolume;
         LedButton systemButton { "System" };
+        TempoPanel tempo;
 
         StagePanel stagePanel;
         ElectroPanel electroPanel;

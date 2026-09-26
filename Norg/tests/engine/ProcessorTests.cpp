@@ -22,6 +22,7 @@ TEST_CASE ("a held note sounds and then decays to silence", "[engine]")
 {
     NorgProcessor processor;
     test::prepare (processor);
+    test::setParam (processor, "reverb_on", 0.0f); // the reverb tail has its own test
 
     juce::MidiBuffer midi;
     midi.addEvent (juce::MidiMessage::noteOn (1, 60, 0.9f), 10);

@@ -174,28 +174,6 @@ namespace norg::ui
     }
 
     //==============================================================================
-    StepButton::StepButton (juce::AudioProcessorValueTreeState& s, const juce::String& paramId, juce::String caption)
-        : button (caption), captionText (std::move (caption))
-    {
-        addAndMakeVisible (button);
-        if (auto* param = dynamic_cast<juce::AudioParameterChoice*> (s.getParameter (paramId)))
-        {
-            choices = param->choices;
-            attachment = std::make_unique<juce::ParameterAttachment> (*param, [this] (float v)
-            {
-                current = juce::roundToInt (v);
-                button.setButtonText (choices[current]);
-                button.setLedOverride (true);
-                repaint();
-            });
-            button.onClick = [this]
-            {
-                attachment->setValueAsCompleteGesture (static_cast<float> ((current + 1) % juce::jmax (1, choices.size())));
-            };
-            attachment->sendInitialUpdate();
-        }
-    }
-
     //==============================================================================
     OrganPanel::OrganPanel (juce::AudioProcessorValueTreeState& s, DrawbarStyle st)
         : SectionFrame ("Organ"),
@@ -338,26 +316,5 @@ namespace norg::ui
             drawSilkscreen (g, footageLabels[i], label, juce::Justification::centred, 10.0f, false,
                             drawbars[i]->isEnabled() ? colours::silkscreen : colours::silkscreenDim);
         }
-    }
-
-    //==============================================================================
-    RotaryPanel::RotaryPanel (juce::AudioProcessorValueTreeState& s)
-        : SectionFrame ("Rotary"),
-          on (s, paramId (P::rotaryOn), "On"),
-          fast (s, paramId (P::rotaryFast), "Fast"),
-          stop (s, paramId (P::rotaryStop), "Stop"),
-          drive (s, paramId (P::rotaryDrive), "Drive")
-    {
-        for (auto* c : std::initializer_list<juce::Component*> { &on, &fast, &stop, &drive })
-            addAndMakeVisible (c);
-    }
-
-    void RotaryPanel::resized()
-    {
-        auto area = content();
-        on.setBounds (area.removeFromLeft (64).withSizeKeepingCentre (60, 48));
-        fast.setBounds (area.removeFromLeft (64).withSizeKeepingCentre (60, 48));
-        stop.setBounds (area.removeFromLeft (64).withSizeKeepingCentre (60, 48));
-        drive.setBounds (area.removeFromLeft (84).withSizeKeepingCentre (80, 92));
     }
 }

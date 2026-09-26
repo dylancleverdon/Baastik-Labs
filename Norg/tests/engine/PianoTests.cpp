@@ -138,3 +138,27 @@ TEST_CASE ("string resonance rings with the pedal down and stops when damped", "
     CHECK (dampedRing < freeRing * 1.0e-3f);    // ...unless the dampers are down
     CHECK (freePeak < 1.5f);
 }
+
+TEST_CASE ("every clav pickup and filter combination stays in range", "[piano]")
+{
+    for (int pickup = 0; pickup < 4; ++pickup)
+        for (int filter = 0; filter < 4; ++filter)
+        {
+            NorgProcessor processor;
+            test::prepare (processor);
+            test::setParam (processor, "organ_on", 0.0f);
+            test::setParam (processor, "piano_on", 1.0f);
+            test::setParam (processor, "piano_type", 4.0f);
+            test::setParam (processor, "piano_clav_pickup", static_cast<float> (pickup));
+            test::setParam (processor, "piano_clav_filter", static_cast<float> (filter));
+
+            juce::MidiBuffer midi;
+            for (int n : { 40, 52, 59, 64, 67, 76 })
+                midi.addEvent (juce::MidiMessage::noteOn (1, n, 1.0f), 10);
+            const auto result = test::render (processor, midi, 24000);
+
+            INFO ("pickup " << pickup << " filter " << filter << " peak " << result.peak);
+            CHECK (result.peak > 0.05f);
+            CHECK (result.peak < 1.0f);
+        }
+}

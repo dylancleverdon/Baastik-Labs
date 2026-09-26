@@ -68,7 +68,7 @@ namespace norg::piano
             default: // Brilliant
                 tone[0].setHighPass (850.0f, 0.707f, sr);
                 tone[1].setLowPass (10000.0f, 0.707f, sr);
-                tone[2].setHighShelf (3000.0f, 4.0f, sr);
+                tone[2].setHighShelf (3000.0f, 2.0f, sr);
                 break;
         }
     }
@@ -215,9 +215,9 @@ namespace norg::piano
                 const float neck = y - readLine (v, neckDelay);
                 const float bridge = y - readLine (v, bridgeDelay);
                 float out = pickupMode == 0 ? neck
-                          : pickupMode == 1 ? 1.6f * bridge
+                          : pickupMode == 1 ? 0.95f * bridge
                           : pickupMode == 2 ? 0.6f * (neck + bridge)
-                                            : 1.2f * (neck - bridge);
+                                            : 0.8f * (neck - bridge);
 
                 if (v.thump > 1.0e-5f)
                 {

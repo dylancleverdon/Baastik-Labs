@@ -1,0 +1,47 @@
+{
+  "name": "Gospel",
+  "family": "acoustic",
+  "categories": {
+    "organ": 5,
+    "piano": 2,
+    "epiano": 2,
+    "pad": 1,
+    "bass": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "warm": 2,
+        "organ": 3,
+        "harmonic": 2
+      }
+    },
+    "fx.FXReverb": 0.8,
+    "fx.FXReverb.kParamType": {
+      "choose": {
+        "kHall": 3,
+        "kVintage": 1
+      }
+    },
+    "fx.FXChorus": 0.5,
+    "expr.velAmp": 0.6,
+    "lfo.count": 0,
+    "mod.count": 0
+  },
+  "perCategory": {
+    "organ": {
+      "recipe": {
+        "choose": {
+          "gospel_organ": 4,
+          "drawbar_organ": 1
+        }
+      }
+    },
+    "pad": {
+      "recipe": "choir_pad"
+    },
+    "bass": {
+      "recipe": "moog_bass"
+    }
+  }
+}

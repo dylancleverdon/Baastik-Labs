@@ -1,0 +1,8 @@
+{
+  "name": "Full strings multisample",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.engine": "multisample",
+    "osc0.multisample": "strings_full"
+  }
+}

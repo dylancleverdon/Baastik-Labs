@@ -1,0 +1,2877 @@
+{
+ "_source": "exported from serum-mcp@6c471bb8424f3f06f16f5b9fc5bfab244fd11384 (MIT) by tools/schema_export",
+ "modules": {
+  "Oscillator": {
+   "kParamEnable": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "confirmed",
+    "slotDefaults": {
+     "0": true
+    }
+   },
+   "kParamOctave": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -4.0,
+    "max": 4.0,
+    "unit": "octaves",
+    "confidence": "confirmed"
+   },
+   "kParamVolume": {
+    "kind": "float",
+    "default": 0.75,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized (0=-inf dB, 1=0dB)",
+    "confidence": "confirmed"
+   },
+   "kParamPan": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -50.0,
+    "max": 50.0,
+    "unit": "normalized pan",
+    "confidence": "observed"
+   },
+   "kParamFine": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -80.0,
+    "max": 80.0,
+    "unit": "cents (approx.)",
+    "confidence": "observed"
+   },
+   "kParamCoarsePit": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -72.0,
+    "max": 72.0,
+    "unit": "semitones",
+    "confidence": "observed"
+   },
+   "kParamPitch": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -12.0,
+    "max": 12.0,
+    "unit": "semitones",
+    "confidence": "observed"
+   },
+   "kParamDetune": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized unison detune",
+    "confidence": "observed"
+   },
+   "kParamDetuneWid": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "% unison width",
+    "confidence": "observed"
+   },
+   "kParamUnison": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 1.0,
+    "max": 16.0,
+    "unit": "voice count",
+    "confidence": "uncertain"
+   },
+   "kParamUnisonStereo": {
+    "kind": "float",
+    "default": 100.0,
+    "min": -100.0,
+    "max": 100.0,
+    "unit": "% width",
+    "confidence": "observed"
+   },
+   "kParamPitchTrack": {
+    "kind": "bool",
+    "default": true,
+    "confidence": "confirmed"
+   },
+   "kParamType": {
+    "kind": "enum",
+    "default": "kOsc_WT",
+    "confidence": "observed",
+    "enum": [
+     "kOsc_WT",
+     "kOsc_Sample",
+     "kOsc_Granular",
+     "kOsc_MultiSample",
+     "kOsc_Spectral"
+    ]
+   },
+   "kParamLoopMode": {
+    "kind": "enum",
+    "confidence": "observed",
+    "enum": [
+     "kForward",
+     "kPingPong",
+     "kTailed",
+     "kReverse"
+    ]
+   },
+   "kParamLoopStart": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "% into the sample",
+    "confidence": "observed"
+   },
+   "kParamLoopEnd": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "% into the sample",
+    "confidence": "observed"
+   },
+   "kParamLoopCrossfade": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "uncertain"
+   }
+  },
+  "WTOsc": {
+   "kParamTablePos": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 256.0,
+    "unit": "table frame",
+    "confidence": "observed"
+   },
+   "kParamWarp": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized",
+    "confidence": "observed"
+   },
+   "kParamWarp2": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized",
+    "confidence": "observed"
+   },
+   "kParamWarpMenu": {
+    "kind": "enum",
+    "default": "kFM_OSC",
+    "confidence": "observed",
+    "enum": [
+     "kAM_OSC",
+     "kAM_SUB",
+     "kASYMNeg",
+     "kASYMPos",
+     "kASYMPosNeg",
+     "kBendNeg",
+     "kBendPos",
+     "kBendPosNeg",
+     "kDLM",
+     "kDistAsym",
+     "kDistDiode1",
+     "kDistDiode2",
+     "kDistHardClip",
+     "kDistLinFold",
+     "kDistSineShaper",
+     "kDistSinFold",
+     "kDistSoftClip",
+     "kDistSoftSat",
+     "kDistStompBox",
+     "kDistTapeSat",
+     "kDistTube",
+     "kDistZeroSquare",
+     "kEvenOdd",
+     "kFMP_NOISE",
+     "kFMP_OSC",
+     "kFMX_NOISE",
+     "kFMX_OSC",
+     "kFMX_OSC2",
+     "kFM_FILT1",
+     "kFM_FILT2",
+     "kFM_NOISE",
+     "kFM_OSC",
+     "kFM_OSC2",
+     "kFM_SUB",
+     "kFilterHPF",
+     "kFilterLPF",
+     "kFlip",
+     "kPD_FILT1",
+     "kPD_NOISE",
+     "kPD_OSC",
+     "kPD_OSC2",
+     "kPD_SUB",
+     "kPWM",
+     "kQuantize",
+     "kRM_FILT1",
+     "kRM_FILT2",
+     "kRM_NOISE",
+     "kRM_OSC",
+     "kRM_OSC2",
+     "kRM_SUB",
+     "kRemap_4",
+     "kSelfPD",
+     "kSync"
+    ]
+   },
+   "kParamInitialPhase": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 360.0,
+    "unit": "degrees",
+    "confidence": "observed"
+   },
+   "kParamRandomPhase": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamXfadeMode": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "max": 1.0,
+    "confidence": "observed"
+   },
+   "kParamWarpMenu2": {
+    "kind": "enum",
+    "default": "kFM_OSC",
+    "confidence": "observed",
+    "enum": [
+     "kAM_OSC",
+     "kAM_SUB",
+     "kASYMNeg",
+     "kASYMPos",
+     "kASYMPosNeg",
+     "kBendNeg",
+     "kBendPos",
+     "kBendPosNeg",
+     "kDLM",
+     "kDistAsym",
+     "kDistDiode1",
+     "kDistDiode2",
+     "kDistHardClip",
+     "kDistLinFold",
+     "kDistSineShaper",
+     "kDistSinFold",
+     "kDistSoftClip",
+     "kDistSoftSat",
+     "kDistStompBox",
+     "kDistTapeSat",
+     "kDistTube",
+     "kDistZeroSquare",
+     "kEvenOdd",
+     "kFMP_NOISE",
+     "kFMP_OSC",
+     "kFMX_NOISE",
+     "kFMX_OSC",
+     "kFMX_OSC2",
+     "kFM_FILT1",
+     "kFM_FILT2",
+     "kFM_NOISE",
+     "kFM_OSC",
+     "kFM_OSC2",
+     "kFM_SUB",
+     "kFilterHPF",
+     "kFilterLPF",
+     "kFlip",
+     "kPD_FILT1",
+     "kPD_NOISE",
+     "kPD_OSC",
+     "kPD_OSC2",
+     "kPD_SUB",
+     "kPWM",
+     "kQuantize",
+     "kRM_FILT1",
+     "kRM_FILT2",
+     "kRM_NOISE",
+     "kRM_OSC",
+     "kRM_OSC2",
+     "kRM_SUB",
+     "kRemap_4",
+     "kSelfPD",
+     "kSync"
+    ]
+   },
+   "kParamWarpVar2": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized",
+    "confidence": "uncertain"
+   }
+  },
+  "NoiseOsc": {
+   "kParamNoiseType": {
+    "kind": "enum",
+    "default": "White",
+    "confidence": "observed",
+    "enum": [
+     "White",
+     "Pink",
+     "Brown",
+     "Geiger"
+    ]
+   },
+   "kParamColor": {
+    "kind": "float",
+    "default": 0.5,
+    "min": 0.0,
+    "max": 1.0,
+    "confidence": "observed"
+   },
+   "kParamOneShot": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "observed"
+   }
+  },
+  "SubOsc": {
+   "kParamShape": {
+    "kind": "enum",
+    "confidence": "observed",
+    "enum": [
+     "kSaw",
+     "kSquare",
+     "kTriangle",
+     "kPulse",
+     "kRoundRect"
+    ]
+   }
+  },
+  "VoiceFilter": {
+   "kParamEnable": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "confirmed"
+   },
+   "kParamType": {
+    "kind": "enum",
+    "default": "MgL12",
+    "confidence": "confirmed",
+    "enum": [
+     "L6",
+     "L12",
+     "L18",
+     "L24",
+     "H6",
+     "H12",
+     "H18",
+     "H24",
+     "B12",
+     "B24",
+     "N24",
+     "BN12",
+     "NN12",
+     "BPN12",
+     "BPN24",
+     "BandReject",
+     "Allpasses",
+     "LH12",
+     "HB12",
+     "LBH12",
+     "LBH24",
+     "LNH12",
+     "LNH24",
+     "LPH24",
+     "LN12",
+     "PP12",
+     "HP12",
+     "MgL6",
+     "MgL12",
+     "MgL18",
+     "MgL24",
+     "LadderMg",
+     "LadderAcid",
+     "LadderEMS",
+     "DirtyMg",
+     "Comb2",
+     "CombN",
+     "CombP",
+     "CombH6N",
+     "CombHL6P",
+     "DistComb2LP",
+     "DistComb2BP",
+     "FlangeN",
+     "FlangeP",
+     "FlangePhase12HL6P",
+     "Phase24P",
+     "Phase36N",
+     "Phase36P",
+     "Phase48H6P",
+     "Phase48HL6P",
+     "Phase48P",
+     "FormantONE",
+     "FormantTWB",
+     "FormantTWO",
+     "DJMixer",
+     "Diffuser",
+     "Exp",
+     "ExpBPF",
+     "PZ_SVF",
+     "RM",
+     "RMT",
+     "Reverb1",
+     "Scream",
+     "Scream3LP",
+     "Wsp",
+     "ADD_BASS",
+     "BEQ12",
+     "BP12",
+     "CombHL6N",
+     "CombL6N",
+     "Combs",
+     "DistComb1BP",
+     "DistComb1LP",
+     "FlangeH6P",
+     "FlangeL6P",
+     "HEQ12",
+     "HN12",
+     "LB12",
+     "N12",
+     "P12",
+     "FlangeHL6N",
+     "HEQ6",
+     "LPH12",
+     "PN12",
+     "Phase12N",
+     "Phase12P",
+     "SNH1",
+     "ZDF_A",
+     "Scream3BP",
+     "Phase48HL6N",
+     "Phase48N",
+     "FlangeHL6P",
+     "Phase24N",
+     "FlangeL6N",
+     "SNH2",
+     "CombH6P",
+     "LEQ12"
+    ]
+   },
+   "kParamFreq": {
+    "kind": "float",
+    "default": 0.5,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized cutoff",
+    "confidence": "uncertain"
+   },
+   "kParamReso": {
+    "kind": "float",
+    "default": 10.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "confirmed"
+   },
+   "kParamDrive": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamVar": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamLevelOut": {
+    "kind": "float",
+    "default": 0.5,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized",
+    "confidence": "observed"
+   },
+   "kParamStereo": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "confirmed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamKeyTrack": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "observed"
+   }
+  },
+  "Env": {
+   "kParamAttack": {
+    "kind": "float",
+    "default": 0.0005,
+    "min": 0.0,
+    "max": 10.0,
+    "unit": "seconds",
+    "confidence": "confirmed"
+   },
+   "kParamHold": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 5.2,
+    "unit": "seconds",
+    "confidence": "observed"
+   },
+   "kParamDecay": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "max": 32.0,
+    "unit": "seconds",
+    "confidence": "confirmed"
+   },
+   "kParamSustain": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized",
+    "confidence": "confirmed"
+   },
+   "kParamRelease": {
+    "kind": "float",
+    "default": 0.015,
+    "min": 0.0,
+    "max": 32.0,
+    "unit": "seconds",
+    "confidence": "confirmed"
+   },
+   "kParamCurve1": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "curve %",
+    "confidence": "observed"
+   },
+   "kParamCurve2": {
+    "kind": "float",
+    "default": 66.6,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "curve %",
+    "confidence": "observed"
+   },
+   "kParamCurve3": {
+    "kind": "float",
+    "default": 66.6,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "curve %",
+    "confidence": "observed"
+   }
+  },
+  "LFO": {
+   "kParamRate": {
+    "kind": "float",
+    "default": 6.25,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "normalized rate",
+    "confidence": "observed"
+   },
+   "kParamMode": {
+    "kind": "enum",
+    "confidence": "observed",
+    "enum": [
+     "Free",
+     "Retrig",
+     "Envelope"
+    ]
+   },
+   "kParamBeatSync": {
+    "kind": "bool",
+    "default": true,
+    "confidence": "observed"
+   },
+   "kParamRise": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 5.0,
+    "unit": "seconds",
+    "confidence": "observed"
+   },
+   "kParamSmooth": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamDelay": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 3.6,
+    "unit": "seconds",
+    "confidence": "observed"
+   },
+   "kParamType": {
+    "kind": "enum",
+    "confidence": "observed",
+    "enum": [
+     "Rossler",
+     "Lorenz",
+     "RandomSH",
+     "Path"
+    ]
+   },
+   "kParamMono": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "observed"
+   },
+   "kParamSwing": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "confidence": "uncertain"
+   },
+   "kParamDotted": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "observed"
+   },
+   "kParamTriplets": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "observed"
+   },
+   "kParamRate10x": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "confirmed"
+   },
+   "kParamDefaultMode": {
+    "kind": "float",
+    "confidence": "observed"
+   }
+  },
+  "Macro": {
+   "kParamValue": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "Global": {
+   "kParamMasterVolume": {
+    "kind": "float",
+    "default": 0.5,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized (0.5=-9dB)",
+    "confidence": "confirmed"
+   },
+   "kParamMonoToggle": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "observed"
+   },
+   "kParamPolyCount": {
+    "kind": "float",
+    "default": 8.0,
+    "min": 1.0,
+    "max": 32.0,
+    "unit": "voices",
+    "confidence": "observed"
+   },
+   "kParamPortamentoTime": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 3.0,
+    "unit": "seconds",
+    "confidence": "confirmed"
+   },
+   "kParamLimitSameNotePolyphony": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "observed"
+   },
+   "kParamDirectVol": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "confidence": "observed"
+   },
+   "kParamFXBus1Vol": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "confidence": "observed"
+   },
+   "kParamFXBus2Vol": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "confidence": "observed"
+   },
+   "kParamFXBus1Dest": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 3.0,
+    "confidence": "observed"
+   },
+   "kParamFXBus2Dest": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 3.0,
+    "confidence": "observed"
+   },
+   "kParamBendRangeUp": {
+    "kind": "float",
+    "default": 2.0,
+    "min": 0.0,
+    "max": 48.0,
+    "unit": "semitones",
+    "confidence": "uncertain"
+   },
+   "kParamBendRangeDn": {
+    "kind": "float",
+    "default": -2.0,
+    "min": -48.0,
+    "max": 0.0,
+    "unit": "semitones",
+    "confidence": "uncertain"
+   },
+   "kParamLegato": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   },
+   "kParamPortaAlways": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "confirmed"
+   },
+   "kParamPortaScaled": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   },
+   "kParamPortamentoCurve": {
+    "kind": "float",
+    "confidence": "confirmed"
+   },
+   "kParamSwing": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "confirmed"
+   },
+   "kParamSwingDiv": {
+    "kind": "float",
+    "confidence": "uncertain"
+   },
+   "kParamTranspose": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -48.0,
+    "max": 48.0,
+    "unit": "semitones",
+    "confidence": "observed"
+   },
+   "kParamGlobalTuning": {
+    "kind": "float",
+    "default": 440.0,
+    "min": 0.0,
+    "unit": "Hz",
+    "confidence": "confirmed"
+   },
+   "kParamOversampling": {
+    "kind": "float",
+    "confidence": "uncertain"
+   },
+   "kParamS1Compatibility": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "confirmed"
+   },
+   "kParamUseUltraOnRender": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   },
+   "kParamNoteLatch": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   },
+   "kParamVoiceAmp": {
+    "kind": "float",
+    "confidence": "uncertain"
+   }
+  },
+  "RoutingSlot": {
+   "kParamRoutingDest": {
+    "kind": "enum",
+    "default": "kRoutingDestFilter",
+    "confidence": "observed",
+    "enum": [
+     "kRoutingDestFilter",
+     "kRoutingDestMaster",
+     "kRoutingDestDirect",
+     "kRoutingDestNone"
+    ]
+   },
+   "kParamFilterBalance": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "confidence": "observed"
+   },
+   "kParamFXBus1Level": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "confidence": "observed"
+   },
+   "kParamFXBus2Level": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "confidence": "observed"
+   },
+   "kParamViaEnv1": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   }
+  },
+  "ModSlot": {
+   "kParamAmount": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -100.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "confirmed"
+   },
+   "kParamBipolar": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "observed"
+   },
+   "kParamAuxInverted": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "observed"
+   },
+   "kParamAuxCurve": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -100.0,
+    "max": 100.0,
+    "confidence": "observed"
+   },
+   "kParamBypass": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "observed"
+   },
+   "kParamCurveIn": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -100.0,
+    "max": 100.0,
+    "confidence": "observed"
+   },
+   "kParamMainCurveData": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "confidence": "observed"
+   },
+   "kParamAuxCurveData": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "confidence": "observed"
+   },
+   "kParamDelayOffset": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "confidence": "uncertain"
+   },
+   "kParamDelayBeatSync": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   },
+   "kParamSmoothRise": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "confidence": "uncertain"
+   },
+   "kParamSmoothFall": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "confidence": "uncertain"
+   },
+   "kParamSmoothLink": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   }
+  },
+  "MultiSampleOsc": {
+   "kParamEnvAttack": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 0.4,
+    "unit": "seconds",
+    "confidence": "observed"
+   },
+   "kParamEnvDecay": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 32.0,
+    "unit": "seconds",
+    "confidence": "observed"
+   },
+   "kParamEnvSustain": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "max": 1.0,
+    "confidence": "observed"
+   },
+   "kParamEnvRelease": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 32.0,
+    "unit": "seconds",
+    "confidence": "observed"
+   },
+   "kParamEnvHold": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 32.0,
+    "unit": "seconds",
+    "confidence": "uncertain"
+   },
+   "kParamEnvDelay": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "seconds",
+    "confidence": "uncertain"
+   },
+   "kParamEnvOverride": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   },
+   "kParamVelTrack": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "uncertain"
+   },
+   "kParamVelTrackOverride": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   },
+   "kParamTimbreShift": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -20.0,
+    "max": 65.0,
+    "confidence": "uncertain"
+   },
+   "kParamRandomPhase": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "uncertain"
+   },
+   "kParamWarp": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "confidence": "observed"
+   },
+   "kParamWarpMenu": {
+    "kind": "enum",
+    "default": "kFM_OSC",
+    "confidence": "observed",
+    "enum": [
+     "kFM_OSC",
+     "kFM_OSC2",
+     "kFM_NOISE",
+     "kFM_SUB",
+     "kAM_OSC",
+     "kRM_OSC",
+     "kRM_SUB",
+     "kSelfPD",
+     "kPD_OSC",
+     "kPD_OSC2",
+     "kPD_SUB",
+     "kFilterLPF",
+     "kFilterHPF",
+     "kDistTube",
+     "kDistSoftClip",
+     "kDistHardClip",
+     "kDistDiode1",
+     "kDistDiode2",
+     "kDistSinFold",
+     "kDistAsym",
+     "kDistSineShaper",
+     "kDistStompBox",
+     "kDistSoftSat",
+     "kDistTapeSat"
+    ]
+   },
+   "kParamWarp2": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "confidence": "uncertain"
+   },
+   "kParamWarpMenu2": {
+    "kind": "enum",
+    "default": "kFM_OSC",
+    "confidence": "uncertain",
+    "enum": [
+     "kFM_OSC",
+     "kFM_OSC2",
+     "kFM_NOISE",
+     "kFM_SUB",
+     "kFMX_OSC",
+     "kAM_OSC",
+     "kAM_OSC2",
+     "kAM_SUB",
+     "kRM_OSC",
+     "kRM_NOISE",
+     "kSelfPD",
+     "kPD_OSC",
+     "kPD_NOISE",
+     "kPD_FILT1",
+     "kFilterLPF",
+     "kDistSoftClip",
+     "kDistTube",
+     "kDistStompBox",
+     "kDistSineShaper"
+    ]
+   },
+   "kParamWarpVar": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "confidence": "uncertain"
+   },
+   "kParamWarpVar2": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.0,
+    "confidence": "uncertain"
+   }
+  }
+ },
+ "fx": {
+  "FXDistortion": {
+   "kParamMode": {
+    "kind": "enum",
+    "default": "kOverdrive",
+    "confidence": "observed",
+    "enum": [
+     "kAsym",
+     "kDiode1",
+     "kDiode2",
+     "kDownsample",
+     "kHardClip",
+     "kLinFold",
+     "kOverdrive",
+     "kRectify",
+     "kSinFold",
+     "kSineShaper",
+     "kSoftClip",
+     "kSoftSat",
+     "kStompBox",
+     "kTapeSat",
+     "kXShaper",
+     "kXShaperAsym",
+     "kZeroSquare"
+    ]
+   },
+   "kParamDrive": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamFreq": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized",
+    "confidence": "observed"
+   },
+   "kParamNumStages": {
+    "kind": "float",
+    "default": 2.0,
+    "min": 2.0,
+    "max": 16.0,
+    "confidence": "observed"
+   }
+  },
+  "FXChorus": {
+   "kParamRate": {
+    "kind": "float",
+    "default": 0.5,
+    "min": 0.0,
+    "max": 20.0,
+    "unit": "Hz (approx.)",
+    "confidence": "observed"
+   },
+   "kParamDepth": {
+    "kind": "float",
+    "default": 10.0,
+    "min": 0.0,
+    "max": 26.0,
+    "unit": "ms (approx.)",
+    "confidence": "observed"
+   },
+   "kParamDelay": {
+    "kind": "float",
+    "default": 5.0,
+    "min": 0.0,
+    "max": 20.0,
+    "unit": "ms (approx.)",
+    "confidence": "observed"
+   },
+   "kParamFeedback": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 75.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamFilt": {
+    "kind": "float",
+    "default": 2000.0,
+    "min": 50.0,
+    "max": 20000.0,
+    "unit": "Hz",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "FXFlanger": {
+   "kParamRate": {
+    "kind": "float",
+    "default": 0.5,
+    "min": 0.0,
+    "max": 10.0,
+    "unit": "Hz (approx.)",
+    "confidence": "observed"
+   },
+   "kParamDepth": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamFeedback": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamWidth": {
+    "kind": "float",
+    "default": 180.0,
+    "min": 0.0,
+    "max": 360.0,
+    "unit": "degrees",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "FXPhaser": {
+   "kParamRate": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "max": 20.0,
+    "unit": "Hz (approx.)",
+    "confidence": "observed"
+   },
+   "kParamDepth": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamFeedback": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamFreq": {
+    "kind": "float",
+    "default": 800.0,
+    "min": 20.0,
+    "max": 20000.0,
+    "unit": "Hz",
+    "confidence": "observed"
+   },
+   "kParamNumPoles": {
+    "kind": "float",
+    "default": 4.0,
+    "min": 1.0,
+    "max": 18.0,
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "FXDelay": {
+   "kParamTimeL": {
+    "kind": "float",
+    "default": 0.25,
+    "min": 0.001,
+    "max": 0.34,
+    "unit": "seconds",
+    "confidence": "confirmed"
+   },
+   "kParamTimeR": {
+    "kind": "float",
+    "default": 0.25,
+    "min": 0.001,
+    "max": 0.32,
+    "unit": "seconds",
+    "confidence": "confirmed"
+   },
+   "kParamBeatSync": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "confirmed"
+   },
+   "kParamMode": {
+    "kind": "float",
+    "confidence": "uncertain"
+   },
+   "kParamLink": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   },
+   "kParamBW": {
+    "kind": "float",
+    "confidence": "uncertain"
+   },
+   "kParamOffsetL": {
+    "kind": "float",
+    "confidence": "uncertain"
+   },
+   "kParamOffsetR": {
+    "kind": "float",
+    "confidence": "uncertain"
+   },
+   "kParamHQ": {
+    "kind": "bool",
+    "default": false,
+    "confidence": "uncertain"
+   },
+   "kParamFeedback": {
+    "kind": "float",
+    "default": 30.0,
+    "min": 0.0,
+    "max": 90.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamFreq": {
+    "kind": "float",
+    "default": 8000.0,
+    "min": 49.5,
+    "max": 17981.0,
+    "unit": "Hz",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 30.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "FXReverb": {
+   "kParamType": {
+    "kind": "enum",
+    "default": "kHall",
+    "confidence": "observed",
+    "enum": [
+     "kAbyss",
+     "kHall",
+     "kSpace",
+     "kVintage"
+    ]
+   },
+   "kParamSize": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamDelay": {
+    "kind": "float",
+    "default": 20.0,
+    "min": 0.0,
+    "max": 250.0,
+    "unit": "ms",
+    "confidence": "observed"
+   },
+   "kParamWidth": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 30.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "FXComp": {
+   "kParamThresh": {
+    "kind": "float",
+    "default": 0.5,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized",
+    "confidence": "observed"
+   },
+   "kParamRatio": {
+    "kind": "float",
+    "default": 4.0,
+    "min": 1.0,
+    "max": 1000000.0,
+    "unit": "ratio:1",
+    "confidence": "observed"
+   },
+   "kParamAttack": {
+    "kind": "float",
+    "default": 10.0,
+    "min": 0.1,
+    "max": 1000.0,
+    "unit": "ms",
+    "confidence": "observed"
+   },
+   "kParamRelease": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 0.1,
+    "max": 1000.0,
+    "unit": "ms",
+    "confidence": "observed"
+   },
+   "kParamMakeup": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 1.0,
+    "max": 32.0,
+    "unit": "gain factor",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "FXEQ": {
+   "kParamFreq1": {
+    "kind": "float",
+    "default": 200.0,
+    "min": 21.5,
+    "max": 10000.0,
+    "unit": "Hz",
+    "confidence": "observed"
+   },
+   "kParamFreq2": {
+    "kind": "float",
+    "default": 4000.0,
+    "min": 21.5,
+    "max": 20000.0,
+    "unit": "Hz",
+    "confidence": "observed"
+   },
+   "kParamGain1": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -24.0,
+    "max": 24.0,
+    "unit": "dB",
+    "confidence": "observed"
+   },
+   "kParamGain2": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -24.0,
+    "max": 24.0,
+    "unit": "dB",
+    "confidence": "observed"
+   },
+   "kParamReso1": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "Q (approx.)",
+    "confidence": "observed"
+   },
+   "kParamReso2": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 95.0,
+    "unit": "Q (approx.)",
+    "confidence": "observed"
+   }
+  },
+  "FXFilter": {
+   "kParamType": {
+    "kind": "enum",
+    "default": "L12",
+    "confidence": "uncertain",
+    "enum": [
+     "L6",
+     "L12",
+     "L18",
+     "L24",
+     "H6",
+     "H12",
+     "H18",
+     "H24",
+     "B12",
+     "B24",
+     "N24",
+     "BN12",
+     "NN12",
+     "BPN12",
+     "BPN24",
+     "BandReject",
+     "Allpasses",
+     "LH12",
+     "HB12",
+     "LBH12",
+     "LBH24",
+     "LNH12",
+     "LNH24",
+     "LPH24",
+     "LN12",
+     "PP12",
+     "HP12",
+     "MgL6",
+     "MgL12",
+     "MgL18",
+     "MgL24",
+     "LadderMg",
+     "LadderAcid",
+     "LadderEMS",
+     "DirtyMg",
+     "Comb2",
+     "CombN",
+     "CombP",
+     "CombH6N",
+     "CombHL6P",
+     "DistComb2LP",
+     "DistComb2BP",
+     "FlangeN",
+     "FlangeP",
+     "FlangePhase12HL6P",
+     "Phase24P",
+     "Phase36N",
+     "Phase36P",
+     "Phase48H6P",
+     "Phase48HL6P",
+     "Phase48P",
+     "FormantONE",
+     "FormantTWB",
+     "FormantTWO",
+     "DJMixer",
+     "Diffuser",
+     "Exp",
+     "ExpBPF",
+     "PZ_SVF",
+     "RM",
+     "RMT",
+     "Reverb1",
+     "Scream",
+     "Scream3LP",
+     "Wsp",
+     "ADD_BASS",
+     "BEQ12",
+     "BP12",
+     "CombHL6N",
+     "CombL6N",
+     "Combs",
+     "DistComb1BP",
+     "DistComb1LP",
+     "FlangeH6P",
+     "FlangeL6P",
+     "HEQ12",
+     "HN12",
+     "LB12",
+     "N12",
+     "P12",
+     "FlangeHL6N",
+     "HEQ6",
+     "LPH12",
+     "PN12",
+     "Phase12N",
+     "Phase12P",
+     "SNH1",
+     "ZDF_A",
+     "Scream3BP",
+     "Phase48HL6N",
+     "Phase48N",
+     "FlangeHL6P",
+     "Phase24N",
+     "FlangeL6N",
+     "SNH2",
+     "CombH6P",
+     "LEQ12"
+    ]
+   },
+   "kParamFreq": {
+    "kind": "float",
+    "default": 0.5,
+    "min": 0.0,
+    "max": 1.0,
+    "unit": "normalized cutoff",
+    "confidence": "observed"
+   },
+   "kParamReso": {
+    "kind": "float",
+    "default": 10.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamDrive": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "FXBode": {
+   "kParamShift": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -100.0,
+    "max": 82.0,
+    "unit": "% (approx.)",
+    "confidence": "observed"
+   },
+   "kParamRange": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 0.1,
+    "max": 3043.2,
+    "unit": "Hz (approx.)",
+    "confidence": "observed"
+   },
+   "kParamFeedback": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamBlur": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamDelayTime": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1.8,
+    "unit": "seconds (approx.)",
+    "confidence": "observed"
+   },
+   "kParamOutputWidth": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamOutputMix": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -100.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 30.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "FXHyperD": {
+   "kParamRate": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamDetune": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamUnison": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 7.0,
+    "confidence": "observed"
+   },
+   "kParamDimESize": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamDimEWet": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "FXConv": {
+   "kParamSize": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 10.0,
+    "max": 1000.0,
+    "unit": "% (IR stretch)",
+    "confidence": "observed"
+   },
+   "kParamDecay": {
+    "kind": "float",
+    "default": 1.0,
+    "min": 0.0,
+    "max": 40.0,
+    "unit": "seconds (approx.)",
+    "confidence": "observed"
+   },
+   "kParamTone": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -100.0,
+    "max": 85.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamIpTrim": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -34.0,
+    "max": 6.0,
+    "unit": "dB",
+    "confidence": "observed"
+   },
+   "kParamDamping": {
+    "kind": "float",
+    "default": 50.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 30.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   }
+  },
+  "FXUtils": {
+   "kParamWidth": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 0.0,
+    "max": 800.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamBalance": {
+    "kind": "float",
+    "default": 0.0,
+    "min": -100.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "observed"
+   },
+   "kParamHPF": {
+    "kind": "float",
+    "default": 20.0,
+    "min": 1.3,
+    "max": 400.0,
+    "unit": "Hz (approx.)",
+    "confidence": "observed"
+   },
+   "kParamLPF": {
+    "kind": "float",
+    "default": 20000.0,
+    "min": 50.0,
+    "max": 20000.0,
+    "unit": "Hz (approx.)",
+    "confidence": "observed"
+   },
+   "kParamLFXover": {
+    "kind": "float",
+    "default": 150.0,
+    "min": 20.25,
+    "max": 400.0,
+    "unit": "Hz (approx.)",
+    "confidence": "observed"
+   },
+   "kParamWet": {
+    "kind": "float",
+    "default": 100.0,
+    "min": 0.0,
+    "max": 100.0,
+    "unit": "%",
+    "confidence": "uncertain"
+   }
+  },
+  "FXSplit": {
+   "kParamFreq": {
+    "kind": "float",
+    "default": 1000.0,
+    "min": 20.0,
+    "max": 20000.0,
+    "unit": "Hz",
+    "confidence": "observed"
+   },
+   "kParamModuleCount1": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 16.0,
+    "confidence": "observed"
+   },
+   "kParamModuleCount2": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 16.0,
+    "confidence": "observed"
+   }
+  },
+  "FXSplit3": {
+   "kParamFreq": {
+    "kind": "float",
+    "default": 300.0,
+    "min": 20.0,
+    "max": 20000.0,
+    "unit": "Hz",
+    "confidence": "observed"
+   },
+   "kParamFreq2": {
+    "kind": "float",
+    "default": 3000.0,
+    "min": 20.0,
+    "max": 20000.0,
+    "unit": "Hz",
+    "confidence": "observed"
+   },
+   "kParamModuleCount1": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 16.0,
+    "confidence": "observed"
+   },
+   "kParamModuleCount2": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 16.0,
+    "confidence": "observed"
+   },
+   "kParamModuleCount3": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 16.0,
+    "confidence": "observed"
+   }
+  },
+  "FXSplitMS": {
+   "kParamModuleCount1": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 16.0,
+    "confidence": "observed"
+   },
+   "kParamModuleCount2": {
+    "kind": "float",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 16.0,
+    "confidence": "observed"
+   }
+  }
+ },
+ "fxTypeIds": {
+  "FXDistortion": 0,
+  "FXFlanger": 1,
+  "FXPhaser": 2,
+  "FXChorus": 3,
+  "FXDelay": 4,
+  "FXComp": 5,
+  "FXReverb": 6,
+  "FXEQ": 7,
+  "FXFilter": 8,
+  "FXHyperD": 9,
+  "FXBode": 10,
+  "FXConv": 11,
+  "FXUtils": 12,
+  "FXSplit": 13,
+  "FXSplit3": 14,
+  "FXSplitMS": 15
+ },
+ "fxWetParamId": 1,
+ "fxExtraModDests": {
+  "FXUtils": {
+   "balance": {
+    "param_name": "kParamBalance",
+    "param_id": 4
+   },
+   "level_out": {
+    "param_name": "kParamLevelOut",
+    "param_id": 2
+   },
+   "width": {
+    "param_name": "kParamWidth",
+    "param_id": 3
+   },
+   "hpf": {
+    "param_name": "kParamHPF",
+    "param_id": 7
+   },
+   "lpf": {
+    "param_name": "kParamLPF",
+    "param_id": 8
+   },
+   "lf_xover": {
+    "param_name": "kParamLFXover",
+    "param_id": 6
+   }
+  },
+  "FXEQ": {
+   "freq2": {
+    "param_name": "kParamFreq2",
+    "param_id": 2
+   }
+  }
+ },
+ "modSources": {
+  "lfo0": 6,
+  "lfo1": 7,
+  "lfo2": 8,
+  "lfo3": 9,
+  "lfo4": 10,
+  "lfo5": 11,
+  "lfo6": 12,
+  "lfo7": 13,
+  "lfo8": 14,
+  "lfo9": 15,
+  "macro0": 25,
+  "macro1": 26,
+  "macro2": 27,
+  "macro3": 28,
+  "macro4": 29,
+  "macro5": 30,
+  "macro6": 31,
+  "macro7": 32,
+  "velocity": 16,
+  "mod_wheel": 1,
+  "env0": 2,
+  "env1": 3,
+  "env2": 4,
+  "env3": 5,
+  "key_track": 17,
+  "aftertouch": 18,
+  "poly_aftertouch": 19,
+  "random1": 21,
+  "random2": 22,
+  "pitch_bend": 33,
+  "random_discrete": 59,
+  "release_velo": 37,
+  "voice_mod1": 56,
+  "voice_mod2": 57,
+  "active_voices": 55,
+  "voice_index": 58,
+  "fixed": 38,
+  "note_on_alt": 23,
+  "note_on_alt2": 24,
+  "expr_pan": 34,
+  "expr_timbre": 35,
+  "expr_press": 36,
+  "oscillator0": 49,
+  "oscillator1": 50,
+  "oscillator2": 51,
+  "oscillator4": 52,
+  "oscillator3": 20,
+  "filter0": 53,
+  "filter1": 54,
+  "lfo1_y": 40
+ },
+ "modDests": {
+  "oscillator0.volume": {
+   "dest_type": "Oscillator",
+   "dest_id": 0,
+   "param_name": "kParamVolume",
+   "param_id": 1
+  },
+  "oscillator0.pan": {
+   "dest_type": "Oscillator",
+   "dest_id": 0,
+   "param_name": "kParamPan",
+   "param_id": 2
+  },
+  "oscillator0.octave": {
+   "dest_type": "Oscillator",
+   "dest_id": 0,
+   "param_name": "kParamOctave",
+   "param_id": 3
+  },
+  "oscillator0.pitch": {
+   "dest_type": "Oscillator",
+   "dest_id": 0,
+   "param_name": "kParamPitch",
+   "param_id": 4
+  },
+  "oscillator0.fine": {
+   "dest_type": "Oscillator",
+   "dest_id": 0,
+   "param_name": "kParamFine",
+   "param_id": 5
+  },
+  "oscillator1.volume": {
+   "dest_type": "Oscillator",
+   "dest_id": 1,
+   "param_name": "kParamVolume",
+   "param_id": 1
+  },
+  "oscillator1.pan": {
+   "dest_type": "Oscillator",
+   "dest_id": 1,
+   "param_name": "kParamPan",
+   "param_id": 2
+  },
+  "oscillator1.octave": {
+   "dest_type": "Oscillator",
+   "dest_id": 1,
+   "param_name": "kParamOctave",
+   "param_id": 3
+  },
+  "oscillator1.pitch": {
+   "dest_type": "Oscillator",
+   "dest_id": 1,
+   "param_name": "kParamPitch",
+   "param_id": 4
+  },
+  "oscillator1.fine": {
+   "dest_type": "Oscillator",
+   "dest_id": 1,
+   "param_name": "kParamFine",
+   "param_id": 5
+  },
+  "oscillator2.volume": {
+   "dest_type": "Oscillator",
+   "dest_id": 2,
+   "param_name": "kParamVolume",
+   "param_id": 1
+  },
+  "oscillator2.pan": {
+   "dest_type": "Oscillator",
+   "dest_id": 2,
+   "param_name": "kParamPan",
+   "param_id": 2
+  },
+  "oscillator2.octave": {
+   "dest_type": "Oscillator",
+   "dest_id": 2,
+   "param_name": "kParamOctave",
+   "param_id": 3
+  },
+  "oscillator2.pitch": {
+   "dest_type": "Oscillator",
+   "dest_id": 2,
+   "param_name": "kParamPitch",
+   "param_id": 4
+  },
+  "oscillator2.fine": {
+   "dest_type": "Oscillator",
+   "dest_id": 2,
+   "param_name": "kParamFine",
+   "param_id": 5
+  },
+  "oscillator3.volume": {
+   "dest_type": "Oscillator",
+   "dest_id": 3,
+   "param_name": "kParamVolume",
+   "param_id": 1
+  },
+  "oscillator3.pan": {
+   "dest_type": "Oscillator",
+   "dest_id": 3,
+   "param_name": "kParamPan",
+   "param_id": 2
+  },
+  "oscillator3.octave": {
+   "dest_type": "Oscillator",
+   "dest_id": 3,
+   "param_name": "kParamOctave",
+   "param_id": 3
+  },
+  "oscillator3.pitch": {
+   "dest_type": "Oscillator",
+   "dest_id": 3,
+   "param_name": "kParamPitch",
+   "param_id": 4
+  },
+  "oscillator3.fine": {
+   "dest_type": "Oscillator",
+   "dest_id": 3,
+   "param_name": "kParamFine",
+   "param_id": 5
+  },
+  "oscillator4.volume": {
+   "dest_type": "Oscillator",
+   "dest_id": 4,
+   "param_name": "kParamVolume",
+   "param_id": 1
+  },
+  "oscillator4.pan": {
+   "dest_type": "Oscillator",
+   "dest_id": 4,
+   "param_name": "kParamPan",
+   "param_id": 2
+  },
+  "oscillator4.octave": {
+   "dest_type": "Oscillator",
+   "dest_id": 4,
+   "param_name": "kParamOctave",
+   "param_id": 3
+  },
+  "oscillator4.pitch": {
+   "dest_type": "Oscillator",
+   "dest_id": 4,
+   "param_name": "kParamPitch",
+   "param_id": 4
+  },
+  "oscillator4.fine": {
+   "dest_type": "Oscillator",
+   "dest_id": 4,
+   "param_name": "kParamFine",
+   "param_id": 5
+  },
+  "filter0.cutoff": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 0,
+   "param_name": "kParamFreq",
+   "param_id": 3
+  },
+  "filter0.resonance": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 0,
+   "param_name": "kParamReso",
+   "param_id": 4
+  },
+  "filter0.drive": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 0,
+   "param_name": "kParamDrive",
+   "param_id": 5
+  },
+  "filter0.wet": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 0,
+   "param_name": "kParamWet",
+   "param_id": 1
+  },
+  "filter0.var": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 0,
+   "param_name": "kParamVar",
+   "param_id": 6
+  },
+  "filter0.stereo": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 0,
+   "param_name": "kParamStereo",
+   "param_id": 7
+  },
+  "filter0.level_out": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 0,
+   "param_name": "kParamLevelOut",
+   "param_id": 8
+  },
+  "filter1.cutoff": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 1,
+   "param_name": "kParamFreq",
+   "param_id": 3
+  },
+  "filter1.resonance": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 1,
+   "param_name": "kParamReso",
+   "param_id": 4
+  },
+  "filter1.drive": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 1,
+   "param_name": "kParamDrive",
+   "param_id": 5
+  },
+  "filter1.wet": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 1,
+   "param_name": "kParamWet",
+   "param_id": 1
+  },
+  "filter1.var": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 1,
+   "param_name": "kParamVar",
+   "param_id": 6
+  },
+  "filter1.stereo": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 1,
+   "param_name": "kParamStereo",
+   "param_id": 7
+  },
+  "filter1.level_out": {
+   "dest_type": "VoiceFilter",
+   "dest_id": 1,
+   "param_name": "kParamLevelOut",
+   "param_id": 8
+  },
+  "env0.attack": {
+   "dest_type": "Env",
+   "dest_id": 0,
+   "param_name": "kParamAttack",
+   "param_id": 0
+  },
+  "env0.decay": {
+   "dest_type": "Env",
+   "dest_id": 0,
+   "param_name": "kParamDecay",
+   "param_id": 2
+  },
+  "env0.sustain": {
+   "dest_type": "Env",
+   "dest_id": 0,
+   "param_name": "kParamSustain",
+   "param_id": 3
+  },
+  "env0.release": {
+   "dest_type": "Env",
+   "dest_id": 0,
+   "param_name": "kParamRelease",
+   "param_id": 4
+  },
+  "env1.attack": {
+   "dest_type": "Env",
+   "dest_id": 1,
+   "param_name": "kParamAttack",
+   "param_id": 0
+  },
+  "env1.decay": {
+   "dest_type": "Env",
+   "dest_id": 1,
+   "param_name": "kParamDecay",
+   "param_id": 2
+  },
+  "env1.sustain": {
+   "dest_type": "Env",
+   "dest_id": 1,
+   "param_name": "kParamSustain",
+   "param_id": 3
+  },
+  "env1.release": {
+   "dest_type": "Env",
+   "dest_id": 1,
+   "param_name": "kParamRelease",
+   "param_id": 4
+  },
+  "env2.attack": {
+   "dest_type": "Env",
+   "dest_id": 2,
+   "param_name": "kParamAttack",
+   "param_id": 0
+  },
+  "env2.decay": {
+   "dest_type": "Env",
+   "dest_id": 2,
+   "param_name": "kParamDecay",
+   "param_id": 2
+  },
+  "env2.sustain": {
+   "dest_type": "Env",
+   "dest_id": 2,
+   "param_name": "kParamSustain",
+   "param_id": 3
+  },
+  "env2.release": {
+   "dest_type": "Env",
+   "dest_id": 2,
+   "param_name": "kParamRelease",
+   "param_id": 4
+  },
+  "env3.attack": {
+   "dest_type": "Env",
+   "dest_id": 3,
+   "param_name": "kParamAttack",
+   "param_id": 0
+  },
+  "env3.decay": {
+   "dest_type": "Env",
+   "dest_id": 3,
+   "param_name": "kParamDecay",
+   "param_id": 2
+  },
+  "env3.sustain": {
+   "dest_type": "Env",
+   "dest_id": 3,
+   "param_name": "kParamSustain",
+   "param_id": 3
+  },
+  "env3.release": {
+   "dest_type": "Env",
+   "dest_id": 3,
+   "param_name": "kParamRelease",
+   "param_id": 4
+  },
+  "oscillator0.table_position": {
+   "dest_type": "WTOsc",
+   "dest_id": 0,
+   "param_name": "kParamTablePos",
+   "param_id": 6
+  },
+  "oscillator0.warp_amount": {
+   "dest_type": "WTOsc",
+   "dest_id": 0,
+   "param_name": "kParamWarp",
+   "param_id": 0
+  },
+  "oscillator0.warp_var2": {
+   "dest_type": "WTOsc",
+   "dest_id": 0,
+   "param_name": "kParamWarpVar2",
+   "param_id": 4
+  },
+  "oscillator0.warp_amount2": {
+   "dest_type": "WTOsc",
+   "dest_id": 0,
+   "param_name": "kParamWarp2",
+   "param_id": 3
+  },
+  "oscillator1.table_position": {
+   "dest_type": "WTOsc",
+   "dest_id": 1,
+   "param_name": "kParamTablePos",
+   "param_id": 6
+  },
+  "oscillator1.warp_amount": {
+   "dest_type": "WTOsc",
+   "dest_id": 1,
+   "param_name": "kParamWarp",
+   "param_id": 0
+  },
+  "oscillator1.warp_var2": {
+   "dest_type": "WTOsc",
+   "dest_id": 1,
+   "param_name": "kParamWarpVar2",
+   "param_id": 4
+  },
+  "oscillator1.warp_amount2": {
+   "dest_type": "WTOsc",
+   "dest_id": 1,
+   "param_name": "kParamWarp2",
+   "param_id": 3
+  },
+  "oscillator2.table_position": {
+   "dest_type": "WTOsc",
+   "dest_id": 2,
+   "param_name": "kParamTablePos",
+   "param_id": 6
+  },
+  "oscillator2.warp_amount": {
+   "dest_type": "WTOsc",
+   "dest_id": 2,
+   "param_name": "kParamWarp",
+   "param_id": 0
+  },
+  "oscillator2.warp_var2": {
+   "dest_type": "WTOsc",
+   "dest_id": 2,
+   "param_name": "kParamWarpVar2",
+   "param_id": 4
+  },
+  "oscillator2.warp_amount2": {
+   "dest_type": "WTOsc",
+   "dest_id": 2,
+   "param_name": "kParamWarp2",
+   "param_id": 3
+  },
+  "lfo0.rate": {
+   "dest_type": "LFO",
+   "dest_id": 0,
+   "param_name": "kParamRate",
+   "param_id": 0
+  },
+  "lfo1.rate": {
+   "dest_type": "LFO",
+   "dest_id": 1,
+   "param_name": "kParamRate",
+   "param_id": 0
+  },
+  "lfo2.rate": {
+   "dest_type": "LFO",
+   "dest_id": 2,
+   "param_name": "kParamRate",
+   "param_id": 0
+  },
+  "lfo3.rate": {
+   "dest_type": "LFO",
+   "dest_id": 3,
+   "param_name": "kParamRate",
+   "param_id": 0
+  },
+  "lfo4.rate": {
+   "dest_type": "LFO",
+   "dest_id": 4,
+   "param_name": "kParamRate",
+   "param_id": 0
+  },
+  "lfo5.rate": {
+   "dest_type": "LFO",
+   "dest_id": 5,
+   "param_name": "kParamRate",
+   "param_id": 0
+  },
+  "lfo6.rate": {
+   "dest_type": "LFO",
+   "dest_id": 6,
+   "param_name": "kParamRate",
+   "param_id": 0
+  },
+  "lfo7.rate": {
+   "dest_type": "LFO",
+   "dest_id": 7,
+   "param_name": "kParamRate",
+   "param_id": 0
+  },
+  "lfo8.rate": {
+   "dest_type": "LFO",
+   "dest_id": 8,
+   "param_name": "kParamRate",
+   "param_id": 0
+  },
+  "lfo9.rate": {
+   "dest_type": "LFO",
+   "dest_id": 9,
+   "param_name": "kParamRate",
+   "param_id": 0
+  },
+  "macro0.value": {
+   "dest_type": "Macro",
+   "dest_id": 0,
+   "param_name": "kParamValue",
+   "param_id": 0
+  },
+  "macro1.value": {
+   "dest_type": "Macro",
+   "dest_id": 1,
+   "param_name": "kParamValue",
+   "param_id": 0
+  },
+  "macro2.value": {
+   "dest_type": "Macro",
+   "dest_id": 2,
+   "param_name": "kParamValue",
+   "param_id": 0
+  },
+  "macro3.value": {
+   "dest_type": "Macro",
+   "dest_id": 3,
+   "param_name": "kParamValue",
+   "param_id": 0
+  },
+  "macro4.value": {
+   "dest_type": "Macro",
+   "dest_id": 4,
+   "param_name": "kParamValue",
+   "param_id": 0
+  },
+  "macro5.value": {
+   "dest_type": "Macro",
+   "dest_id": 5,
+   "param_name": "kParamValue",
+   "param_id": 0
+  },
+  "macro6.value": {
+   "dest_type": "Macro",
+   "dest_id": 6,
+   "param_name": "kParamValue",
+   "param_id": 0
+  },
+  "macro7.value": {
+   "dest_type": "Macro",
+   "dest_id": 7,
+   "param_name": "kParamValue",
+   "param_id": 0
+  },
+  "oscillator3.noise_color": {
+   "dest_type": "NoiseOsc",
+   "dest_id": 3,
+   "param_name": "kParamColor",
+   "param_id": 0
+  },
+  "oscillator3.noise_initial_phase": {
+   "dest_type": "NoiseOsc",
+   "dest_id": 3,
+   "param_name": "kParamInitialPhase",
+   "param_id": 2
+  },
+  "oscillator3.noise_fine": {
+   "dest_type": "NoiseOsc",
+   "dest_id": 3,
+   "param_name": "kParamFine",
+   "param_id": 1
+  },
+  "global.voice_amp": {
+   "dest_type": "Global",
+   "dest_id": 0,
+   "param_name": "kParamVoiceAmp",
+   "param_id": 2
+  },
+  "arp.gate": {
+   "dest_type": "Arp",
+   "dest_id": 0,
+   "param_name": "kParamGate",
+   "param_id": 6
+  },
+  "arp.rate": {
+   "dest_type": "Arp",
+   "dest_id": 0,
+   "param_name": "kParamRate",
+   "param_id": 1
+  },
+  "arp.chance": {
+   "dest_type": "Arp",
+   "dest_id": 0,
+   "param_name": "kParamChance",
+   "param_id": 7
+  },
+  "arp.offset": {
+   "dest_type": "Arp",
+   "dest_id": 0,
+   "param_name": "kParamOffset",
+   "param_id": 4
+  },
+  "arp.transpose_range": {
+   "dest_type": "Arp",
+   "dest_id": 0,
+   "param_name": "kParamTransposeRange",
+   "param_id": 3
+  },
+  "global.voice_scaling_env_time": {
+   "dest_type": "VoicePanel",
+   "dest_id": 0,
+   "param_name": "kParamGlobalScalingEnvTime",
+   "param_id": 58
+  },
+  "global.voice_scaling_lfo_time": {
+   "dest_type": "VoicePanel",
+   "dest_id": 0,
+   "param_name": "kParamGlobalScalingLfoTime",
+   "param_id": 59
+  },
+  "oscillator0.detune": {
+   "dest_type": "Oscillator",
+   "dest_id": 0,
+   "param_name": "kParamDetune",
+   "param_id": 26
+  },
+  "oscillator1.detune": {
+   "dest_type": "Oscillator",
+   "dest_id": 1,
+   "param_name": "kParamDetune",
+   "param_id": 26
+  },
+  "oscillator2.detune": {
+   "dest_type": "Oscillator",
+   "dest_id": 2,
+   "param_name": "kParamDetune",
+   "param_id": 26
+  }
+ },
+ "wavetables": {
+  "default": {
+   "path": "S2 Tables/Default Shapes.wav",
+   "numFrames": 18432,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "basic",
+    "clean",
+    "sine",
+    "saw",
+    "square"
+   ],
+   "knownFrames": {
+    "saw": 0.0,
+    "sine": 32.875
+   }
+  },
+  "analog_basic": {
+   "path": "Analog/Basic Shapes.wav",
+   "numFrames": 14336,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "basic",
+    "analog",
+    "clean",
+    "saw",
+    "square"
+   ]
+  },
+  "analog_warm": {
+   "path": "S2 Tables/Analog/DM - OSCAR.wav",
+   "numFrames": 8192,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "analog",
+    "warm"
+   ]
+  },
+  "pwm": {
+   "path": "Analog/PWM Juno.wav",
+   "numFrames": 229376,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "analog",
+    "pwm",
+    "warm"
+   ]
+  },
+  "analog_mini": {
+   "path": "Analog/Basic Mini.wav",
+   "numFrames": 8192,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "analog",
+    "basic",
+    "warm"
+   ]
+  },
+  "warm_sub": {
+   "path": "S2 Tables/Analog/Warm Sub.wav",
+   "numFrames": 4096,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "analog",
+    "sub",
+    "warm",
+    "sine"
+   ]
+  },
+  "digital_fm": {
+   "path": "S2 Tables/Digital/Basic OPL.wav",
+   "numFrames": 16384,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "digital",
+    "fm",
+    "bright",
+    "keys"
+   ]
+  },
+  "harmonic_smooth": {
+   "path": "S2 Tables/Digital/Harmonic Series Smooth.wav",
+   "numFrames": 49152,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "digital",
+    "harmonic",
+    "organ",
+    "clean"
+   ]
+  },
+  "dying_sine": {
+   "path": "S2 Tables/Digital/Dying Sine.wav",
+   "numFrames": 524288,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "digital",
+    "sine",
+    "evolving",
+    "growl"
+   ]
+  },
+  "acid": {
+   "path": "Analog/Acid.wav",
+   "numFrames": 81920,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "analog",
+    "acid",
+    "growl",
+    "bright"
+   ]
+  },
+  "fm_piano": {
+   "path": "S2 Tables/Digital/FM Piano.wav",
+   "numFrames": 4096,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "fm",
+    "keys",
+    "epiano",
+    "bell"
+   ]
+  },
+  "flute": {
+   "path": "S2 Tables/Digital/JF Flute.wav",
+   "numFrames": 524288,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "acoustic",
+    "winds",
+    "breathy"
+   ]
+  },
+  "mini_bass": {
+   "path": "Analog/MiniBass.wav",
+   "numFrames": 22528,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "analog",
+    "bass",
+    "warm",
+    "moog"
+   ]
+  },
+  "rhodes_mk1": {
+   "path": "S2 Tables/Digital/RMrk1.wav",
+   "numFrames": 524288,
+   "sampleRate": 44100,
+   "numChannels": 1,
+   "tags": [
+    "keys",
+    "epiano",
+    "acoustic",
+    "warm"
+   ]
+  }
+ },
+ "lfoSyncRates": {
+  "4 bar": 0.2108496543592536,
+  "1 bar": 1.6269264358721542,
+  "1/2": 3.3735944697480575,
+  "1/4": 6.25,
+  "1/8": 10.66,
+  "1/16": 17.078820419579646,
+  "1/32": 26.030822973954468
+ },
+ "lfoCurveShapes": {
+  "random_sh": "RandomSH",
+  "rossler": "Rossler",
+  "lorenz": "Lorenz",
+  "path": "Path"
+ }
+}

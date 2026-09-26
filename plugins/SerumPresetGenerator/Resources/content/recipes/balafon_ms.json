@@ -1,0 +1,8 @@
+{
+  "name": "Balafon multisample",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.engine": "multisample",
+    "osc0.multisample": "mallet_balafon"
+  }
+}

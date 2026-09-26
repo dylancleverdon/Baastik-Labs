@@ -1,0 +1,64 @@
+{
+  "name": "FM electric piano",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 2,
+        "2": 1
+      }
+    },
+    "osc0.wavetable": "fm_piano",
+    "osc1.wavetable": "default",
+    "osc1.frame": "sine",
+    "osc1.octave": {
+      "choose": {
+        "1": 1,
+        "2": 1
+      }
+    },
+    "osc1.volume": [
+      0.1,
+      0.25
+    ],
+    "osc.unison": {
+      "choose": {
+        "1": 2,
+        "2": 1
+      }
+    },
+    "osc.detune": [
+      0.005,
+      0.02
+    ],
+    "env1.attack": 0.0005,
+    "env1.decay": {
+      "range": [
+        0.3,
+        1.2
+      ],
+      "log": true
+    },
+    "env1.sustain": [
+      0,
+      0.2
+    ]
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "oscillator0.table_position",
+      "amount": [
+        20,
+        50
+      ]
+    },
+    {
+      "source": "velocity",
+      "dest": "oscillator0.table_position",
+      "amount": [
+        10,
+        30
+      ]
+    }
+  ]
+}

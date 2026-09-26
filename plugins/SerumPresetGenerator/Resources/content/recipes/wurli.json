@@ -1,0 +1,42 @@
+{
+  "name": "Wurli-style EP",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.wavetable": {
+      "choose": {
+        "rhodes_mk1": 1,
+        "fm_piano": 1
+      }
+    },
+    "osc0.warp": 1,
+    "osc0.warpMode": {
+      "choose": {
+        "kDistSoftClip": 2,
+        "kDistTube": 1
+      }
+    },
+    "osc0.warpAmount": [
+      0.15,
+      0.4
+    ],
+    "lfo0.shape": "sine",
+    "lfo0.sync": 0,
+    "lfo0.rateHz": [
+      4.0,
+      6.5
+    ],
+    "lfo0.mode": "Free",
+    "fx.FXDistortion": 0.3
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "oscillator0.volume",
+      "amount": [
+        8,
+        20
+      ],
+      "bipolar": true
+    }
+  ]
+}

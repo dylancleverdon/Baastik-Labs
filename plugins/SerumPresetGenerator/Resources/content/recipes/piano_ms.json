@@ -1,0 +1,8 @@
+{
+  "name": "Grand piano multisample",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.engine": "multisample",
+    "osc0.multisample": "piano_grand"
+  }
+}

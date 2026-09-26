@@ -1,0 +1,38 @@
+{
+  "name": "Suitcase EP multisample with tremolo",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.engine": "multisample",
+    "osc0.multisample": "epiano_suitcase",
+    "lfo0.shape": {
+      "choose": {
+        "sine": 2,
+        "triangle": 1
+      }
+    },
+    "lfo0.sync": 0.5,
+    "lfo0.syncRate": {
+      "choose": {
+        "1/8": 2,
+        "1/16": 1
+      }
+    },
+    "lfo0.rateHz": [
+      3.0,
+      6.0
+    ],
+    "lfo0.mode": "Free"
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "oscillator0.pan",
+      "amount": [
+        15,
+        45
+      ],
+      "bipolar": true,
+      "chance": 0.8
+    }
+  ]
+}

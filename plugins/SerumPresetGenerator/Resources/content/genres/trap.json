@@ -1,0 +1,48 @@
+{
+  "name": "Trap",
+  "family": "electronic",
+  "categories": {
+    "sub_bass": 5,
+    "pluck": 2,
+    "lead": 2,
+    "pad": 1,
+    "mallet": 1,
+    "perc": 2
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "digital": 2,
+        "basic": 2,
+        "bright": 1
+      }
+    },
+    "fx.FXReverb": 0.5,
+    "fx.FXDelay": 0.4,
+    "lfo.count": {
+      "choose": {
+        "0": 2,
+        "1": 1
+      }
+    }
+  },
+  "perCategory": {
+    "mallet": {
+      "recipe": {
+        "choose": {
+          "bell_fm": 2,
+          "vibes": 1
+        }
+      }
+    },
+    "lead": {
+      "recipe": {
+        "choose": {
+          "none": 2,
+          "pwm_lead": 1
+        }
+      },
+      "global.porta": 0.5
+    }
+  }
+}

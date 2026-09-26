@@ -1,0 +1,4 @@
+#!/bin/sh
+# Make Logic/GarageBand notice the new Audio Unit version without a reboot.
+killall -9 AudioComponentRegistrar 2>/dev/null || true
+exit 0

@@ -1,0 +1,38 @@
+{
+  "name": "PWM lead",
+  "knobs": {
+    "osc0.wavetable": "pwm",
+    "osc.unison": {
+      "choose": {
+        "1": 2,
+        "3": 1
+      }
+    },
+    "lfo0.shape": {
+      "choose": {
+        "sine": 2,
+        "triangle": 1
+      }
+    },
+    "lfo0.sync": 0,
+    "lfo0.rateHz": {
+      "range": [
+        0.3,
+        3.0
+      ],
+      "log": true
+    },
+    "lfo0.mode": "Free"
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "oscillator0.table_position",
+      "amount": [
+        15,
+        40
+      ],
+      "bipolar": true
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "name": "Acid bass",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.wavetable": {
+      "choose": {
+        "acid": 2,
+        "analog_basic": 1
+      }
+    },
+    "osc.octave": {
+      "choose": {
+        "-1": 2,
+        "0": 1
+      }
+    },
+    "osc.unison": 1,
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "LadderAcid": 3,
+        "MgL24": 1
+      }
+    },
+    "filter.cutoff": [
+      0.15,
+      0.35
+    ],
+    "filter.reso": [
+      55,
+      80
+    ],
+    "global.mono": 1,
+    "global.legato": 1,
+    "global.porta": 0.7,
+    "global.portaTime": {
+      "range": [
+        0.03,
+        0.09
+      ],
+      "log": true
+    },
+    "global.portaAlways": 0,
+    "env1.attack": 0.0005,
+    "env1.decay": {
+      "range": [
+        0.08,
+        0.35
+      ],
+      "log": true
+    },
+    "env1.sustain": [
+      0,
+      0.15
+    ],
+    "amp.sustain": [
+      0.7,
+      1
+    ],
+    "fx.FXDistortion": 0.7,
+    "fx.FXDelay": 0.35,
+    "expr.velCutoff": 0.8
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "filter0.cutoff",
+      "amount": [
+        40,
+        80
+      ]
+    }
+  ]
+}

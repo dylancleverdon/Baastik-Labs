@@ -1,0 +1,9 @@
+{
+  "name": "French horn multisample",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.engine": "multisample",
+    "osc0.multisample": "brass_french_horn",
+    "fx.FXReverb": 1
+  }
+}

@@ -1,0 +1,729 @@
+{
+  "recipe": "none",
+  "global.mono": 0.25,
+  "global.legato": 0.5,
+  "global.poly": {
+    "choose": {
+      "4": 1,
+      "6": 1,
+      "8": 3,
+      "12": 1,
+      "16": 1
+    }
+  },
+  "global.porta": 0.2,
+  "global.portaTime": {
+    "range": [
+      0.01,
+      0.4
+    ],
+    "log": true
+  },
+  "global.portaAlways": 0.3,
+  "global.bend": {
+    "choose": {
+      "2": 6,
+      "7": 1,
+      "12": 2,
+      "24": 1
+    }
+  },
+  "osc.count": {
+    "choose": {
+      "1": 2,
+      "2": 3,
+      "3": 2
+    }
+  },
+  "osc.engine": "wavetable",
+  "osc.wtTag": {
+    "choose": {
+      "basic": 2,
+      "analog": 3,
+      "digital": 3,
+      "warm": 1,
+      "bright": 1,
+      "fm": 1,
+      "growl": 1,
+      "evolving": 1,
+      "organ": 1,
+      "keys": 1,
+      "acid": 1
+    }
+  },
+  "osc.msTag": {
+    "choose": {
+      "keys": 1,
+      "strings": 1,
+      "synth": 1,
+      "choir": 1,
+      "mallet": 1,
+      "plucked": 1,
+      "brass": 1
+    }
+  },
+  "osc.pos": [
+    0,
+    256
+  ],
+  "osc.octave": {
+    "choose": {
+      "-2": 1,
+      "-1": 3,
+      "0": 6,
+      "1": 2,
+      "2": 1
+    }
+  },
+  "osc.semi": {
+    "choose": {
+      "0": 20,
+      "7": 2,
+      "12": 1,
+      "-12": 1,
+      "5": 1,
+      "-5": 1,
+      "3": 1,
+      "4": 1
+    }
+  },
+  "osc.fine": [
+    -12,
+    12
+  ],
+  "osc.unison": {
+    "choose": {
+      "1": 5,
+      "2": 2,
+      "3": 2,
+      "4": 2,
+      "5": 1,
+      "7": 1,
+      "9": 1,
+      "16": 0.3
+    }
+  },
+  "osc.detune": [
+    0.03,
+    0.4
+  ],
+  "osc.width": [
+    40,
+    100
+  ],
+  "osc.volume": [
+    0.45,
+    0.8
+  ],
+  "osc.pan": [
+    -25,
+    25
+  ],
+  "osc.warp": 0.4,
+  "osc.warpMode": {
+    "choose": {
+      "kBendPos": 3,
+      "kBendNeg": 2,
+      "kBendPosNeg": 1,
+      "kPWM": 2,
+      "kSync": 3,
+      "kQuantize": 1,
+      "kFlip": 1,
+      "kEvenOdd": 1,
+      "kSelfPD": 1,
+      "kFM_OSC": 2,
+      "kAM_OSC": 1,
+      "kRM_OSC": 1,
+      "kDistSoftClip": 2,
+      "kDistTube": 1,
+      "kDistHardClip": 1,
+      "kDistLinFold": 2,
+      "kDistSinFold": 2,
+      "kDistTapeSat": 1,
+      "kDistDiode1": 1,
+      "kFilterLPF": 1,
+      "kFilterHPF": 1,
+      "kASYMPos": 1
+    }
+  },
+  "osc.warpAmount": [
+    0.05,
+    0.9
+  ],
+  "noise.on": 0.25,
+  "noise.type": {
+    "choose": {
+      "White": 3,
+      "Pink": 2,
+      "Brown": 1
+    }
+  },
+  "noise.volume": [
+    0.02,
+    0.35
+  ],
+  "sub.on": 0.3,
+  "sub.octave": {
+    "choose": {
+      "-2": 1,
+      "-1": 3,
+      "0": 1
+    }
+  },
+  "sub.volume": [
+    0.25,
+    0.7
+  ],
+  "sub.shape": {
+    "choose": {
+      "sine": 4,
+      "kTriangle": 2,
+      "kSaw": 1,
+      "kSquare": 1,
+      "kPulse": 1,
+      "kRoundRect": 1
+    }
+  },
+  "filter.on": 0.7,
+  "filterB.on": 0.15,
+  "filter.type": {
+    "choose": {
+      "L12": 2,
+      "L24": 2,
+      "MgL12": 3,
+      "MgL24": 3,
+      "LadderMg": 2,
+      "LadderAcid": 1,
+      "DirtyMg": 1,
+      "H12": 1,
+      "H24": 1,
+      "B12": 1,
+      "B24": 1,
+      "N24": 1,
+      "CombN": 1,
+      "CombP": 1,
+      "FormantONE": 1,
+      "FormantTWO": 1,
+      "Scream": 1,
+      "Phase24P": 1,
+      "FlangeP": 1,
+      "DistComb2LP": 1,
+      "Exp": 1
+    }
+  },
+  "filter.cutoff": [
+    0.15,
+    0.95
+  ],
+  "filter.reso": [
+    0,
+    70
+  ],
+  "filter.drive": {
+    "choose": {
+      "0": 4,
+      "15": 1,
+      "35": 1,
+      "60": 1
+    }
+  },
+  "filter.keytrack": 0.2,
+  "amp.attack": {
+    "range": [
+      0.0005,
+      2.0
+    ],
+    "log": true
+  },
+  "amp.decay": {
+    "range": [
+      0.05,
+      4.0
+    ],
+    "log": true
+  },
+  "amp.sustain": [
+    0,
+    1
+  ],
+  "amp.release": {
+    "range": [
+      0.01,
+      4.0
+    ],
+    "log": true
+  },
+  "env.count": {
+    "choose": {
+      "0": 2,
+      "1": 3,
+      "2": 2,
+      "3": 1
+    }
+  },
+  "env.attack": {
+    "range": [
+      0.0005,
+      1.0
+    ],
+    "log": true
+  },
+  "env.decay": {
+    "range": [
+      0.05,
+      3.0
+    ],
+    "log": true
+  },
+  "env.sustain": [
+    0,
+    1
+  ],
+  "env.release": {
+    "range": [
+      0.01,
+      2.0
+    ],
+    "log": true
+  },
+  "env.dests": {
+    "choose": {
+      "1": 3,
+      "2": 1
+    }
+  },
+  "env.dest": {
+    "choose": {
+      "filter*.cutoff": 5,
+      "oscillator*.table_position": 3,
+      "oscillator*.warp_amount": 2,
+      "oscillator*.pitch": 1,
+      "filter*.resonance": 1,
+      "oscillator*.volume": 1,
+      "fx:FXDistortion.wet": 1
+    }
+  },
+  "env.amount": [
+    -60,
+    80
+  ],
+  "lfo.count": {
+    "choose": {
+      "0": 2,
+      "1": 3,
+      "2": 2,
+      "3": 1
+    }
+  },
+  "lfo.shape": {
+    "choose": {
+      "triangle": 3,
+      "sine": 3,
+      "saw_down": 2,
+      "saw_up": 1,
+      "square": 1,
+      "pulse": 1,
+      "decay": 1,
+      "stairs": 1,
+      "gate": 1,
+      "random": 1,
+      "lorenz": 0.5,
+      "rossler": 0.5
+    }
+  },
+  "lfo.mode": {
+    "choose": {
+      "Retrig": 3,
+      "Free": 2,
+      "Envelope": 1
+    }
+  },
+  "lfo.sync": 0.6,
+  "lfo.syncRate": {
+    "choose": {
+      "4 bar": 1,
+      "1 bar": 2,
+      "1/2": 2,
+      "1/4": 3,
+      "1/8": 3,
+      "1/16": 2,
+      "1/32": 1
+    }
+  },
+  "lfo.triplet": 0.1,
+  "lfo.dotted": 0.1,
+  "lfo.rateHz": {
+    "range": [
+      0.05,
+      12.0
+    ],
+    "log": true
+  },
+  "lfo.dests": {
+    "choose": {
+      "1": 3,
+      "2": 1
+    }
+  },
+  "lfo.dest": {
+    "choose": {
+      "filter*.cutoff": 4,
+      "oscillator*.table_position": 4,
+      "oscillator*.warp_amount": 2,
+      "oscillator*.pan": 1,
+      "oscillator*.fine": 1,
+      "oscillator*.volume": 1,
+      "oscillator*.detune": 1,
+      "filter*.resonance": 1,
+      "fx:FXDistortion.wet": 1,
+      "fx:FXUtils.width": 1
+    }
+  },
+  "lfo.amount": [
+    -60,
+    60
+  ],
+  "lfo.bipolar": 0.3,
+  "expr.vibrato": 0.1,
+  "expr.vibratoRate": [
+    4.5,
+    6.5
+  ],
+  "expr.vibratoDelay": [
+    0.15,
+    0.6
+  ],
+  "expr.vibratoRise": [
+    0.2,
+    0.8
+  ],
+  "expr.vibratoDepth": [
+    8,
+    25
+  ],
+  "expr.velCutoff": 0.3,
+  "expr.velCutoffAmount": [
+    10,
+    35
+  ],
+  "expr.velAmp": 0.2,
+  "expr.velAmpAmount": [
+    10,
+    35
+  ],
+  "expr.atCutoff": 0.1,
+  "expr.atCutoffAmount": [
+    10,
+    35
+  ],
+  "expr.wheelCutoff": 0.2,
+  "expr.wheelCutoffAmount": [
+    20,
+    50
+  ],
+  "mod.count": {
+    "choose": {
+      "0": 3,
+      "1": 2,
+      "2": 1
+    }
+  },
+  "mod.source": {
+    "choose": {
+      "velocity": 3,
+      "mod_wheel": 2,
+      "aftertouch": 1,
+      "key_track": 2,
+      "random1": 1,
+      "note_on_alt": 1
+    }
+  },
+  "mod.dest": {
+    "choose": {
+      "filter*.cutoff": 3,
+      "oscillator*.table_position": 2,
+      "oscillator*.warp_amount": 1,
+      "oscillator*.pan": 1,
+      "filter*.resonance": 1
+    }
+  },
+  "mod.amount": [
+    -40,
+    40
+  ],
+  "macro.count": {
+    "choose": {
+      "0": 1,
+      "2": 2,
+      "4": 3,
+      "6": 1
+    }
+  },
+  "macro.theme": {
+    "choose": {
+      "tone": 4,
+      "space": 3,
+      "movement": 2,
+      "growl": 2,
+      "drive": 2,
+      "morph": 2,
+      "width": 2,
+      "attack": 1,
+      "release": 1,
+      "resonance": 1,
+      "crush": 1,
+      "sub": 1,
+      "noise": 1,
+      "drift": 1,
+      "chorus": 1
+    }
+  },
+  "macro.value": {
+    "choose": {
+      "0": 4,
+      "25": 1,
+      "50": 1
+    }
+  },
+  "fx.max": {
+    "choose": {
+      "2": 1,
+      "3": 2,
+      "4": 2,
+      "6": 1
+    }
+  },
+  "fx.shuffle": 0.1,
+  "fx.FXDistortion": 0.35,
+  "fx.FXDistortion.kParamMode": {
+    "choose": {
+      "kOverdrive": 3,
+      "kSoftClip": 3,
+      "kSoftSat": 2,
+      "kTapeSat": 2,
+      "kHardClip": 1,
+      "kDiode1": 1,
+      "kLinFold": 1,
+      "kSinFold": 1,
+      "kDownsample": 1,
+      "kRectify": 0.5,
+      "kXShaper": 1,
+      "kAsym": 1
+    }
+  },
+  "fx.FXDistortion.kParamDrive": [
+    10,
+    70
+  ],
+  "fx.FXDistortion.kParamWet": {
+    "choose": {
+      "100": 3,
+      "70": 1,
+      "50": 1
+    }
+  },
+  "fx.FXFilter": 0.1,
+  "fx.FXFilter.kParamType": {
+    "choose": {
+      "L12": 2,
+      "H12": 2,
+      "B12": 1,
+      "Phase24P": 1,
+      "CombN": 1
+    }
+  },
+  "fx.FXFilter.kParamFreq": [
+    0.3,
+    0.9
+  ],
+  "fx.FXFilter.kParamReso": [
+    0,
+    50
+  ],
+  "fx.FXEQ": 0.2,
+  "fx.FXEQ.kParamFreq1": {
+    "range": [
+      60,
+      400
+    ],
+    "log": true
+  },
+  "fx.FXEQ.kParamGain1": [
+    -6,
+    4
+  ],
+  "fx.FXEQ.kParamFreq2": {
+    "range": [
+      2000,
+      10000
+    ],
+    "log": true
+  },
+  "fx.FXEQ.kParamGain2": [
+    -4,
+    5
+  ],
+  "fx.FXComp": 0.2,
+  "fx.FXComp.kParamThresh": [
+    0.3,
+    0.7
+  ],
+  "fx.FXComp.kParamRatio": [
+    2,
+    8
+  ],
+  "fx.FXComp.kParamAttack": [
+    1,
+    30
+  ],
+  "fx.FXComp.kParamRelease": [
+    40,
+    250
+  ],
+  "fx.FXChorus": 0.3,
+  "fx.FXChorus.kParamRate": [
+    0.1,
+    2.0
+  ],
+  "fx.FXChorus.kParamDepth": [
+    3,
+    20
+  ],
+  "fx.FXChorus.kParamDelay": [
+    2,
+    12
+  ],
+  "fx.FXChorus.kParamFeedback": [
+    0,
+    30
+  ],
+  "fx.FXChorus.kParamWet": [
+    20,
+    60
+  ],
+  "fx.FXPhaser": 0.12,
+  "fx.FXPhaser.kParamRate": [
+    0.05,
+    2.0
+  ],
+  "fx.FXPhaser.kParamDepth": [
+    20,
+    80
+  ],
+  "fx.FXPhaser.kParamFeedback": [
+    0,
+    60
+  ],
+  "fx.FXPhaser.kParamWet": [
+    20,
+    60
+  ],
+  "fx.FXFlanger": 0.1,
+  "fx.FXFlanger.kParamRate": [
+    0.05,
+    1.5
+  ],
+  "fx.FXFlanger.kParamDepth": [
+    20,
+    80
+  ],
+  "fx.FXFlanger.kParamFeedback": [
+    0,
+    70
+  ],
+  "fx.FXFlanger.kParamWet": [
+    20,
+    60
+  ],
+  "fx.FXHyperD": 0.15,
+  "fx.FXHyperD.kParamRate": [
+    10,
+    60
+  ],
+  "fx.FXHyperD.kParamDetune": [
+    5,
+    40
+  ],
+  "fx.FXHyperD.kParamUnison": {
+    "choose": {
+      "2": 1,
+      "4": 2,
+      "7": 1
+    }
+  },
+  "fx.FXHyperD.kParamDimESize": [
+    10,
+    60
+  ],
+  "fx.FXHyperD.kParamDimEWet": [
+    10,
+    50
+  ],
+  "fx.FXHyperD.kParamWet": [
+    15,
+    50
+  ],
+  "fx.FXBode": 0.05,
+  "fx.FXBode.kParamShift": [
+    -30,
+    30
+  ],
+  "fx.FXBode.kParamFeedback": [
+    0,
+    40
+  ],
+  "fx.FXBode.kParamWet": [
+    15,
+    50
+  ],
+  "fx.FXDelay": 0.35,
+  "fx.FXDelay.kParamTimeL": [
+    0.1,
+    0.34
+  ],
+  "fx.FXDelay.kParamTimeR": [
+    0.1,
+    0.34
+  ],
+  "fx.FXDelay.kParamFeedback": [
+    10,
+    60
+  ],
+  "fx.FXDelay.kParamFreq": {
+    "range": [
+      1500,
+      12000
+    ],
+    "log": true
+  },
+  "fx.FXDelay.kParamWet": [
+    10,
+    35
+  ],
+  "fx.FXReverb": 0.5,
+  "fx.FXReverb.kParamType": {
+    "choose": {
+      "kHall": 3,
+      "kVintage": 2,
+      "kSpace": 2,
+      "kAbyss": 1
+    }
+  },
+  "fx.FXReverb.kParamSize": [
+    20,
+    85
+  ],
+  "fx.FXReverb.kParamDelay": [
+    0,
+    60
+  ],
+  "fx.FXReverb.kParamWet": [
+    10,
+    45
+  ],
+  "fx.FXUtils": 0.05,
+  "fx.FXUtils.kParamWidth": [
+    80,
+    160
+  ]
+}

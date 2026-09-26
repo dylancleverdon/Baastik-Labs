@@ -1,0 +1,53 @@
+{
+  "name": "Drum & Bass",
+  "family": "electronic",
+  "categories": {
+    "bass": 5,
+    "pad": 2,
+    "lead": 1,
+    "pluck": 1,
+    "perc": 1,
+    "sub_bass": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "analog": 2,
+        "digital": 2,
+        "growl": 1
+      }
+    },
+    "lfo.syncRate": {
+      "choose": {
+        "1/2": 2,
+        "1/4": 2,
+        "1 bar": 1,
+        "1/8": 1
+      }
+    },
+    "fx.FXDistortion": 0.5,
+    "fx.FXComp": 0.4,
+    "fx.FXReverb": 0.4,
+    "fx.FXDelay": 0.35
+  },
+  "perCategory": {
+    "bass": {
+      "recipe": {
+        "choose": {
+          "reese": 5,
+          "fm_bass": 1,
+          "wobble_bass": 1
+        }
+      },
+      "global.mono": 1
+    },
+    "pad": {
+      "recipe": {
+        "choose": {
+          "evolving_pad": 2,
+          "warm_analog_pad": 1
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "name": "Drawbar organ",
+  "knobs": {
+    "osc.count": 3,
+    "osc0.wavetable": {
+      "choose": {
+        "harmonic_smooth": 2,
+        "default": 1
+      }
+    },
+    "osc0.frame": "sine",
+    "osc1.wavetable": "default",
+    "osc1.frame": "sine",
+    "osc1.octave": 1,
+    "osc1.volume": [
+      0.3,
+      0.6
+    ],
+    "osc2.wavetable": "default",
+    "osc2.frame": "sine",
+    "osc2.octave": {
+      "choose": {
+        "-1": 1,
+        "2": 1
+      }
+    },
+    "osc2.volume": [
+      0.2,
+      0.5
+    ],
+    "osc.unison": 1,
+    "lfo0.shape": "sine",
+    "lfo0.sync": 0,
+    "lfo0.rateHz": [
+      5.0,
+      7.0
+    ],
+    "lfo0.mode": "Free",
+    "fx.FXChorus": 0.8,
+    "fx.FXChorus.kParamRate": [
+      0.8,
+      6.0
+    ]
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "oscillator*.pan",
+      "amount": [
+        10,
+        30
+      ],
+      "bipolar": true
+    }
+  ]
+}

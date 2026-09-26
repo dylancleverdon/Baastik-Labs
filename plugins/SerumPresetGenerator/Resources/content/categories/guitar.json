@@ -1,0 +1,97 @@
+{
+  "name": "Guitar & Plucked",
+  "family": "acoustic",
+  "knobs": {
+    "global.mono": 0,
+    "amp.attack": {
+      "range": [
+        0.0005,
+        0.003
+      ],
+      "log": true
+    },
+    "amp.decay": {
+      "range": [
+        0.5,
+        2.0
+      ],
+      "log": true
+    },
+    "amp.sustain": [
+      0,
+      0.15
+    ],
+    "amp.release": {
+      "range": [
+        0.2,
+        0.8
+      ],
+      "log": true
+    },
+    "expr.velAmp": 0.7,
+    "expr.velCutoff": 0.6,
+    "lfo.count": 0,
+    "fx.FXReverb": 0.55,
+    "fx.FXChorus": 0.3,
+    "fx.FXDelay": 0.2,
+    "recipe": {
+      "choose": {
+        "guitar_ms": 2,
+        "nylon_pluck": 2
+      }
+    },
+    "sanity.minSustain": 0,
+    "osc.octave": {
+      "choose": {
+        "0": 6,
+        "1": 1,
+        "-1": 1
+      }
+    },
+    "osc.semi": {
+      "choose": {
+        "0": 10,
+        "12": 1
+      }
+    },
+    "osc.fine": [
+      -4,
+      4
+    ],
+    "filter.reso": [
+      0,
+      20
+    ],
+    "filter.drive": 0,
+    "osc.pan": [
+      -10,
+      10
+    ],
+    "fx.FXFlanger": 0.02,
+    "fx.FXBode": 0,
+    "lfo.shape": {
+      "choose": {
+        "sine": 3,
+        "triangle": 2
+      }
+    },
+    "global.poly": {
+      "choose": {
+        "8": 2,
+        "12": 1,
+        "16": 1
+      }
+    },
+    "filter.type": {
+      "choose": {
+        "L12": 2,
+        "MgL12": 2,
+        "L24": 1,
+        "MgL24": 1
+      }
+    },
+    "filter.on": 0.5,
+    "expr.vibrato": 0.0,
+    "sub.on": 0.03
+  }
+}

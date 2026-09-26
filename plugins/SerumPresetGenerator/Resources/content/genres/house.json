@@ -1,0 +1,62 @@
+{
+  "name": "House",
+  "family": "electronic",
+  "categories": {
+    "bass": 3,
+    "keys": 3,
+    "pluck": 2,
+    "pad": 2,
+    "organ": 1,
+    "perc": 1,
+    "lead": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "analog": 3,
+        "basic": 2,
+        "warm": 2
+      }
+    },
+    "fx.FXChorus": 0.4,
+    "fx.FXReverb": 0.55,
+    "fx.FXDelay": 0.4,
+    "fx.FXDistortion": 0.2,
+    "lfo.syncRate": {
+      "choose": {
+        "1/4": 2,
+        "1/8": 2,
+        "1/2": 1
+      }
+    },
+    "filter.type": {
+      "choose": {
+        "MgL12": 3,
+        "MgL24": 2,
+        "L12": 1
+      }
+    }
+  },
+  "perCategory": {
+    "bass": {
+      "recipe": {
+        "choose": {
+          "moog_bass": 2,
+          "fm_bass": 1,
+          "none": 2
+        }
+      }
+    },
+    "keys": {
+      "recipe": {
+        "choose": {
+          "none": 2,
+          "fm_epiano": 1
+        }
+      }
+    },
+    "organ": {
+      "recipe": "drawbar_organ"
+    }
+  }
+}

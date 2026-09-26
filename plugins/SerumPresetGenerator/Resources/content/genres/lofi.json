@@ -1,0 +1,93 @@
+{
+  "name": "Lo-Fi Hip Hop",
+  "family": "electronic",
+  "categories": {
+    "epiano": 4,
+    "keys": 2,
+    "pad": 2,
+    "bass": 2,
+    "guitar": 1,
+    "piano": 1,
+    "mallet": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "warm": 3,
+        "analog": 2,
+        "keys": 2
+      }
+    },
+    "filter.on": 0.85,
+    "filter.cutoff": [
+      0.25,
+      0.55
+    ],
+    "noise.on": 0.5,
+    "noise.volume": [
+      0.01,
+      0.06
+    ],
+    "fx.FXDistortion": 0.5,
+    "fx.FXDistortion.kParamMode": {
+      "choose": {
+        "kTapeSat": 3,
+        "kSoftSat": 2,
+        "kDownsample": 1
+      }
+    },
+    "fx.FXDistortion.kParamDrive": [
+      10,
+      35
+    ],
+    "fx.FXChorus": 0.5,
+    "fx.FXReverb": 0.5,
+    "fx.FXEQ": 0.5,
+    "fx.FXEQ.kParamGain2": [
+      -9,
+      -3
+    ],
+    "expr.vibrato": 0,
+    "global.bend": 2,
+    "mod.count": {
+      "choose": {
+        "1": 2,
+        "2": 1
+      }
+    },
+    "mod.source": {
+      "choose": {
+        "random1": 2,
+        "note_on_alt": 1
+      }
+    },
+    "mod.dest": {
+      "choose": {
+        "oscillator*.fine": 3,
+        "filter*.cutoff": 1
+      }
+    },
+    "mod.amount": [
+      3,
+      10
+    ],
+    "macro.theme": {
+      "choose": {
+        "crush": 3,
+        "tone": 3,
+        "drift": 3,
+        "space": 1
+      }
+    }
+  },
+  "perCategory": {
+    "bass": {
+      "recipe": {
+        "choose": {
+          "moog_bass": 2,
+          "none": 1
+        }
+      }
+    }
+  }
+}

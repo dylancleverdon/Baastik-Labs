@@ -1,0 +1,80 @@
+{
+  "name": "Ambient",
+  "family": "electronic",
+  "categories": {
+    "pad": 6,
+    "experimental": 2,
+    "pluck": 1,
+    "mallet": 1,
+    "keys": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "evolving": 3,
+        "harmonic": 2,
+        "warm": 2
+      }
+    },
+    "amp.attack": {
+      "range": [
+        0.5,
+        4.0
+      ],
+      "log": true
+    },
+    "amp.release": {
+      "range": [
+        2.0,
+        6.0
+      ],
+      "log": true
+    },
+    "fx.FXReverb": 1,
+    "fx.FXReverb.kParamSize": [
+      70,
+      100
+    ],
+    "fx.FXReverb.kParamWet": [
+      35,
+      65
+    ],
+    "fx.FXDelay": 0.6,
+    "fx.FXDistortion": 0.05,
+    "lfo.sync": 0.2,
+    "lfo.rateHz": {
+      "range": [
+        0.02,
+        0.4
+      ],
+      "log": true
+    },
+    "macro.theme": {
+      "choose": {
+        "space": 4,
+        "morph": 3,
+        "movement": 2,
+        "width": 2
+      }
+    }
+  },
+  "perCategory": {
+    "pad": {
+      "recipe": {
+        "choose": {
+          "evolving_pad": 3,
+          "dreamy_sines": 2,
+          "choir_pad": 1
+        }
+      }
+    },
+    "experimental": {
+      "recipe": {
+        "choose": {
+          "drone": 3,
+          "riser": 1
+        }
+      }
+    }
+  }
+}

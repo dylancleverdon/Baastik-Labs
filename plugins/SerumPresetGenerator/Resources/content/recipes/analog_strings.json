@@ -1,0 +1,47 @@
+{
+  "name": "Analog string ensemble",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 1,
+        "2": 2
+      }
+    },
+    "osc.wavetable": {
+      "choose": {
+        "analog_basic": 1,
+        "default": 1
+      }
+    },
+    "osc.frame": "saw",
+    "osc.unison": {
+      "choose": {
+        "5": 1,
+        "7": 1
+      }
+    },
+    "osc.detune": [
+      0.1,
+      0.2
+    ],
+    "osc1.octave": {
+      "choose": {
+        "0": 1,
+        "1": 1
+      }
+    },
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "L12": 2,
+        "MgL12": 1
+      }
+    },
+    "filter.cutoff": [
+      0.35,
+      0.6
+    ],
+    "fx.FXChorus": 0.9,
+    "fx.FXHyperD": 0.3
+  }
+}

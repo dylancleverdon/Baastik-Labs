@@ -1,0 +1,40 @@
+{
+  "name": "Hard sync lead",
+  "knobs": {
+    "osc0.wavetable": {
+      "choose": {
+        "default": 1,
+        "analog_basic": 1
+      }
+    },
+    "osc0.frame": "saw",
+    "osc0.warp": 1,
+    "osc0.warpMode": "kSync",
+    "osc0.warpAmount": [
+      0.1,
+      0.5
+    ],
+    "env1.attack": 0.0005,
+    "env1.decay": {
+      "range": [
+        0.1,
+        0.8
+      ],
+      "log": true
+    },
+    "env1.sustain": [
+      0,
+      0.4
+    ]
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "oscillator0.warp_amount",
+      "amount": [
+        20,
+        60
+      ]
+    }
+  ]
+}

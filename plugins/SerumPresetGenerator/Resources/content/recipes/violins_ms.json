@@ -1,0 +1,24 @@
+{
+  "name": "Violins multisample",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 2,
+        "2": 1
+      }
+    },
+    "osc0.engine": "multisample",
+    "osc0.multisample": "violins",
+    "osc1.wavetable": "default",
+    "osc1.frame": "sine",
+    "osc1.volume": [
+      0.05,
+      0.15
+    ],
+    "osc1.unison": 4,
+    "osc1.detune": [
+      0.01,
+      0.03
+    ]
+  }
+}

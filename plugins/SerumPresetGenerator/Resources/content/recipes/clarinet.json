@@ -1,0 +1,31 @@
+{
+  "name": "Hollow clarinet",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.wavetable": {
+      "choose": {
+        "pwm": 1,
+        "analog_basic": 1
+      }
+    },
+    "osc0.pos": [
+      0,
+      60
+    ],
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "L12": 2,
+        "MgL12": 1
+      }
+    },
+    "filter.cutoff": [
+      0.25,
+      0.45
+    ],
+    "noise.volume": [
+      0.02,
+      0.08
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "name": "Synth Keys",
+  "family": "synth",
+  "knobs": {
+    "global.mono": 0,
+    "osc.count": {
+      "choose": {
+        "1": 1,
+        "2": 3,
+        "3": 1
+      }
+    },
+    "osc.unison": {
+      "choose": {
+        "1": 3,
+        "2": 2,
+        "3": 1
+      }
+    },
+    "osc.detune": [
+      0.02,
+      0.12
+    ],
+    "amp.attack": {
+      "range": [
+        0.001,
+        0.01
+      ],
+      "log": true
+    },
+    "amp.decay": {
+      "range": [
+        0.5,
+        2.5
+      ],
+      "log": true
+    },
+    "amp.sustain": [
+      0.3,
+      0.8
+    ],
+    "amp.release": {
+      "range": [
+        0.15,
+        0.8
+      ],
+      "log": true
+    },
+    "filter.on": 0.7,
+    "filter.cutoff": [
+      0.35,
+      0.75
+    ],
+    "expr.velCutoff": 0.7,
+    "expr.velAmp": 0.5,
+    "fx.FXChorus": 0.4,
+    "recipe": {
+      "choose": {
+        "none": 2,
+        "fm_epiano": 1,
+        "supersaw": 0.5
+      }
+    },
+    "sanity.minSustain": 0,
+    "global.poly": {
+      "choose": {
+        "8": 2,
+        "12": 1,
+        "16": 1
+      }
+    },
+    "osc.octave": {
+      "choose": {
+        "0": 5,
+        "1": 1,
+        "-1": 1
+      }
+    },
+    "global.porta": 0.03,
+    "lfo.count": {
+      "choose": {
+        "0": 3,
+        "1": 1
+      }
+    }
+  }
+}

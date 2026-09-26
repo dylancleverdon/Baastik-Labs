@@ -1,0 +1,56 @@
+{
+  "name": "Synth kick",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.wavetable": "default",
+    "osc0.frame": "sine",
+    "osc.octave": {
+      "choose": {
+        "-2": 1,
+        "-1": 2
+      }
+    },
+    "global.mono": 1,
+    "noise.on": 0.4,
+    "noise.volume": [
+      0.02,
+      0.08
+    ],
+    "amp.decay": {
+      "range": [
+        0.2,
+        0.6
+      ],
+      "log": true
+    },
+    "env1.decay": {
+      "range": [
+        0.03,
+        0.1
+      ],
+      "log": true
+    },
+    "filter.on": 0.2,
+    "fx.FXDistortion": 0.5,
+    "fx.FXReverb": 0.05
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "oscillator0.pitch",
+      "amount": [
+        40,
+        90
+      ]
+    },
+    {
+      "source": "env1",
+      "dest": "oscillator0.octave",
+      "amount": [
+        10,
+        30
+      ],
+      "chance": 0.5
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "name": "Nylon-string pluck",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 1,
+        "2": 1
+      }
+    },
+    "osc0.wavetable": {
+      "choose": {
+        "default": 1,
+        "analog_mini": 1
+      }
+    },
+    "osc0.frame": {
+      "choose": {
+        "sine": 1,
+        "saw": 1
+      }
+    },
+    "osc1.wavetable": "default",
+    "osc1.frame": "sine",
+    "osc1.octave": 1,
+    "osc1.volume": [
+      0.15,
+      0.35
+    ],
+    "noise.on": 0.7,
+    "noise.volume": [
+      0.03,
+      0.1
+    ],
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "L12": 2,
+        "MgL12": 1
+      }
+    },
+    "filter.cutoff": [
+      0.2,
+      0.4
+    ],
+    "filter.keytrack": 0.8,
+    "env1.decay": {
+      "range": [
+        0.1,
+        0.4
+      ],
+      "log": true
+    },
+    "env1.sustain": 0,
+    "osc.unison": 1
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "filter0.cutoff",
+      "amount": [
+        25,
+        50
+      ]
+    },
+    {
+      "source": "velocity",
+      "dest": "filter0.cutoff",
+      "amount": [
+        10,
+        25
+      ]
+    }
+  ]
+}

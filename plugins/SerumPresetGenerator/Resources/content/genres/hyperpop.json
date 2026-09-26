@@ -1,0 +1,57 @@
+{
+  "name": "Hyperpop",
+  "family": "electronic",
+  "categories": {
+    "lead": 4,
+    "pluck": 2,
+    "bass": 2,
+    "keys": 1,
+    "experimental": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "digital": 3,
+        "bright": 2,
+        "fm": 1
+      }
+    },
+    "osc.warp": 0.6,
+    "fx.FXDistortion": 0.7,
+    "fx.FXDistortion.kParamMode": {
+      "choose": {
+        "kHardClip": 2,
+        "kDownsample": 2,
+        "kSoftClip": 1
+      }
+    },
+    "fx.FXComp": 0.5,
+    "fx.FXHyperD": 0.5,
+    "global.porta": 0.6,
+    "global.portaTime": {
+      "range": [
+        0.03,
+        0.15
+      ],
+      "log": true
+    },
+    "expr.vibrato": 0.4
+  },
+  "perCategory": {
+    "lead": {
+      "recipe": {
+        "choose": {
+          "supersaw": 2,
+          "sync_lead": 2,
+          "none": 1
+        }
+      },
+      "osc.octave": {
+        "choose": {
+          "0": 1,
+          "1": 2
+        }
+      }
+    }
+  }
+}

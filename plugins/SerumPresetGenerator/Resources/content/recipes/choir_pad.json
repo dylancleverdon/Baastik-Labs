@@ -1,0 +1,25 @@
+{
+  "name": "Choir pad",
+  "knobs": {
+    "osc0.engine": "multisample",
+    "osc0.multisample": "choir_ah",
+    "osc.count": {
+      "choose": {
+        "1": 1,
+        "2": 1
+      }
+    },
+    "osc1.wavetable": {
+      "choose": {
+        "harmonic_smooth": 1,
+        "analog_warm": 1
+      }
+    },
+    "osc1.volume": [
+      0.2,
+      0.45
+    ],
+    "fx.FXReverb": 1,
+    "fx.FXChorus": 0.5
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "name": "Techno",
+  "family": "electronic",
+  "categories": {
+    "bass": 3,
+    "lead": 2,
+    "perc": 3,
+    "experimental": 2,
+    "pluck": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "acid": 2,
+        "analog": 2,
+        "digital": 2
+      }
+    },
+    "fx.FXDistortion": 0.5,
+    "fx.FXDelay": 0.5,
+    "fx.FXReverb": 0.5,
+    "fx.FXDelay.kParamFeedback": [
+      30,
+      70
+    ],
+    "lfo.sync": 0.9,
+    "lfo.syncRate": {
+      "choose": {
+        "1/16": 3,
+        "1/8": 2,
+        "1 bar": 1,
+        "4 bar": 1
+      }
+    },
+    "global.mono": 0.5,
+    "macro.theme": {
+      "choose": {
+        "tone": 3,
+        "resonance": 3,
+        "drive": 2,
+        "space": 2
+      }
+    }
+  },
+  "perCategory": {
+    "bass": {
+      "recipe": {
+        "choose": {
+          "acid_bass": 3,
+          "none": 2
+        }
+      }
+    },
+    "lead": {
+      "recipe": {
+        "choose": {
+          "none": 2,
+          "sync_lead": 1,
+          "pwm_lead": 1
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "name": "Dubstep",
+  "family": "electronic",
+  "categories": {
+    "bass": 5,
+    "lead": 1,
+    "pad": 1,
+    "perc": 1,
+    "experimental": 1,
+    "sub_bass": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "growl": 3,
+        "digital": 3,
+        "evolving": 1,
+        "acid": 1
+      }
+    },
+    "osc.warp": 0.7,
+    "fx.FXDistortion": 0.75,
+    "fx.FXComp": 0.5,
+    "fx.FXDistortion.kParamDrive": [
+      35,
+      80
+    ],
+    "lfo.sync": 0.9,
+    "lfo.syncRate": {
+      "choose": {
+        "1/4": 2,
+        "1/8": 3,
+        "1/16": 2,
+        "1/2": 1
+      }
+    },
+    "lfo.triplet": 0.2,
+    "macro.theme": {
+      "choose": {
+        "growl": 4,
+        "drive": 3,
+        "morph": 3,
+        "movement": 2,
+        "tone": 2
+      }
+    }
+  },
+  "perCategory": {
+    "bass": {
+      "recipe": {
+        "choose": {
+          "wobble_bass": 4,
+          "riddim_bass": 1,
+          "reese": 1,
+          "none": 1
+        }
+      },
+      "filter.type": {
+        "choose": {
+          "L24": 2,
+          "MgL24": 1,
+          "FormantONE": 2,
+          "Scream": 1,
+          "B24": 1
+        }
+      }
+    }
+  }
+}

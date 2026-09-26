@@ -1,0 +1,101 @@
+{
+  "name": "Strings",
+  "family": "acoustic",
+  "knobs": {
+    "global.mono": 0.05,
+    "amp.attack": {
+      "range": [
+        0.15,
+        0.8
+      ],
+      "log": true
+    },
+    "amp.decay": 2.0,
+    "amp.sustain": [
+      0.8,
+      1
+    ],
+    "amp.release": {
+      "range": [
+        0.4,
+        1.5
+      ],
+      "log": true
+    },
+    "osc.unison": {
+      "choose": {
+        "3": 2,
+        "5": 2
+      }
+    },
+    "osc.detune": [
+      0.06,
+      0.18
+    ],
+    "expr.vibrato": 0.5,
+    "fx.FXChorus": 0.5,
+    "fx.FXReverb": 0.85,
+    "fx.FXReverb.kParamSize": [
+      45,
+      85
+    ],
+    "recipe": {
+      "choose": {
+        "analog_strings": 2,
+        "violins_ms": 2,
+        "strings_ms": 1
+      }
+    },
+    "sanity.minSustain": 0.6,
+    "osc.octave": {
+      "choose": {
+        "0": 6,
+        "1": 1,
+        "-1": 1
+      }
+    },
+    "osc.semi": {
+      "choose": {
+        "0": 10,
+        "12": 1
+      }
+    },
+    "osc.fine": [
+      -4,
+      4
+    ],
+    "filter.reso": [
+      0,
+      20
+    ],
+    "filter.drive": 0,
+    "osc.pan": [
+      -10,
+      10
+    ],
+    "fx.FXFlanger": 0.02,
+    "fx.FXBode": 0,
+    "lfo.shape": {
+      "choose": {
+        "sine": 3,
+        "triangle": 2
+      }
+    },
+    "global.poly": {
+      "choose": {
+        "8": 2,
+        "12": 1,
+        "16": 1
+      }
+    },
+    "filter.type": {
+      "choose": {
+        "L12": 2,
+        "MgL12": 2,
+        "L24": 1,
+        "MgL24": 1
+      }
+    },
+    "sub.on": 0.03
+  }
+}

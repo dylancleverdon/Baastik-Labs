@@ -1,0 +1,67 @@
+{
+  "name": "Noise riser",
+  "knobs": {
+    "noise.on": 1,
+    "noise.volume": [
+      0.3,
+      0.6
+    ],
+    "osc0.wavetable": "default",
+    "osc0.frame": "saw",
+    "osc.unison": {
+      "choose": {
+        "5": 1,
+        "7": 1
+      }
+    },
+    "amp.attack": {
+      "range": [
+        2.0,
+        6.0
+      ],
+      "log": true
+    },
+    "amp.sustain": 1,
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "L24": 1,
+        "B12": 1
+      }
+    },
+    "filter.cutoff": [
+      0.1,
+      0.3
+    ],
+    "lfo0.shape": "saw_up",
+    "lfo0.mode": "Envelope",
+    "lfo0.sync": 1,
+    "lfo0.syncRate": {
+      "choose": {
+        "4 bar": 1,
+        "1 bar": 1
+      }
+    },
+    "fx.FXReverb": 1,
+    "fx.FXDelay": 0.6
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "filter0.cutoff",
+      "amount": [
+        50,
+        90
+      ]
+    },
+    {
+      "source": "lfo0",
+      "dest": "oscillator0.pitch",
+      "amount": [
+        10,
+        40
+      ],
+      "chance": 0.5
+    }
+  ]
+}

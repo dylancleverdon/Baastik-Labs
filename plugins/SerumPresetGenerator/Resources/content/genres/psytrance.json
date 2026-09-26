@@ -1,0 +1,73 @@
+{
+  "name": "Psytrance",
+  "family": "electronic",
+  "categories": {
+    "bass": 4,
+    "lead": 3,
+    "experimental": 2,
+    "perc": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "acid": 2,
+        "digital": 2,
+        "analog": 1
+      }
+    },
+    "fx.FXDelay": 0.6,
+    "fx.FXDelay.kParamFeedback": [
+      30,
+      70
+    ],
+    "fx.FXFlanger": 0.3,
+    "fx.FXPhaser": 0.3,
+    "lfo.sync": 1,
+    "lfo.syncRate": {
+      "choose": {
+        "1/16": 4,
+        "1/8": 1
+      }
+    },
+    "filter.reso": [
+      30,
+      70
+    ]
+  },
+  "perCategory": {
+    "bass": {
+      "recipe": {
+        "choose": {
+          "acid_bass": 2,
+          "none": 2
+        }
+      },
+      "amp.decay": {
+        "range": [
+          0.08,
+          0.25
+        ],
+        "log": true
+      },
+      "amp.sustain": [
+        0,
+        0.2
+      ],
+      "global.mono": 1
+    },
+    "lead": {
+      "recipe": {
+        "choose": {
+          "sync_lead": 2,
+          "none": 1
+        }
+      },
+      "lfo.count": {
+        "choose": {
+          "1": 1,
+          "2": 1
+        }
+      }
+    }
+  }
+}

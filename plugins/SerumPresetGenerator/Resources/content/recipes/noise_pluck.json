@@ -1,0 +1,50 @@
+{
+  "name": "Noise-excited pluck",
+  "knobs": {
+    "noise.on": 1,
+    "noise.type": "White",
+    "noise.volume": [
+      0.0,
+      0.03
+    ],
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "CombP": 2,
+        "L24": 1,
+        "MgL24": 1
+      }
+    },
+    "filter.keytrack": 1,
+    "filter.reso": [
+      40,
+      75
+    ],
+    "env1.decay": {
+      "range": [
+        0.05,
+        0.25
+      ],
+      "log": true
+    },
+    "env1.sustain": 0
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "filter0.cutoff",
+      "amount": [
+        30,
+        60
+      ]
+    },
+    {
+      "source": "env1",
+      "dest": "oscillator3.volume",
+      "amount": [
+        50,
+        80
+      ]
+    }
+  ]
+}

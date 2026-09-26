@@ -1,0 +1,104 @@
+{
+  "name": "90s R&B",
+  "family": "acoustic",
+  "categories": {
+    "epiano": 3,
+    "bass": 3,
+    "pad": 2,
+    "strings": 2,
+    "guitar": 1,
+    "mallet": 1,
+    "keys": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "warm": 3,
+        "keys": 2,
+        "basic": 1
+      }
+    },
+    "osc.warp": 0.05,
+    "fx.FXReverb": 0.7,
+    "fx.FXDelay": 0.3,
+    "fx.FXChorus": 0.35,
+    "fx.FXHyperD": 0.25,
+    "fx.FXEQ": 0.4,
+    "fx.FXDistortion": 0.2,
+    "fx.FXDistortion.kParamMode": {
+      "choose": {
+        "kSoftClip": 3,
+        "kTapeSat": 1
+      }
+    },
+    "fx.FXBode": 0.1,
+    "expr.velAmp": 0.7,
+    "lfo.count": {
+      "choose": {
+        "0": 2,
+        "1": 2
+      }
+    },
+    "macro.theme": {
+      "choose": {
+        "tone": 3,
+        "space": 3,
+        "chorus": 2,
+        "width": 1
+      }
+    }
+  },
+  "perCategory": {
+    "bass": {
+      "recipe": {
+        "choose": {
+          "moog_bass": 5,
+          "none": 1
+        }
+      },
+      "global.mono": 1,
+      "global.legato": 1
+    },
+    "epiano": {
+      "recipe": {
+        "choose": {
+          "rhodes_wt": 4,
+          "fm_epiano": 1,
+          "suitcase_ms": 1
+        }
+      }
+    },
+    "pad": {
+      "recipe": {
+        "choose": {
+          "dreamy_sines": 3,
+          "warm_analog_pad": 1
+        }
+      }
+    },
+    "strings": {
+      "recipe": {
+        "choose": {
+          "violins_ms": 2,
+          "analog_strings": 1
+        }
+      }
+    },
+    "guitar": {
+      "recipe": {
+        "choose": {
+          "guitar_ms": 2,
+          "nylon_pluck": 1
+        }
+      }
+    },
+    "mallet": {
+      "recipe": {
+        "choose": {
+          "vibes": 2,
+          "bell_fm": 1
+        }
+      }
+    }
+  }
+}

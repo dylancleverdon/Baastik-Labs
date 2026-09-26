@@ -1,0 +1,90 @@
+{
+  "name": "Drums & Perc",
+  "family": "drums",
+  "knobs": {
+    "global.mono": 0.3,
+    "osc.count": {
+      "choose": {
+        "1": 3,
+        "2": 1
+      }
+    },
+    "osc.unison": 1,
+    "osc.warp": 0.2,
+    "amp.attack": {
+      "range": [
+        0.0005,
+        0.002
+      ],
+      "log": true
+    },
+    "amp.decay": {
+      "range": [
+        0.05,
+        0.5
+      ],
+      "log": true
+    },
+    "amp.sustain": 0,
+    "amp.release": {
+      "range": [
+        0.02,
+        0.3
+      ],
+      "log": true
+    },
+    "env.count": {
+      "choose": {
+        "1": 3,
+        "2": 2
+      }
+    },
+    "env.attack": 0.0005,
+    "env.decay": {
+      "range": [
+        0.02,
+        0.2
+      ],
+      "log": true
+    },
+    "env.sustain": 0,
+    "env.dest": {
+      "choose": {
+        "oscillator*.pitch": 4,
+        "filter*.cutoff": 3,
+        "oscillator*.table_position": 1
+      }
+    },
+    "env.amount": [
+      30,
+      100
+    ],
+    "noise.on": 0.6,
+    "noise.volume": [
+      0.1,
+      0.5
+    ],
+    "lfo.count": 0,
+    "expr.vibrato": 0,
+    "macro.count": {
+      "choose": {
+        "2": 1,
+        "4": 1
+      }
+    },
+    "fx.FXDistortion": 0.4,
+    "fx.FXReverb": 0.3,
+    "fx.FXDelay": 0.1,
+    "fx.FXChorus": 0.05,
+    "recipe": {
+      "choose": {
+        "kick": 2,
+        "snare": 2,
+        "hat": 2,
+        "perc_fm": 1,
+        "none": 1
+      }
+    },
+    "sanity.minSustain": 0
+  }
+}

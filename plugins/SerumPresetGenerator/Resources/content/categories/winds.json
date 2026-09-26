@@ -1,0 +1,104 @@
+{
+  "name": "Winds & Flutes",
+  "family": "acoustic",
+  "knobs": {
+    "global.mono": 0.6,
+    "global.legato": 0.8,
+    "global.porta": 0.3,
+    "global.portaTime": {
+      "range": [
+        0.02,
+        0.08
+      ],
+      "log": true
+    },
+    "amp.attack": {
+      "range": [
+        0.03,
+        0.15
+      ],
+      "log": true
+    },
+    "amp.decay": 1.0,
+    "amp.sustain": [
+      0.7,
+      1
+    ],
+    "amp.release": {
+      "range": [
+        0.08,
+        0.3
+      ],
+      "log": true
+    },
+    "osc.unison": 1,
+    "osc.warp": 0.05,
+    "noise.on": 0.8,
+    "noise.type": {
+      "choose": {
+        "Pink": 3,
+        "White": 1
+      }
+    },
+    "noise.volume": [
+      0.04,
+      0.18
+    ],
+    "expr.vibrato": 0.7,
+    "expr.velCutoff": 0.4,
+    "lfo.count": 0,
+    "fx.FXReverb": 0.7,
+    "fx.FXDelay": 0.2,
+    "recipe": {
+      "choose": {
+        "flute_wt": 2,
+        "breathy_winds": 2,
+        "clarinet": 1
+      }
+    },
+    "sanity.minSustain": 0.5,
+    "osc.octave": {
+      "choose": {
+        "0": 6,
+        "1": 1,
+        "-1": 1
+      }
+    },
+    "osc.semi": {
+      "choose": {
+        "0": 10,
+        "12": 1
+      }
+    },
+    "osc.fine": [
+      -4,
+      4
+    ],
+    "filter.reso": [
+      0,
+      20
+    ],
+    "filter.drive": 0,
+    "osc.pan": [
+      -10,
+      10
+    ],
+    "fx.FXFlanger": 0.02,
+    "fx.FXBode": 0,
+    "lfo.shape": {
+      "choose": {
+        "sine": 3,
+        "triangle": 2
+      }
+    },
+    "filter.type": {
+      "choose": {
+        "L12": 2,
+        "MgL12": 2,
+        "L24": 1,
+        "MgL24": 1
+      }
+    },
+    "sub.on": 0.03
+  }
+}

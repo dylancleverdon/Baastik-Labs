@@ -1,0 +1,75 @@
+{
+  "name": "Funk clav with envelope filter",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 1,
+        "2": 1
+      }
+    },
+    "osc0.wavetable": {
+      "choose": {
+        "pwm": 2,
+        "analog_basic": 1
+      }
+    },
+    "osc0.pos": [
+      100,
+      220
+    ],
+    "osc1.wavetable": "analog_basic",
+    "osc1.octave": 1,
+    "osc1.volume": [
+      0.1,
+      0.3
+    ],
+    "osc.unison": 1,
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "B12": 2,
+        "L12": 1,
+        "MgL12": 1
+      }
+    },
+    "filter.cutoff": [
+      0.2,
+      0.4
+    ],
+    "filter.reso": [
+      30,
+      60
+    ],
+    "amp.decay": {
+      "range": [
+        0.2,
+        0.6
+      ],
+      "log": true
+    },
+    "amp.sustain": [
+      0.1,
+      0.3
+    ],
+    "env1.attack": 0.0005,
+    "env1.decay": {
+      "range": [
+        0.08,
+        0.25
+      ],
+      "log": true
+    },
+    "env1.sustain": 0,
+    "expr.velCutoff": 1
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "filter0.cutoff",
+      "amount": [
+        40,
+        70
+      ]
+    }
+  ]
+}

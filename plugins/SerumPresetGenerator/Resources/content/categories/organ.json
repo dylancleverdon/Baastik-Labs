@@ -1,0 +1,118 @@
+{
+  "name": "Organ",
+  "family": "acoustic",
+  "knobs": {
+    "global.mono": 0,
+    "global.porta": 0,
+    "amp.attack": {
+      "range": [
+        0.001,
+        0.006
+      ],
+      "log": true
+    },
+    "amp.decay": 1.0,
+    "amp.sustain": [
+      0.92,
+      1
+    ],
+    "amp.release": {
+      "range": [
+        0.03,
+        0.12
+      ],
+      "log": true
+    },
+    "filter.on": 0.3,
+    "filter.cutoff": [
+      0.55,
+      0.9
+    ],
+    "expr.velAmp": 0,
+    "expr.velCutoff": 0,
+    "env.count": 0,
+    "mod.count": 0,
+    "osc.warp": 0,
+    "fx.FXChorus": 0.55,
+    "fx.FXPhaser": 0.25,
+    "fx.FXDistortion": 0.35,
+    "fx.FXDistortion.kParamMode": {
+      "choose": {
+        "kOverdrive": 3,
+        "kTapeSat": 2,
+        "kSoftClip": 1
+      }
+    },
+    "fx.FXDistortion.kParamDrive": [
+      10,
+      45
+    ],
+    "fx.FXReverb": 0.5,
+    "recipe": {
+      "choose": {
+        "drawbar_organ": 3,
+        "gospel_organ": 1
+      }
+    },
+    "macro.theme": {
+      "choose": {
+        "drive": 3,
+        "chorus": 2,
+        "tone": 2,
+        "space": 1
+      }
+    },
+    "sanity.minSustain": 0.8,
+    "osc.octave": {
+      "choose": {
+        "0": 6,
+        "1": 1,
+        "-1": 1
+      }
+    },
+    "osc.semi": {
+      "choose": {
+        "0": 10,
+        "12": 1
+      }
+    },
+    "osc.fine": [
+      -4,
+      4
+    ],
+    "filter.reso": [
+      0,
+      20
+    ],
+    "filter.drive": 0,
+    "osc.pan": [
+      -10,
+      10
+    ],
+    "fx.FXFlanger": 0.02,
+    "fx.FXBode": 0,
+    "lfo.shape": {
+      "choose": {
+        "sine": 3,
+        "triangle": 2
+      }
+    },
+    "global.poly": {
+      "choose": {
+        "8": 2,
+        "12": 1,
+        "16": 1
+      }
+    },
+    "filter.type": {
+      "choose": {
+        "L12": 2,
+        "MgL12": 2,
+        "L24": 1,
+        "MgL24": 1
+      }
+    },
+    "expr.vibrato": 0.0,
+    "sub.on": 0.03
+  }
+}

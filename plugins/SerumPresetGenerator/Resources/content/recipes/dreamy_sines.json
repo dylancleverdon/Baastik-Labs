@@ -1,0 +1,52 @@
+{
+  "name": "Dreamy detuned sines",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 2,
+        "2": 1
+      }
+    },
+    "osc.wavetable": "default",
+    "osc.frame": "sine",
+    "osc.unison": {
+      "choose": {
+        "4": 1,
+        "5": 1
+      }
+    },
+    "osc.detune": [
+      0.03,
+      0.06
+    ],
+    "osc1.octave": 1,
+    "osc1.volume": [
+      0.2,
+      0.4
+    ],
+    "filter.on": 0.4,
+    "filter.type": {
+      "choose": {
+        "P12": 1,
+        "L12": 1
+      }
+    },
+    "fx.FXBode": 0.6,
+    "fx.FXBode.kParamShift": [
+      5,
+      20
+    ],
+    "fx.FXBode.kParamWet": [
+      30,
+      60
+    ],
+    "fx.FXReverb": 1,
+    "amp.attack": {
+      "range": [
+        0.3,
+        1.2
+      ],
+      "log": true
+    }
+  }
+}

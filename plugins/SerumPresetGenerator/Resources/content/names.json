@@ -1,0 +1,336 @@
+{
+  "prefix": {
+    "bass": "BA",
+    "sub_bass": "808",
+    "lead": "LD",
+    "pad": "PD",
+    "pluck": "PL",
+    "keys": "KY",
+    "perc": "DR",
+    "experimental": "FX",
+    "epiano": "EP",
+    "organ": "OR",
+    "mallet": "ML",
+    "brass": "BR",
+    "winds": "WN",
+    "strings": "ST",
+    "guitar": "GT",
+    "piano": "PN",
+    "random": "RND"
+  },
+  "adjectives": {
+    "any": [
+      "Velvet",
+      "Dusty",
+      "Neon",
+      "Hollow",
+      "Golden",
+      "Liquid",
+      "Broken",
+      "Silver",
+      "Warm",
+      "Cold",
+      "Tidal",
+      "Glass",
+      "Smoky",
+      "Midnight",
+      "Rusty",
+      "Soft",
+      "Wide",
+      "Deep",
+      "Lucid",
+      "Hazy",
+      "Crystal",
+      "Faded",
+      "Electric",
+      "Molten",
+      "Vapor",
+      "Fuzzy",
+      "Lush",
+      "Tiny",
+      "Heavy",
+      "Bright"
+    ],
+    "dubstep": [
+      "Filthy",
+      "Snarling",
+      "Brutal",
+      "Mechanical",
+      "Gnarly"
+    ],
+    "riddim": [
+      "Wonky",
+      "Rattling",
+      "Grimy",
+      "Stomping",
+      "Mangled"
+    ],
+    "dnb": [
+      "Rolling",
+      "Liquid",
+      "Jungle",
+      "Stepping",
+      "Neuro"
+    ],
+    "house": [
+      "Deep",
+      "Jacking",
+      "Groovy",
+      "Sunset",
+      "Disco"
+    ],
+    "techno": [
+      "Industrial",
+      "Hypnotic",
+      "Warehouse",
+      "Minimal",
+      "Acidic"
+    ],
+    "trance": [
+      "Euphoric",
+      "Soaring",
+      "Uplifting",
+      "Starlit",
+      "Endless"
+    ],
+    "future_bass": [
+      "Sparkling",
+      "Bouncy",
+      "Candy",
+      "Shimmering",
+      "Kawaii"
+    ],
+    "synthwave": [
+      "Retro",
+      "Chrome",
+      "Outrun",
+      "Nightdrive",
+      "Laser"
+    ],
+    "lofi": [
+      "Dusty",
+      "Tape",
+      "Rainy",
+      "Cozy",
+      "Worn"
+    ],
+    "hyperpop": [
+      "Glitchy",
+      "Bubblegum",
+      "Overblown",
+      "Sugar",
+      "Hyper"
+    ],
+    "trap": [
+      "Dark",
+      "Bouncing",
+      "Hard",
+      "Icy",
+      "Menacing"
+    ],
+    "ambient": [
+      "Floating",
+      "Distant",
+      "Glacial",
+      "Breathing",
+      "Drifting"
+    ],
+    "psytrance": [
+      "Twisted",
+      "Psychedelic",
+      "Rolling",
+      "Fractal",
+      "Cosmic"
+    ],
+    "jazz": [
+      "Smoky",
+      "Late Night",
+      "Mellow",
+      "Brushed",
+      "Swinging"
+    ],
+    "soul": [
+      "Sweet",
+      "Sunday",
+      "Honey",
+      "Heartfelt",
+      "Vintage"
+    ],
+    "neo_soul": [
+      "Buttery",
+      "Hazy",
+      "Silky",
+      "Laid Back",
+      "Mellow"
+    ],
+    "fusion": [
+      "Electric",
+      "Blazing",
+      "Cosmic",
+      "Mercurial",
+      "Virtuoso"
+    ],
+    "funk": [
+      "Greasy",
+      "Tight",
+      "Popping",
+      "Strutting",
+      "Nasty"
+    ],
+    "rnb": [
+      "Slow Jam",
+      "Satin",
+      "Nineties",
+      "Smooth",
+      "After Hours"
+    ],
+    "gospel": [
+      "Joyful",
+      "Praise",
+      "Sanctified",
+      "Uplifted",
+      "Choir Loft"
+    ],
+    "blues": [
+      "Gritty",
+      "Crying",
+      "Delta",
+      "Whiskey",
+      "Weary"
+    ],
+    "bossa_nova": [
+      "Breezy",
+      "Seaside",
+      "Gentle",
+      "Sunlit",
+      "Samba"
+    ]
+  },
+  "nouns": {
+    "any": [
+      "Signal",
+      "Machine",
+      "Dream",
+      "Echo",
+      "Circuit",
+      "Ghost",
+      "Tide",
+      "Pulse",
+      "Bloom",
+      "Orbit"
+    ],
+    "bass": [
+      "Growl",
+      "Sub",
+      "Reese",
+      "Wobble",
+      "Bass",
+      "Rumble",
+      "Stab",
+      "Grind"
+    ],
+    "sub_bass": [
+      "808",
+      "Boom",
+      "Sub",
+      "Slide",
+      "Knock"
+    ],
+    "lead": [
+      "Lead",
+      "Saw",
+      "Whistle",
+      "Screamer",
+      "Line",
+      "Solo"
+    ],
+    "pad": [
+      "Pad",
+      "Cloud",
+      "Haze",
+      "Atmosphere",
+      "Choir",
+      "Wash"
+    ],
+    "pluck": [
+      "Pluck",
+      "Pick",
+      "Drop",
+      "Ping",
+      "Stab"
+    ],
+    "keys": [
+      "Keys",
+      "Chord",
+      "Stab",
+      "Board"
+    ],
+    "perc": [
+      "Kick",
+      "Hit",
+      "Snap",
+      "Perc",
+      "Click",
+      "Tom"
+    ],
+    "experimental": [
+      "Texture",
+      "Glitch",
+      "Sweep",
+      "Riser",
+      "Anomaly",
+      "Drone"
+    ],
+    "epiano": [
+      "Rhodes",
+      "Tines",
+      "EP",
+      "Suitcase",
+      "Keys"
+    ],
+    "organ": [
+      "Organ",
+      "Drawbars",
+      "Tonewheel",
+      "Chapel"
+    ],
+    "mallet": [
+      "Vibes",
+      "Marimba",
+      "Bells",
+      "Mallet",
+      "Chime"
+    ],
+    "brass": [
+      "Brass",
+      "Horns",
+      "Section",
+      "Fanfare"
+    ],
+    "winds": [
+      "Flute",
+      "Reed",
+      "Breath",
+      "Winds",
+      "Whistle"
+    ],
+    "strings": [
+      "Strings",
+      "Ensemble",
+      "Violins",
+      "Section"
+    ],
+    "guitar": [
+      "Guitar",
+      "Nylon",
+      "Strum",
+      "Pick"
+    ],
+    "piano": [
+      "Piano",
+      "Grand",
+      "Upright",
+      "Keys"
+    ]
+  }
+}

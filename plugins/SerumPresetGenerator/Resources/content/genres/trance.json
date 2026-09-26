@@ -1,0 +1,68 @@
+{
+  "name": "Trance",
+  "family": "electronic",
+  "categories": {
+    "lead": 4,
+    "pluck": 3,
+    "pad": 2,
+    "bass": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "basic": 2,
+        "analog": 2,
+        "digital": 1
+      }
+    },
+    "fx.FXReverb": 0.8,
+    "fx.FXDelay": 0.75,
+    "fx.FXHyperD": 0.3,
+    "fx.FXDistortion": 0.15,
+    "lfo.syncRate": {
+      "choose": {
+        "1/16": 3,
+        "1/8": 2
+      }
+    },
+    "lfo.shape": {
+      "choose": {
+        "gate": 3,
+        "square": 1,
+        "saw_down": 1
+      }
+    }
+  },
+  "perCategory": {
+    "lead": {
+      "recipe": {
+        "choose": {
+          "supersaw": 5,
+          "none": 1
+        }
+      }
+    },
+    "pluck": {
+      "recipe": {
+        "choose": {
+          "none": 2,
+          "noise_pluck": 1
+        }
+      },
+      "osc.unison": {
+        "choose": {
+          "5": 2,
+          "7": 2
+        }
+      }
+    },
+    "pad": {
+      "recipe": {
+        "choose": {
+          "warm_analog_pad": 1,
+          "evolving_pad": 1
+        }
+      }
+    }
+  }
+}

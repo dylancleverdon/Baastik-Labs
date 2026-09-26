@@ -1,0 +1,19 @@
+{
+  "name": "Flute wavetable with breath",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.wavetable": "flute",
+    "noise.on": 1,
+    "filter.on": 0.6,
+    "filter.type": {
+      "choose": {
+        "L12": 2,
+        "B12": 1
+      }
+    },
+    "filter.cutoff": [
+      0.4,
+      0.7
+    ]
+  }
+}

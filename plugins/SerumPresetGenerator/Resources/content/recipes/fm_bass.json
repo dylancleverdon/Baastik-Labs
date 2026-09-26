@@ -1,0 +1,60 @@
+{
+  "name": "FM bass",
+  "knobs": {
+    "osc.count": 2,
+    "osc0.wavetable": {
+      "choose": {
+        "digital_fm": 2,
+        "fm_piano": 1
+      }
+    },
+    "osc0.warp": 1,
+    "osc0.warpMode": {
+      "choose": {
+        "kFM_OSC": 2,
+        "kSelfPD": 1
+      }
+    },
+    "osc0.warpAmount": [
+      0.1,
+      0.4
+    ],
+    "osc1.wavetable": "default",
+    "osc1.frame": "sine",
+    "osc1.octave": {
+      "choose": {
+        "0": 1,
+        "1": 1
+      }
+    },
+    "osc1.volume": [
+      0.1,
+      0.3
+    ],
+    "osc.octave": -1,
+    "filter.on": 0.5,
+    "env1.attack": 0.0005,
+    "env1.decay": {
+      "range": [
+        0.1,
+        0.4
+      ],
+      "log": true
+    },
+    "env1.sustain": [
+      0,
+      0.3
+    ],
+    "global.mono": 1
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "oscillator0.warp_amount",
+      "amount": [
+        20,
+        50
+      ]
+    }
+  ]
+}

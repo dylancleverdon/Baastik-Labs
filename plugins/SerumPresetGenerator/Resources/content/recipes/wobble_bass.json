@@ -1,0 +1,76 @@
+{
+  "name": "Wobble bass",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 1,
+        "2": 2
+      }
+    },
+    "osc.wtTag": {
+      "choose": {
+        "growl": 2,
+        "digital": 2,
+        "evolving": 1
+      }
+    },
+    "osc.octave": -1,
+    "osc.warp": 0.6,
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "L24": 2,
+        "MgL24": 1,
+        "FormantONE": 1,
+        "B24": 1
+      }
+    },
+    "filter.cutoff": [
+      0.2,
+      0.5
+    ],
+    "filter.reso": [
+      20,
+      50
+    ],
+    "lfo0.shape": {
+      "choose": {
+        "saw_down": 2,
+        "sine": 2,
+        "triangle": 1
+      }
+    },
+    "lfo0.sync": 1,
+    "lfo0.syncRate": {
+      "choose": {
+        "1/4": 2,
+        "1/8": 3,
+        "1/16": 1
+      }
+    },
+    "lfo0.triplet": 0.25,
+    "lfo0.mode": "Retrig",
+    "fx.FXDistortion": 0.9,
+    "fx.FXComp": 0.6,
+    "global.mono": 1
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "filter0.cutoff",
+      "amount": [
+        35,
+        70
+      ]
+    },
+    {
+      "source": "lfo0",
+      "dest": "oscillator0.table_position",
+      "amount": [
+        20,
+        60
+      ],
+      "chance": 0.7
+    }
+  ]
+}

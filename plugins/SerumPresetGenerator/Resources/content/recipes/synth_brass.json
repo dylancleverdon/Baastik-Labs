@@ -1,0 +1,99 @@
+{
+  "name": "Analog synth brass",
+  "knobs": {
+    "osc.count": 2,
+    "osc.wavetable": {
+      "choose": {
+        "analog_basic": 1,
+        "default": 1
+      }
+    },
+    "osc.frame": "saw",
+    "osc0.fine": [
+      -8,
+      -3
+    ],
+    "osc1.fine": [
+      3,
+      8
+    ],
+    "osc.unison": {
+      "choose": {
+        "1": 1,
+        "2": 1,
+        "3": 1
+      }
+    },
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "MgL24": 2,
+        "MgL12": 1,
+        "L24": 1
+      }
+    },
+    "filter.cutoff": [
+      0.2,
+      0.4
+    ],
+    "env1.attack": {
+      "range": [
+        0.03,
+        0.12
+      ],
+      "log": true
+    },
+    "env1.decay": {
+      "range": [
+        0.3,
+        0.8
+      ],
+      "log": true
+    },
+    "env1.sustain": [
+      0.4,
+      0.7
+    ],
+    "env1.release": {
+      "range": [
+        0.1,
+        0.3
+      ],
+      "log": true
+    },
+    "env2.attack": {
+      "range": [
+        0.02,
+        0.08
+      ],
+      "log": true
+    },
+    "env2.decay": {
+      "range": [
+        0.05,
+        0.2
+      ],
+      "log": true
+    },
+    "env2.sustain": 0
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "filter0.cutoff",
+      "amount": [
+        30,
+        60
+      ]
+    },
+    {
+      "source": "env2",
+      "dest": "oscillator*.fine",
+      "amount": [
+        -20,
+        -8
+      ],
+      "chance": 0.6
+    }
+  ]
+}

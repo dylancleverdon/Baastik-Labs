@@ -1,0 +1,73 @@
+{
+  "name": "Future Bass",
+  "family": "electronic",
+  "categories": {
+    "keys": 4,
+    "lead": 2,
+    "pad": 2,
+    "pluck": 2,
+    "bass": 1,
+    "sub_bass": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "basic": 2,
+        "analog": 2,
+        "bright": 1
+      }
+    },
+    "osc.unison": {
+      "choose": {
+        "5": 2,
+        "7": 3,
+        "9": 2
+      }
+    },
+    "osc.detune": [
+      0.15,
+      0.3
+    ],
+    "fx.FXChorus": 0.5,
+    "fx.FXReverb": 0.7,
+    "fx.FXHyperD": 0.5,
+    "fx.FXComp": 0.4,
+    "lfo.sync": 1,
+    "lfo.syncRate": {
+      "choose": {
+        "1/4": 3,
+        "1/8": 1
+      }
+    },
+    "macro.theme": {
+      "choose": {
+        "tone": 3,
+        "width": 3,
+        "space": 2,
+        "chorus": 2
+      }
+    }
+  },
+  "perCategory": {
+    "keys": {
+      "recipe": {
+        "choose": {
+          "supersaw": 4,
+          "none": 1
+        }
+      },
+      "lfo.count": 1,
+      "lfo.shape": "saw_up",
+      "lfo.dest": {
+        "choose": {
+          "oscillator*.volume": 3,
+          "filter*.cutoff": 1
+        }
+      },
+      "lfo.amount": [
+        30,
+        60
+      ]
+    }
+  }
+}

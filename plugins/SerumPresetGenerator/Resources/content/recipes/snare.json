@@ -1,0 +1,54 @@
+{
+  "name": "Synth snare",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.wavetable": "default",
+    "osc0.frame": "sine",
+    "osc.octave": {
+      "choose": {
+        "0": 1,
+        "1": 1
+      }
+    },
+    "noise.on": 1,
+    "noise.volume": [
+      0.3,
+      0.6
+    ],
+    "filter.on": 0.8,
+    "filter.type": {
+      "choose": {
+        "H12": 1,
+        "B12": 1
+      }
+    },
+    "filter.cutoff": [
+      0.4,
+      0.7
+    ],
+    "amp.decay": {
+      "range": [
+        0.1,
+        0.3
+      ],
+      "log": true
+    },
+    "env1.decay": {
+      "range": [
+        0.02,
+        0.06
+      ],
+      "log": true
+    }
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "oscillator0.pitch",
+      "amount": [
+        20,
+        50
+      ]
+    }
+  ]
+}

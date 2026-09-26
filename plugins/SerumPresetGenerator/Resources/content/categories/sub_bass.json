@@ -1,0 +1,99 @@
+{
+  "name": "808 & Sub",
+  "family": "synth",
+  "knobs": {
+    "global.mono": 1,
+    "global.legato": 0.7,
+    "global.porta": 0.6,
+    "global.portaTime": {
+      "range": [
+        0.02,
+        0.12
+      ],
+      "log": true
+    },
+    "osc.count": 1,
+    "osc0.wavetable": {
+      "choose": {
+        "default": 3,
+        "warm_sub": 1
+      }
+    },
+    "osc0.frame": "sine",
+    "osc.octave": {
+      "choose": {
+        "-2": 1,
+        "-1": 3
+      }
+    },
+    "osc.unison": 1,
+    "sub.on": 0.2,
+    "noise.on": 0,
+    "filter.on": 0.2,
+    "filter.cutoff": [
+      0.4,
+      0.8
+    ],
+    "osc.warp": 0.1,
+    "amp.attack": {
+      "range": [
+        0.0005,
+        0.004
+      ],
+      "log": true
+    },
+    "amp.decay": {
+      "range": [
+        0.8,
+        3.0
+      ],
+      "log": true
+    },
+    "amp.sustain": [
+      0,
+      0.5
+    ],
+    "amp.release": {
+      "range": [
+        0.1,
+        0.6
+      ],
+      "log": true
+    },
+    "env.count": 0,
+    "lfo.count": 0,
+    "fx.FXReverb": 0,
+    "fx.FXDelay": 0,
+    "fx.FXChorus": 0,
+    "fx.FXDistortion": 0.6,
+    "fx.FXDistortion.kParamMode": {
+      "choose": {
+        "kSoftClip": 2,
+        "kTapeSat": 2,
+        "kOverdrive": 1,
+        "kSoftSat": 1
+      }
+    },
+    "recipe": {
+      "choose": {
+        "808": 1
+      }
+    },
+    "macro.theme": {
+      "choose": {
+        "drive": 3,
+        "release": 2,
+        "tone": 1
+      }
+    },
+    "sanity.minSustain": 0,
+    "osc.semi": 0,
+    "osc.fine": 0,
+    "fx.FXFlanger": 0,
+    "fx.FXPhaser": 0,
+    "fx.FXHyperD": 0,
+    "fx.FXBode": 0,
+    "fx.FXEQ": 0.2,
+    "expr.vibrato": 0
+  }
+}

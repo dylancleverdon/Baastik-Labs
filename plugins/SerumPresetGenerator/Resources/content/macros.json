@@ -1,0 +1,307 @@
+{
+  "tone": {
+    "names": [
+      "Tone",
+      "Brightness",
+      "Filter",
+      "Cutoff"
+    ],
+    "targets": [
+      {
+        "dest": "filter*.cutoff",
+        "amount": [
+          20,
+          50
+        ]
+      }
+    ]
+  },
+  "space": {
+    "names": [
+      "Space",
+      "Room",
+      "Ambience",
+      "Wash"
+    ],
+    "targets": [
+      {
+        "dest": "fx:FXReverb.wet",
+        "amount": [
+          20,
+          50
+        ]
+      },
+      {
+        "dest": "fx:FXDelay.wet",
+        "amount": [
+          15,
+          40
+        ]
+      }
+    ]
+  },
+  "movement": {
+    "names": [
+      "Motion",
+      "Movement",
+      "Speed"
+    ],
+    "targets": [
+      {
+        "dest": "lfo*.rate",
+        "amount": [
+          20,
+          50
+        ]
+      }
+    ]
+  },
+  "growl": {
+    "names": [
+      "Growl",
+      "Grit",
+      "Snarl"
+    ],
+    "targets": [
+      {
+        "dest": "oscillator*.warp_amount",
+        "amount": [
+          20,
+          60
+        ]
+      },
+      {
+        "dest": "fx:FXDistortion.wet",
+        "amount": [
+          20,
+          50
+        ]
+      }
+    ]
+  },
+  "drive": {
+    "names": [
+      "Drive",
+      "Dirt",
+      "Heat"
+    ],
+    "targets": [
+      {
+        "dest": "filter*.drive",
+        "amount": [
+          30,
+          70
+        ]
+      },
+      {
+        "dest": "fx:FXDistortion.wet",
+        "amount": [
+          20,
+          60
+        ]
+      }
+    ]
+  },
+  "morph": {
+    "names": [
+      "Morph",
+      "Timbre",
+      "Shape"
+    ],
+    "targets": [
+      {
+        "dest": "oscillator*.table_position",
+        "amount": [
+          30,
+          70
+        ]
+      }
+    ]
+  },
+  "width": {
+    "names": [
+      "Width",
+      "Spread",
+      "Stereo"
+    ],
+    "targets": [
+      {
+        "dest": "oscillator*.detune",
+        "amount": [
+          20,
+          50
+        ]
+      },
+      {
+        "dest": "fx:FXUtils.width",
+        "amount": [
+          20,
+          60
+        ]
+      },
+      {
+        "dest": "fx:FXChorus.wet",
+        "amount": [
+          20,
+          50
+        ]
+      }
+    ]
+  },
+  "attack": {
+    "names": [
+      "Attack",
+      "Swell",
+      "Fade In"
+    ],
+    "targets": [
+      {
+        "dest": "env0.attack",
+        "amount": [
+          20,
+          50
+        ]
+      }
+    ]
+  },
+  "release": {
+    "names": [
+      "Release",
+      "Tail",
+      "Length"
+    ],
+    "targets": [
+      {
+        "dest": "env0.release",
+        "amount": [
+          20,
+          50
+        ]
+      },
+      {
+        "dest": "env0.decay",
+        "amount": [
+          10,
+          40
+        ]
+      }
+    ]
+  },
+  "resonance": {
+    "names": [
+      "Reso",
+      "Squelch",
+      "Peak"
+    ],
+    "targets": [
+      {
+        "dest": "filter*.resonance",
+        "amount": [
+          20,
+          50
+        ]
+      }
+    ]
+  },
+  "crush": {
+    "names": [
+      "Crush",
+      "Lo-Fi",
+      "Degrade"
+    ],
+    "targets": [
+      {
+        "dest": "fx:FXDistortion.wet",
+        "amount": [
+          30,
+          60
+        ]
+      },
+      {
+        "dest": "filter*.cutoff",
+        "amount": [
+          -30,
+          -15
+        ]
+      }
+    ]
+  },
+  "sub": {
+    "names": [
+      "Sub",
+      "Weight",
+      "Low End"
+    ],
+    "targets": [
+      {
+        "dest": "oscillator4.volume",
+        "amount": [
+          20,
+          50
+        ]
+      }
+    ]
+  },
+  "noise": {
+    "names": [
+      "Air",
+      "Noise",
+      "Breath"
+    ],
+    "targets": [
+      {
+        "dest": "oscillator3.volume",
+        "amount": [
+          20,
+          60
+        ]
+      }
+    ]
+  },
+  "drift": {
+    "names": [
+      "Drift",
+      "Detune",
+      "Wobble"
+    ],
+    "targets": [
+      {
+        "dest": "oscillator*.fine",
+        "amount": [
+          5,
+          15
+        ]
+      },
+      {
+        "dest": "oscillator*.detune",
+        "amount": [
+          10,
+          30
+        ]
+      }
+    ]
+  },
+  "chorus": {
+    "names": [
+      "Chorus",
+      "Ensemble",
+      "Shimmer"
+    ],
+    "targets": [
+      {
+        "dest": "fx:FXChorus.wet",
+        "amount": [
+          20,
+          50
+        ]
+      },
+      {
+        "dest": "fx:FXHyperD.wet",
+        "amount": [
+          20,
+          50
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+build*/
+out/
+dist/
+.DS_Store
+*.swp
+.vscode/
+.idea/
+CMakeUserPresets.json
+__pycache__/

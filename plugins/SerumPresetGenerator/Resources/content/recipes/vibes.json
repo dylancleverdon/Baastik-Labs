@@ -1,0 +1,35 @@
+{
+  "name": "Vibraphone",
+  "knobs": {
+    "osc.count": 2,
+    "osc0.wavetable": "default",
+    "osc0.frame": "sine",
+    "osc1.wavetable": "default",
+    "osc1.frame": "sine",
+    "osc1.octave": 2,
+    "osc1.volume": [
+      0.15,
+      0.35
+    ],
+    "osc.unison": 1,
+    "lfo0.shape": "sine",
+    "lfo0.sync": 0,
+    "lfo0.rateHz": [
+      4.0,
+      6.0
+    ],
+    "lfo0.mode": "Free",
+    "fx.FXReverb": 0.9
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "oscillator0.volume",
+      "amount": [
+        10,
+        25
+      ],
+      "bipolar": true
+    }
+  ]
+}

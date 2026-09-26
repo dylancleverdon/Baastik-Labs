@@ -1,0 +1,134 @@
+{
+  "name": "Moog-style mono bass",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 2,
+        "2": 2
+      }
+    },
+    "osc0.wavetable": "mini_bass",
+    "osc0.octave": {
+      "choose": {
+        "-2": 1,
+        "-1": 1
+      }
+    },
+    "osc0.unison": {
+      "choose": {
+        "1": 2,
+        "4": 1,
+        "6": 1
+      }
+    },
+    "osc0.detune": [
+      0.1,
+      0.17
+    ],
+    "osc1.wavetable": {
+      "choose": {
+        "analog_mini": 2,
+        "analog_basic": 1
+      }
+    },
+    "osc1.octave": -1,
+    "osc1.volume": [
+      0.35,
+      0.6
+    ],
+    "osc.warp": 0.1,
+    "sub.on": 0.8,
+    "sub.shape": {
+      "choose": {
+        "kPulse": 2,
+        "kSquare": 1,
+        "sine": 2
+      }
+    },
+    "sub.octave": -2,
+    "sub.volume": [
+      0.4,
+      0.6
+    ],
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "MgL12": 2,
+        "MgL24": 2,
+        "LadderMg": 1
+      }
+    },
+    "filter.cutoff": [
+      0.3,
+      0.5
+    ],
+    "filter.reso": [
+      5,
+      25
+    ],
+    "global.mono": 1,
+    "global.legato": 0.8,
+    "global.porta": 0.8,
+    "global.portaTime": {
+      "range": [
+        0.005,
+        0.03
+      ],
+      "log": true
+    },
+    "global.portaAlways": 0.7,
+    "amp.attack": {
+      "range": [
+        0.005,
+        0.04
+      ],
+      "log": true
+    },
+    "amp.release": {
+      "range": [
+        0.1,
+        0.25
+      ],
+      "log": true
+    },
+    "env1.attack": 0.0005,
+    "env1.decay": {
+      "range": [
+        0.15,
+        0.5
+      ],
+      "log": true
+    },
+    "env1.sustain": [
+      0.2,
+      0.5
+    ],
+    "fx.FXHyperD": 0.4,
+    "fx.FXDistortion": 0.5,
+    "fx.FXDistortion.kParamMode": {
+      "choose": {
+        "kSoftClip": 2,
+        "kTapeSat": 2,
+        "kOverdrive": 1
+      }
+    },
+    "fx.FXDistortion.kParamDrive": [
+      20,
+      60
+    ],
+    "osc0.pos": [
+      0,
+      40
+    ]
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "filter0.cutoff",
+      "amount": [
+        15,
+        40
+      ]
+    }
+  ]
+}

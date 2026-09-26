@@ -1,0 +1,66 @@
+{
+  "name": "Synthwave",
+  "family": "electronic",
+  "categories": {
+    "lead": 3,
+    "pad": 3,
+    "bass": 3,
+    "keys": 2,
+    "pluck": 1,
+    "brass": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "analog": 4,
+        "warm": 2,
+        "basic": 1,
+        "pwm": 1
+      }
+    },
+    "osc.warp": 0.1,
+    "fx.FXChorus": 0.75,
+    "fx.FXDelay": 0.6,
+    "fx.FXReverb": 0.7,
+    "fx.FXDistortion": 0.1,
+    "filter.type": {
+      "choose": {
+        "MgL24": 3,
+        "MgL12": 2,
+        "LadderMg": 2
+      }
+    },
+    "expr.vibrato": 0.3
+  },
+  "perCategory": {
+    "lead": {
+      "recipe": {
+        "choose": {
+          "pwm_lead": 2,
+          "supersaw": 1,
+          "sync_lead": 1
+        }
+      }
+    },
+    "pad": {
+      "recipe": {
+        "choose": {
+          "warm_analog_pad": 4,
+          "evolving_pad": 1
+        }
+      }
+    },
+    "bass": {
+      "recipe": {
+        "choose": {
+          "moog_bass": 2,
+          "none": 1
+        }
+      },
+      "lfo.count": 0
+    },
+    "brass": {
+      "recipe": "synth_brass"
+    }
+  }
+}

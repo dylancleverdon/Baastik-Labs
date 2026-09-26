@@ -1,0 +1,76 @@
+{
+  "name": "Chaotic drone",
+  "knobs": {
+    "osc.count": 3,
+    "osc.wtTag": {
+      "choose": {
+        "evolving": 2,
+        "digital": 1,
+        "harmonic": 1
+      }
+    },
+    "osc.unison": {
+      "choose": {
+        "3": 1,
+        "5": 1
+      }
+    },
+    "amp.attack": {
+      "range": [
+        1.0,
+        4.0
+      ],
+      "log": true
+    },
+    "amp.sustain": 1,
+    "amp.release": {
+      "range": [
+        2.0,
+        6.0
+      ],
+      "log": true
+    },
+    "lfo0.shape": "lorenz",
+    "lfo1.shape": "rossler",
+    "lfo.sync": 0,
+    "lfo.rateHz": {
+      "range": [
+        0.05,
+        0.5
+      ],
+      "log": true
+    },
+    "fx.FXReverb": 1,
+    "fx.FXReverb.kParamSize": [
+      70,
+      100
+    ]
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "oscillator*.table_position",
+      "amount": [
+        20,
+        60
+      ]
+    },
+    {
+      "source": "lfo1",
+      "dest": "filter*.cutoff",
+      "amount": [
+        15,
+        40
+      ]
+    },
+    {
+      "source": "lfo1",
+      "dest": "oscillator*.warp_amount",
+      "amount": [
+        10,
+        40
+      ],
+      "chance": 0.5
+    }
+  ]
+}

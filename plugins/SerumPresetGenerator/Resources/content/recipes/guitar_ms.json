@@ -1,0 +1,8 @@
+{
+  "name": "Acoustic guitar multisample",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.engine": "multisample",
+    "osc0.multisample": "guitar_ac"
+  }
+}

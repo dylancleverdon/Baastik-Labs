@@ -1,0 +1,51 @@
+{
+  "name": "Marimba",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 1,
+        "2": 1
+      }
+    },
+    "osc0.wavetable": "default",
+    "osc0.frame": "sine",
+    "osc1.wavetable": "default",
+    "osc1.frame": "sine",
+    "osc1.octave": 2,
+    "osc1.volume": [
+      0.05,
+      0.2
+    ],
+    "osc.unison": 1,
+    "noise.on": 1,
+    "noise.volume": [
+      0.0,
+      0.02
+    ],
+    "amp.decay": {
+      "range": [
+        0.3,
+        0.9
+      ],
+      "log": true
+    },
+    "env1.decay": {
+      "range": [
+        0.01,
+        0.04
+      ],
+      "log": true
+    },
+    "env1.sustain": 0
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "oscillator3.volume",
+      "amount": [
+        40,
+        70
+      ]
+    }
+  ]
+}

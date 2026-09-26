@@ -1,0 +1,52 @@
+{
+  "name": "Warm analog pad",
+  "knobs": {
+    "osc.wavetable": {
+      "choose": {
+        "pwm": 2,
+        "analog_warm": 2,
+        "analog_basic": 1
+      }
+    },
+    "osc.unison": {
+      "choose": {
+        "4": 1,
+        "5": 1,
+        "7": 1
+      }
+    },
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "MgL24": 2,
+        "MgL12": 2
+      }
+    },
+    "filter.cutoff": [
+      0.3,
+      0.6
+    ],
+    "fx.FXChorus": 0.8,
+    "lfo0.shape": "sine",
+    "lfo0.sync": 0,
+    "lfo0.rateHz": {
+      "range": [
+        0.05,
+        0.3
+      ],
+      "log": true
+    },
+    "lfo0.mode": "Free"
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "filter0.cutoff",
+      "amount": [
+        10,
+        25
+      ],
+      "bipolar": true
+    }
+  ]
+}

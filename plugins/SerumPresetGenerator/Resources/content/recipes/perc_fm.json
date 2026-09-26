@@ -1,0 +1,57 @@
+{
+  "name": "FM percussion",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 1,
+        "2": 1
+      }
+    },
+    "osc0.wavetable": "digital_fm",
+    "osc0.warp": 1,
+    "osc0.warpMode": {
+      "choose": {
+        "kFM_OSC": 1,
+        "kSelfPD": 1,
+        "kRM_OSC": 1
+      }
+    },
+    "osc0.warpAmount": [
+      0.2,
+      0.8
+    ],
+    "amp.decay": {
+      "range": [
+        0.05,
+        0.3
+      ],
+      "log": true
+    },
+    "env1.decay": {
+      "range": [
+        0.02,
+        0.1
+      ],
+      "log": true
+    }
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "oscillator0.pitch",
+      "amount": [
+        20,
+        70
+      ]
+    },
+    {
+      "source": "env1",
+      "dest": "oscillator0.warp_amount",
+      "amount": [
+        20,
+        60
+      ],
+      "chance": 0.5
+    }
+  ]
+}

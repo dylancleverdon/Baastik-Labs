@@ -1,0 +1,48 @@
+{
+  "name": "Supersaw",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 1,
+        "2": 2
+      }
+    },
+    "osc.wavetable": {
+      "choose": {
+        "default": 2,
+        "analog_basic": 1
+      }
+    },
+    "osc.frame": "saw",
+    "osc.unison": {
+      "choose": {
+        "7": 2,
+        "9": 2,
+        "16": 1
+      }
+    },
+    "osc.detune": [
+      0.15,
+      0.35
+    ],
+    "osc.width": 100,
+    "osc0.randomPhase": 100,
+    "osc1.octave": {
+      "choose": {
+        "0": 1,
+        "1": 1,
+        "-1": 1
+      }
+    },
+    "osc.warp": 0.05,
+    "filter.on": 0.5,
+    "filter.cutoff": [
+      0.6,
+      0.95
+    ],
+    "fx.FXReverb": 0.8,
+    "fx.FXDelay": 0.6,
+    "fx.FXHyperD": 0.4,
+    "global.mono": 0.1
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "name": "Jazz",
+  "family": "acoustic",
+  "categories": {
+    "epiano": 3,
+    "piano": 3,
+    "organ": 2,
+    "bass": 2,
+    "mallet": 2,
+    "brass": 1,
+    "winds": 1,
+    "guitar": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "warm": 3,
+        "keys": 2,
+        "analog": 1
+      }
+    },
+    "osc.warp": 0.05,
+    "osc.unison": {
+      "choose": {
+        "1": 4,
+        "2": 1
+      }
+    },
+    "filter.drive": 0,
+    "fx.FXDistortion": 0.05,
+    "fx.FXDistortion.kParamDrive": [
+      5,
+      20
+    ],
+    "fx.FXReverb": 0.6,
+    "fx.FXReverb.kParamType": {
+      "choose": {
+        "kVintage": 2,
+        "kHall": 1
+      }
+    },
+    "fx.FXReverb.kParamSize": [
+      20,
+      50
+    ],
+    "fx.FXReverb.kParamWet": [
+      10,
+      25
+    ],
+    "fx.FXDelay": 0.05,
+    "fx.FXHyperD": 0.02,
+    "fx.FXComp": 0.1,
+    "global.mono": 0,
+    "global.porta": 0,
+    "expr.velAmp": 0.9,
+    "expr.velCutoff": 0.8,
+    "lfo.count": {
+      "choose": {
+        "0": 3,
+        "1": 1
+      }
+    },
+    "lfo.sync": 0.2,
+    "mod.count": 0,
+    "macro.theme": {
+      "choose": {
+        "tone": 3,
+        "space": 2,
+        "drift": 1,
+        "chorus": 1
+      }
+    }
+  },
+  "perCategory": {
+    "bass": {
+      "recipe": {
+        "choose": {
+          "moog_bass": 1,
+          "nylon_pluck": 1
+        }
+      },
+      "amp.sustain": [
+        0.2,
+        0.5
+      ],
+      "amp.decay": {
+        "range": [
+          0.6,
+          1.5
+        ],
+        "log": true
+      },
+      "filter.cutoff": [
+        0.2,
+        0.4
+      ],
+      "fx.FXDistortion": 0,
+      "fx.FXHyperD": 0,
+      "global.porta": 0
+    },
+    "brass": {
+      "recipe": {
+        "choose": {
+          "synth_brass": 1,
+          "horn_ms": 1
+        }
+      },
+      "expr.vibrato": 0.8
+    },
+    "mallet": {
+      "recipe": {
+        "choose": {
+          "vibes": 4,
+          "marimba": 1
+        }
+      }
+    },
+    "winds": {
+      "recipe": {
+        "choose": {
+          "flute_wt": 2,
+          "clarinet": 1,
+          "breathy_winds": 1
+        }
+      }
+    }
+  }
+}

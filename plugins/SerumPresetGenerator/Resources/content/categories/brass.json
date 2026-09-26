@@ -1,0 +1,95 @@
+{
+  "name": "Brass",
+  "family": "acoustic",
+  "knobs": {
+    "global.mono": 0.3,
+    "global.porta": 0.2,
+    "global.portaTime": {
+      "range": [
+        0.02,
+        0.08
+      ],
+      "log": true
+    },
+    "amp.attack": {
+      "range": [
+        0.02,
+        0.12
+      ],
+      "log": true
+    },
+    "amp.decay": {
+      "range": [
+        0.3,
+        1.0
+      ],
+      "log": true
+    },
+    "amp.sustain": [
+      0.6,
+      0.9
+    ],
+    "amp.release": {
+      "range": [
+        0.08,
+        0.3
+      ],
+      "log": true
+    },
+    "expr.vibrato": 0.5,
+    "expr.velCutoff": 0.8,
+    "expr.velAmp": 0.4,
+    "fx.FXReverb": 0.55,
+    "fx.FXChorus": 0.2,
+    "recipe": {
+      "choose": {
+        "synth_brass": 3,
+        "horn_ms": 1
+      }
+    },
+    "sanity.minSustain": 0.5,
+    "osc.octave": {
+      "choose": {
+        "0": 6,
+        "1": 1,
+        "-1": 1
+      }
+    },
+    "osc.semi": {
+      "choose": {
+        "0": 10,
+        "12": 1
+      }
+    },
+    "osc.fine": [
+      -4,
+      4
+    ],
+    "filter.reso": [
+      0,
+      20
+    ],
+    "filter.drive": 0,
+    "osc.pan": [
+      -10,
+      10
+    ],
+    "fx.FXFlanger": 0.02,
+    "fx.FXBode": 0,
+    "lfo.shape": {
+      "choose": {
+        "sine": 3,
+        "triangle": 2
+      }
+    },
+    "filter.type": {
+      "choose": {
+        "L12": 2,
+        "MgL12": 2,
+        "L24": 1,
+        "MgL24": 1
+      }
+    },
+    "sub.on": 0.03
+  }
+}

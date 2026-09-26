@@ -1,0 +1,28 @@
+{
+  "name": "808 with pitch drop",
+  "knobs": {
+    "env1.attack": 0.0005,
+    "env1.decay": {
+      "range": [
+        0.03,
+        0.12
+      ],
+      "log": true
+    },
+    "env1.sustain": 0,
+    "fx.FXDistortion.kParamDrive": [
+      15,
+      55
+    ]
+  },
+  "routes": [
+    {
+      "source": "env1",
+      "dest": "oscillator0.pitch",
+      "amount": [
+        20,
+        45
+      ]
+    }
+  ]
+}

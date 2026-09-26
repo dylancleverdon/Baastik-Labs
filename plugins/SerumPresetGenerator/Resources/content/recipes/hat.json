@@ -1,0 +1,37 @@
+{
+  "name": "Noise hi-hat",
+  "knobs": {
+    "osc.count": 1,
+    "osc0.volume": [
+      0.0,
+      0.04
+    ],
+    "noise.on": 1,
+    "noise.type": "White",
+    "noise.volume": [
+      0.4,
+      0.7
+    ],
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "H24": 2,
+        "H12": 1,
+        "B24": 1
+      }
+    },
+    "filter.cutoff": [
+      0.75,
+      0.95
+    ],
+    "amp.decay": {
+      "range": [
+        0.03,
+        0.15
+      ],
+      "log": true
+    },
+    "env.count": 0,
+    "fx.FXDistortion": 0.2
+  }
+}

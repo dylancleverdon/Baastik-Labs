@@ -1,0 +1,78 @@
+{
+  "name": "Jazz Fusion",
+  "family": "acoustic",
+  "categories": {
+    "lead": 4,
+    "epiano": 3,
+    "bass": 2,
+    "brass": 1,
+    "organ": 1,
+    "keys": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "analog": 3,
+        "bright": 1,
+        "warm": 1,
+        "pwm": 1
+      }
+    },
+    "fx.FXDistortion": 0.4,
+    "fx.FXDistortion.kParamDrive": [
+      15,
+      45
+    ],
+    "fx.FXChorus": 0.4,
+    "fx.FXDelay": 0.4,
+    "fx.FXReverb": 0.5,
+    "expr.vibrato": 0.5,
+    "expr.velCutoff": 0.7,
+    "expr.wheelCutoff": 0.4
+  },
+  "perCategory": {
+    "lead": {
+      "recipe": {
+        "choose": {
+          "sync_lead": 2,
+          "pwm_lead": 2,
+          "none": 1
+        }
+      },
+      "global.mono": 0.9,
+      "global.porta": 0.8,
+      "global.portaTime": {
+        "range": [
+          0.03,
+          0.12
+        ],
+        "log": true
+      },
+      "filter.type": {
+        "choose": {
+          "MgL24": 2,
+          "LadderMg": 1
+        }
+      },
+      "expr.vibrato": 0.8
+    },
+    "epiano": {
+      "recipe": {
+        "choose": {
+          "rhodes_wt": 2,
+          "suitcase_ms": 1
+        }
+      },
+      "fx.FXPhaser": 0.5
+    },
+    "bass": {
+      "recipe": {
+        "choose": {
+          "moog_bass": 2,
+          "fm_bass": 1
+        }
+      },
+      "global.porta": 0.6
+    }
+  }
+}

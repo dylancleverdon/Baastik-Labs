@@ -1,0 +1,67 @@
+{
+  "name": "Blues",
+  "family": "acoustic",
+  "categories": {
+    "organ": 3,
+    "piano": 2,
+    "guitar": 2,
+    "brass": 1,
+    "winds": 1,
+    "bass": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "warm": 3,
+        "analog": 1
+      }
+    },
+    "fx.FXDistortion": 0.55,
+    "fx.FXDistortion.kParamMode": {
+      "choose": {
+        "kOverdrive": 3,
+        "kTapeSat": 2,
+        "kStompBox": 1
+      }
+    },
+    "fx.FXDistortion.kParamDrive": [
+      20,
+      55
+    ],
+    "fx.FXReverb": 0.55,
+    "fx.FXReverb.kParamType": {
+      "choose": {
+        "kVintage": 3,
+        "kHall": 1
+      }
+    },
+    "expr.vibrato": 0.4,
+    "global.bend": {
+      "choose": {
+        "2": 2,
+        "12": 1
+      }
+    }
+  },
+  "perCategory": {
+    "organ": {
+      "recipe": {
+        "choose": {
+          "gospel_organ": 2,
+          "drawbar_organ": 2
+        }
+      }
+    },
+    "winds": {
+      "recipe": {
+        "choose": {
+          "clarinet": 2,
+          "breathy_winds": 1
+        }
+      }
+    },
+    "bass": {
+      "recipe": "moog_bass"
+    }
+  }
+}

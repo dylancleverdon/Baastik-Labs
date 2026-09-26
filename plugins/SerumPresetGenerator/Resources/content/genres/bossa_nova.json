@@ -1,0 +1,71 @@
+{
+  "name": "Bossa Nova",
+  "family": "acoustic",
+  "categories": {
+    "guitar": 4,
+    "winds": 3,
+    "piano": 2,
+    "epiano": 1,
+    "strings": 1,
+    "mallet": 1,
+    "bass": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "warm": 3,
+        "acoustic": 2
+      }
+    },
+    "osc.warp": 0,
+    "fx.FXDistortion": 0,
+    "fx.FXReverb": 0.6,
+    "fx.FXReverb.kParamWet": [
+      12,
+      30
+    ],
+    "fx.FXChorus": 0.2,
+    "fx.FXDelay": 0.1,
+    "expr.velAmp": 0.9,
+    "global.mono": 0,
+    "lfo.count": 0,
+    "mod.count": 0
+  },
+  "perCategory": {
+    "guitar": {
+      "recipe": {
+        "choose": {
+          "nylon_pluck": 3,
+          "guitar_ms": 2
+        }
+      }
+    },
+    "winds": {
+      "recipe": {
+        "choose": {
+          "flute_wt": 3,
+          "breathy_winds": 2
+        }
+      }
+    },
+    "bass": {
+      "recipe": "nylon_pluck",
+      "osc.octave": -1,
+      "amp.decay": {
+        "range": [
+          0.5,
+          1.2
+        ],
+        "log": true
+      }
+    },
+    "strings": {
+      "recipe": {
+        "choose": {
+          "strings_ms": 1,
+          "violins_ms": 1
+        }
+      }
+    }
+  }
+}

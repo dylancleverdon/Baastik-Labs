@@ -1,0 +1,84 @@
+{
+  "name": "Soul",
+  "family": "acoustic",
+  "categories": {
+    "organ": 3,
+    "epiano": 3,
+    "bass": 2,
+    "brass": 2,
+    "strings": 1,
+    "guitar": 1,
+    "piano": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "warm": 3,
+        "analog": 2,
+        "keys": 1
+      }
+    },
+    "osc.warp": 0.05,
+    "fx.FXChorus": 0.45,
+    "fx.FXPhaser": 0.2,
+    "fx.FXDistortion": 0.25,
+    "fx.FXDistortion.kParamMode": {
+      "choose": {
+        "kTapeSat": 2,
+        "kOverdrive": 1,
+        "kSoftSat": 1
+      }
+    },
+    "fx.FXDistortion.kParamDrive": [
+      10,
+      35
+    ],
+    "fx.FXReverb": 0.55,
+    "fx.FXReverb.kParamType": {
+      "choose": {
+        "kVintage": 3,
+        "kHall": 1
+      }
+    },
+    "expr.velAmp": 0.85,
+    "global.porta": 0.05,
+    "lfo.count": {
+      "choose": {
+        "0": 2,
+        "1": 1
+      }
+    },
+    "mod.count": 0
+  },
+  "perCategory": {
+    "epiano": {
+      "recipe": {
+        "choose": {
+          "suitcase_ms": 2,
+          "rhodes_wt": 2,
+          "wurli": 1
+        }
+      }
+    },
+    "organ": {
+      "recipe": {
+        "choose": {
+          "drawbar_organ": 2,
+          "gospel_organ": 1
+        }
+      }
+    },
+    "bass": {
+      "recipe": "moog_bass",
+      "fx.FXHyperD": 0.1
+    },
+    "brass": {
+      "recipe": {
+        "choose": {
+          "synth_brass": 2,
+          "horn_ms": 1
+        }
+      }
+    }
+  }
+}

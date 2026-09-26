@@ -1,0 +1,58 @@
+{
+  "name": "Gospel organ with overdrive",
+  "knobs": {
+    "osc.count": 3,
+    "osc0.wavetable": "harmonic_smooth",
+    "osc1.wavetable": "default",
+    "osc1.frame": "sine",
+    "osc1.octave": 1,
+    "osc2.wavetable": "default",
+    "osc2.frame": "sine",
+    "osc2.octave": -1,
+    "osc.unison": 1,
+    "fx.FXDistortion": 0.9,
+    "fx.FXDistortion.kParamMode": {
+      "choose": {
+        "kOverdrive": 2,
+        "kTapeSat": 1
+      }
+    },
+    "fx.FXDistortion.kParamDrive": [
+      30,
+      60
+    ],
+    "fx.FXChorus": 0.9,
+    "lfo0.shape": "sine",
+    "lfo0.sync": 0,
+    "lfo0.rateHz": [
+      6.0,
+      7.5
+    ],
+    "lfo0.mode": "Free",
+    "macro.theme": {
+      "choose": {
+        "drive": 3,
+        "chorus": 2
+      }
+    }
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "oscillator*.pan",
+      "amount": [
+        15,
+        35
+      ],
+      "bipolar": true
+    },
+    {
+      "source": "mod_wheel",
+      "dest": "lfo0.rate",
+      "amount": [
+        20,
+        50
+      ]
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "name": "Riddim bass",
+  "knobs": {
+    "osc.count": {
+      "choose": {
+        "1": 2,
+        "2": 1
+      }
+    },
+    "osc.wtTag": {
+      "choose": {
+        "growl": 2,
+        "digital": 2
+      }
+    },
+    "osc.octave": -1,
+    "osc0.warp": 1,
+    "osc0.warpMode": {
+      "choose": {
+        "kDistLinFold": 2,
+        "kSync": 2,
+        "kBendPos": 1,
+        "kDistSinFold": 1
+      }
+    },
+    "osc0.warpAmount": [
+      0.2,
+      0.7
+    ],
+    "lfo0.shape": {
+      "choose": {
+        "square": 2,
+        "saw_down": 2,
+        "stairs": 1
+      }
+    },
+    "lfo0.sync": 1,
+    "lfo0.syncRate": {
+      "choose": {
+        "1/8": 2,
+        "1/16": 2,
+        "1/4": 1
+      }
+    },
+    "lfo0.triplet": 0.35,
+    "lfo0.mode": "Retrig",
+    "filter.on": 0.7,
+    "filter.cutoff": [
+      0.3,
+      0.6
+    ],
+    "fx.FXDistortion": 1,
+    "fx.FXDistortion.kParamDrive": [
+      40,
+      80
+    ],
+    "fx.FXComp": 0.8,
+    "global.mono": 1
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "oscillator0.table_position",
+      "amount": [
+        30,
+        80
+      ]
+    },
+    {
+      "source": "lfo0",
+      "dest": "oscillator0.warp_amount",
+      "amount": [
+        20,
+        50
+      ],
+      "chance": 0.6
+    },
+    {
+      "source": "lfo0",
+      "dest": "filter0.cutoff",
+      "amount": [
+        20,
+        50
+      ],
+      "chance": 0.5
+    }
+  ]
+}

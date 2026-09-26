@@ -1,0 +1,84 @@
+{
+  "name": "Funk",
+  "family": "acoustic",
+  "categories": {
+    "keys": 3,
+    "bass": 3,
+    "brass": 2,
+    "epiano": 2,
+    "lead": 1,
+    "organ": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "analog": 3,
+        "pwm": 1,
+        "warm": 1
+      }
+    },
+    "fx.FXPhaser": 0.3,
+    "fx.FXChorus": 0.3,
+    "fx.FXDistortion": 0.3,
+    "fx.FXReverb": 0.35,
+    "fx.FXReverb.kParamWet": [
+      8,
+      20
+    ],
+    "expr.velCutoff": 0.9,
+    "amp.release": {
+      "range": [
+        0.05,
+        0.2
+      ],
+      "log": true
+    },
+    "macro.theme": {
+      "choose": {
+        "tone": 3,
+        "resonance": 3,
+        "drive": 2,
+        "attack": 1
+      }
+    }
+  },
+  "perCategory": {
+    "keys": {
+      "recipe": {
+        "choose": {
+          "clav": 5,
+          "none": 1
+        }
+      }
+    },
+    "bass": {
+      "recipe": {
+        "choose": {
+          "moog_bass": 3,
+          "acid_bass": 1
+        }
+      },
+      "global.mono": 1,
+      "amp.sustain": [
+        0.5,
+        0.8
+      ],
+      "filter.reso": [
+        20,
+        45
+      ]
+    },
+    "brass": {
+      "recipe": "synth_brass"
+    },
+    "epiano": {
+      "recipe": {
+        "choose": {
+          "wurli": 2,
+          "rhodes_wt": 1
+        }
+      },
+      "fx.FXPhaser": 0.6
+    }
+  }
+}

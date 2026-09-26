@@ -1,0 +1,61 @@
+{
+  "name": "Evolving wavetable pad",
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "evolving": 2,
+        "harmonic": 1,
+        "digital": 1
+      }
+    },
+    "lfo0.shape": {
+      "choose": {
+        "sine": 2,
+        "triangle": 1
+      }
+    },
+    "lfo0.sync": 0,
+    "lfo0.rateHz": {
+      "range": [
+        0.03,
+        0.2
+      ],
+      "log": true
+    },
+    "lfo0.mode": "Free",
+    "lfo1.shape": {
+      "choose": {
+        "sine": 1,
+        "random": 1
+      }
+    },
+    "lfo1.sync": 0,
+    "lfo1.rateHz": {
+      "range": [
+        0.05,
+        0.4
+      ],
+      "log": true
+    },
+    "lfo1.mode": "Free"
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "oscillator*.table_position",
+      "amount": [
+        20,
+        60
+      ]
+    },
+    {
+      "source": "lfo1",
+      "dest": "oscillator*.pan",
+      "amount": [
+        15,
+        40
+      ],
+      "bipolar": true
+    }
+  ]
+}

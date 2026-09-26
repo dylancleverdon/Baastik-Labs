@@ -1,0 +1,87 @@
+{
+  "name": "Reese bass",
+  "knobs": {
+    "osc.count": 2,
+    "osc0.wavetable": {
+      "choose": {
+        "default": 1,
+        "analog_basic": 1
+      }
+    },
+    "osc0.frame": "saw",
+    "osc1.wavetable": {
+      "choose": {
+        "default": 1,
+        "analog_basic": 1
+      }
+    },
+    "osc1.frame": "saw",
+    "osc.octave": -1,
+    "osc0.fine": [
+      -18,
+      -6
+    ],
+    "osc1.fine": [
+      6,
+      18
+    ],
+    "osc.unison": {
+      "choose": {
+        "2": 2,
+        "3": 1,
+        "4": 1
+      }
+    },
+    "osc.detune": [
+      0.1,
+      0.25
+    ],
+    "osc.warp": 0.2,
+    "filter.on": 1,
+    "filter.type": {
+      "choose": {
+        "MgL24": 2,
+        "L24": 1,
+        "LadderMg": 1
+      }
+    },
+    "filter.cutoff": [
+      0.3,
+      0.55
+    ],
+    "global.mono": 1,
+    "lfo0.shape": "sine",
+    "lfo0.sync": 0.3,
+    "lfo0.rateHz": {
+      "range": [
+        0.1,
+        0.6
+      ],
+      "log": true
+    },
+    "lfo0.mode": "Free",
+    "fx.FXDistortion": 0.6,
+    "fx.FXHyperD": 0.3,
+    "fx.FXComp": 0.4
+  },
+  "routes": [
+    {
+      "source": "lfo0",
+      "dest": "filter0.cutoff",
+      "amount": [
+        10,
+        25
+      ],
+      "bipolar": true
+    },
+    {
+      "source": "lfo0",
+      "dest": "oscillator*.detune",
+      "amount": [
+        15,
+        35
+      ],
+      "chance": 0.5
+    }
+  ]
+}

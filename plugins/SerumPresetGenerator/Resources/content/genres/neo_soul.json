@@ -1,0 +1,90 @@
+{
+  "name": "Neo Soul",
+  "family": "acoustic",
+  "categories": {
+    "epiano": 4,
+    "pad": 2,
+    "bass": 2,
+    "keys": 1,
+    "organ": 1,
+    "guitar": 1,
+    "strings": 1
+  },
+  "knobs": {
+    "osc.wtTag": {
+      "choose": {
+        "warm": 3,
+        "keys": 2,
+        "harmonic": 1
+      }
+    },
+    "osc.warp": 0.05,
+    "fx.FXChorus": 0.6,
+    "fx.FXChorus.kParamWet": [
+      30,
+      60
+    ],
+    "fx.FXDistortion": 0.35,
+    "fx.FXDistortion.kParamMode": {
+      "choose": {
+        "kTapeSat": 3,
+        "kSoftSat": 1
+      }
+    },
+    "fx.FXDistortion.kParamDrive": [
+      8,
+      25
+    ],
+    "fx.FXReverb": 0.6,
+    "fx.FXPhaser": 0.2,
+    "expr.velAmp": 0.8,
+    "expr.velCutoff": 0.7,
+    "mod.count": {
+      "choose": {
+        "0": 2,
+        "1": 1
+      }
+    },
+    "mod.source": "random1",
+    "mod.dest": {
+      "choose": {
+        "oscillator*.fine": 1
+      }
+    },
+    "mod.amount": [
+      3,
+      8
+    ],
+    "macro.theme": {
+      "choose": {
+        "tone": 3,
+        "chorus": 2,
+        "drift": 2,
+        "space": 2
+      }
+    }
+  },
+  "perCategory": {
+    "epiano": {
+      "recipe": {
+        "choose": {
+          "rhodes_wt": 3,
+          "suitcase_ms": 2,
+          "wurli": 1
+        }
+      }
+    },
+    "pad": {
+      "recipe": {
+        "choose": {
+          "dreamy_sines": 3,
+          "warm_analog_pad": 1
+        }
+      }
+    },
+    "bass": {
+      "recipe": "moog_bass",
+      "global.porta": 0.8
+    }
+  }
+}

@@ -28,9 +28,9 @@ cp "$PAYLOAD/release.json"      "$ROOT/Library/Application Support/Norg/installe
 pkgbuild --analyze --root "$ROOT" "$WORK/components.plist"
 i=0
 while /usr/libexec/PlistBuddy -c "Print :$i" "$WORK/components.plist" >/dev/null 2>&1; do
-    /usr/libexec/PlistBuddy -c "Set :$i:BundleIsRelocatable false" "$WORK/components.plist"
-    /usr/libexec/PlistBuddy -c "Set :$i:BundleIsVersionChecked false" "$WORK/components.plist"
-    /usr/libexec/PlistBuddy -c "Set :$i:BundleOverwriteAction upgrade" "$WORK/components.plist"
+    plutil -replace "$i.BundleIsRelocatable" -bool NO "$WORK/components.plist"
+    plutil -replace "$i.BundleIsVersionChecked" -bool NO "$WORK/components.plist"
+    plutil -replace "$i.BundleOverwriteAction" -string upgrade "$WORK/components.plist"
     i=$((i + 1))
 done
 

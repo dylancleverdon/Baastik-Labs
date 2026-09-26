@@ -30,6 +30,22 @@ namespace norg::update
         }
 
        #if JUCE_MAC
+        // Runs a helper whose output we don't need, killing it if it overruns (never blocks on pipes).
+        int runQuiet (const juce::StringArray& args, int timeoutMs)
+        {
+            juce::ChildProcess process;
+            if (! process.start (args, 0))
+                return -1;
+
+            if (! process.waitForProcessToFinish (timeoutMs))
+            {
+                process.kill();
+                return -1;
+            }
+
+            return static_cast<int> (process.getExitCode());
+        }
+
         juce::String escapeAppleScript (const juce::String& s)
         {
             return s.replace ("\\", "\\\\").replace ("\"", "\\\"");
@@ -100,18 +116,16 @@ namespace norg::update
             {
                #if JUCE_MAC
                 // Makes the AU registry notice the new Norg.component straight away.
-                juce::String out;
-                run ({ "/usr/bin/killall", "-9", "AudioComponentRegistrar" }, out, 10000);
+                runQuiet ({ "/usr/bin/killall", "-9", "AudioComponentRegistrar" }, 10000);
                #endif
             }
 
             void notify (const juce::String& title, const juce::String& message) override
             {
                #if JUCE_MAC
-                juce::String out;
-                run ({ "/usr/bin/osascript", "-e",
-                       "display notification \"" + escapeAppleScript (message) + "\" with title \""
-                           + escapeAppleScript (title) + "\"" }, out, 10000);
+                runQuiet ({ "/usr/bin/osascript", "-e",
+                            "display notification \"" + escapeAppleScript (message) + "\" with title \""
+                                + escapeAppleScript (title) + "\"" }, 10000);
                #else
                 juce::ignoreUnused (title, message);
                #endif
@@ -150,11 +164,10 @@ namespace norg::update
 
                #if JUCE_MAC
                 const auto domain = "gui/" + juce::String (static_cast<int> (getuid()));
-                juce::String out;
-                run ({ "/bin/launchctl", "bootout", domain + "/" + Layout::launchAgentLabel }, out, 20000);
-                if (run ({ "/bin/launchctl", "bootstrap", domain, plist.getFullPathName() }, out, 20000) != 0)
+                runQuiet ({ "/bin/launchctl", "bootout", domain + "/" + Layout::launchAgentLabel }, 20000);
+                if (const int code = runQuiet ({ "/bin/launchctl", "bootstrap", domain, plist.getFullPathName() }, 20000); code != 0)
                 {
-                    error = "launchctl bootstrap failed: " + out.trim();
+                    error = "launchctl bootstrap exited with " + juce::String (code);
                     return false;
                 }
                #endif

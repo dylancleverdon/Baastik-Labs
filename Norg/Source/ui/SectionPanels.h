@@ -21,27 +21,36 @@ namespace norg::ui
         Knob volume;
     };
 
-    // Norg Stage: Organ | Piano | Synth, with the effects strip underneath.
+    class OrganPanel;
+    class RotaryPanel;
+
+    // Norg Stage: Organ | Piano | Synth, with the rotary and effects strip underneath.
     class StagePanel final : public juce::Component
     {
     public:
         explicit StagePanel (juce::AudioProcessorValueTreeState&);
+        ~StagePanel() override;
         void resized() override;
 
     private:
-        InstrumentSection organ, piano, synth;
+        std::unique_ptr<OrganPanel> organ;
+        InstrumentSection piano, synth;
+        std::unique_ptr<RotaryPanel> rotary;
         SectionFrame effects { "Effects" };
     };
 
-    // Norg Electro: Organ | Piano | Sample, with the effects row along the bottom.
+    // Norg Electro: Organ | Piano | Sample, with the rotary and effects row along the bottom.
     class ElectroPanel final : public juce::Component
     {
     public:
         explicit ElectroPanel (juce::AudioProcessorValueTreeState&);
+        ~ElectroPanel() override;
         void resized() override;
 
     private:
-        InstrumentSection organ, piano, sample;
+        std::unique_ptr<OrganPanel> organ;
+        InstrumentSection piano, sample;
+        std::unique_ptr<RotaryPanel> rotary;
         SectionFrame effects { "Effects" };
     };
 }

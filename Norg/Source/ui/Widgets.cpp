@@ -35,7 +35,7 @@ namespace norg::ui
 
     //==============================================================================
     LedButton::LedButton (juce::String label, juce::Colour ledColour)
-        : juce::Button (label), labelText (std::move (label)), led (ledColour)
+        : juce::Button (std::move (label)), led (ledColour)
     {
         setMouseCursor (juce::MouseCursor::PointingHandCursor);
     }
@@ -46,6 +46,7 @@ namespace norg::ui
         const bool lit = ledOverride.value_or (getToggleState());
 
         // Layout: LED on top, key cap in the middle, label below.
+        const auto labelText = getButtonText();
         const float labelHeight = labelText.isEmpty() ? 0.0f : 14.0f;
         auto area = bounds;
         const auto labelArea = area.removeFromBottom (labelHeight);
@@ -53,7 +54,7 @@ namespace norg::ui
         auto cap = area.reduced (2.0f, 1.5f);
         cap = cap.withSizeKeepingCentre (juce::jmin (cap.getWidth(), 40.0f), juce::jmin (cap.getHeight(), 18.0f));
 
-        NorgLookAndFeel::drawLed (g, ledArea.getCentre(), 3.0f, lit, led);
+        NorgLookAndFeel::drawLed (g, ledArea.getCentre(), 3.0f, lit && isEnabled(), led);
 
         const float press = down ? 1.0f : 0.0f;
         g.setColour (juce::Colours::black.withAlpha (0.5f));
@@ -67,7 +68,8 @@ namespace norg::ui
         g.drawRoundedRectangle (cap.translated (0.0f, press).reduced (0.5f), 3.0f, 1.0f);
 
         if (labelHeight > 0.0f)
-            drawSilkscreen (g, labelText, labelArea, juce::Justification::centred, 11.0f);
+            drawSilkscreen (g, labelText, labelArea, juce::Justification::centred, 11.0f, false,
+                            isEnabled() ? colours::silkscreen : colours::silkscreenDim);
     }
 
     //==============================================================================

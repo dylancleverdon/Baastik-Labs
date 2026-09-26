@@ -28,6 +28,9 @@ namespace norg
         // 0 = pedal up, 1 = fully down (values in between are half-pedal).
         virtual void sustainPedal (float amount) { juce::ignoreUnused (amount); }
 
+        // Expression / swell pedal (CC 11), 0..1. Defaults to fully open.
+        virtual void expression (float amount) { juce::ignoreUnused (amount); }
+
         // Adds `numSamples` of stereo output into `buffer`, starting at `startSample`.
         virtual void render (juce::AudioBuffer<float>& buffer, int startSample, int numSamples) = 0;
 

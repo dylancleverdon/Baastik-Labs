@@ -1,4 +1,5 @@
 #include "SectionPanels.h"
+#include "OrganPanel.h"
 #include "params/Parameters.h"
 
 namespace norg::ui
@@ -28,64 +29,76 @@ namespace norg::ui
     }
 
     //==============================================================================
-    StagePanel::StagePanel (juce::AudioProcessorValueTreeState& state)
-        : organ (state, "Organ", paramId (P::organOn), paramId (P::organVolume)),
-          piano (state, "Piano", paramId (P::pianoOn), paramId (P::pianoVolume)),
-          synth (state, "Synth", paramId (P::synthOn), paramId (P::synthVolume))
+    namespace
     {
-        organ.setNote ("Tonewheel, Vox, Farf and Pipe organs arrive in the next update");
+        // Top row of sections, then the rotary + effects strip underneath.
+        void layoutPanel (juce::Rectangle<int> area, std::initializer_list<std::pair<juce::Component*, int>> topRow,
+                          juce::Component& rotary, juce::Component& effects)
+        {
+            auto bottom = area.removeFromBottom (136);
+            area.removeFromBottom (12);
+
+            const int gap = 14;
+            for (const auto& [component, width] : topRow)
+            {
+                component->setBounds (area.removeFromLeft (width));
+                area.removeFromLeft (gap);
+            }
+
+            rotary.setBounds (bottom.removeFromLeft (330));
+            bottom.removeFromLeft (gap);
+            effects.setBounds (bottom);
+        }
+    }
+
+    StagePanel::StagePanel (juce::AudioProcessorValueTreeState& state)
+        : organ (std::make_unique<OrganPanel> (state, DrawbarStyle::sliding)),
+          piano (state, "Piano", paramId (P::pianoOn), paramId (P::pianoVolume)),
+          synth (state, "Synth", paramId (P::synthOn), paramId (P::synthVolume)),
+          rotary (std::make_unique<RotaryPanel> (state))
+    {
         piano.setNote ("Grand, EPs and Clav coming soon");
         synth.setNote ("Synth coming soon");
-        effects.setNote ("Rotary, effects and reverb coming soon");
+        effects.setNote ("Effects and reverb coming soon");
 
-        for (auto* c : std::initializer_list<juce::Component*> { &organ, &piano, &synth, &effects })
+        for (auto* c : std::initializer_list<juce::Component*> { organ.get(), &piano, &synth, rotary.get(), &effects })
             addAndMakeVisible (c);
     }
 
+    StagePanel::~StagePanel() = default;
+
     void StagePanel::resized()
     {
-        auto area = getLocalBounds();
-        auto fx = area.removeFromBottom (136);
-        area.removeFromBottom (12);
-
-        const int gap = 14;
-        const int total = area.getWidth() - 2 * gap;
-        organ.setBounds (area.removeFromLeft (total * 40 / 100));
-        area.removeFromLeft (gap);
-        piano.setBounds (area.removeFromLeft (total * 30 / 100));
-        area.removeFromLeft (gap);
-        synth.setBounds (area);
-        effects.setBounds (fx);
+        const int width = getWidth() - 28;
+        const int organWidth = width * 48 / 100;
+        const int pianoWidth = (width - organWidth) / 2;
+        layoutPanel (getLocalBounds(), { { organ.get(), organWidth }, { &piano, pianoWidth }, { &synth, width - organWidth - pianoWidth } },
+                     *rotary, effects);
     }
 
     //==============================================================================
     ElectroPanel::ElectroPanel (juce::AudioProcessorValueTreeState& state)
-        : organ (state, "Organ", paramId (P::organOn), paramId (P::organVolume)),
+        : organ (std::make_unique<OrganPanel> (state, DrawbarStyle::leds)),
           piano (state, "Piano", paramId (P::pianoOn), paramId (P::pianoVolume)),
-          sample (state, "Sample", paramId (P::sampleOn), paramId (P::sampleVolume))
+          sample (state, "Sample", paramId (P::sampleOn), paramId (P::sampleVolume)),
+          rotary (std::make_unique<RotaryPanel> (state))
     {
-        organ.setNote ("Drawbars and rotary arrive in the next update");
         piano.setNote ("Pianos coming soon");
         sample.setNote ("Tape strings, flute and choir coming soon");
         effects.setNote ("Effects coming soon");
 
-        for (auto* c : std::initializer_list<juce::Component*> { &organ, &piano, &sample, &effects })
+        for (auto* c : std::initializer_list<juce::Component*> { organ.get(), &piano, &sample, rotary.get(), &effects })
             addAndMakeVisible (c);
     }
 
+    ElectroPanel::~ElectroPanel() = default;
+
     void ElectroPanel::resized()
     {
-        auto area = getLocalBounds();
-        auto fx = area.removeFromBottom (136);
-        area.removeFromBottom (12);
-
-        const int gap = 14;
-        const int total = area.getWidth() - 2 * gap;
-        organ.setBounds (area.removeFromLeft (total * 48 / 100));
-        area.removeFromLeft (gap);
-        piano.setBounds (area.removeFromLeft (total * 27 / 100));
-        area.removeFromLeft (gap);
-        sample.setBounds (area);
-        effects.setBounds (fx);
+        const int width = getWidth() - 28;
+        const int organWidth = width * 52 / 100;
+        const int pianoWidth = (width - organWidth) / 2;
+        layoutPanel (getLocalBounds(), { { organ.get(), organWidth }, { &piano, pianoWidth }, { &sample, width - organWidth - pianoWidth } },
+                     *rotary, effects);
     }
 }

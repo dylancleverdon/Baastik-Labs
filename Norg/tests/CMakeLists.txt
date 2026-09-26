@@ -13,3 +13,9 @@ target_link_libraries(NorgUpdaterTests PRIVATE
     juce::juce_recommended_config_flags Catch2::Catch2)
 catch_discover_tests(NorgUpdaterTests DISCOVERY_MODE PRE_TEST)
 
+
+# Tests compare exact values on purpose. (Set per source file so it comes after JUCE's warning flags.)
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    set_source_files_properties(${NORG_ENGINE_TESTS} ${NORG_UPDATER_TESTS} TestMain.cpp
+        PROPERTIES COMPILE_OPTIONS "-Wno-float-equal")
+endif()

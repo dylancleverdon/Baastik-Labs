@@ -34,7 +34,6 @@ namespace norg::ui
         void setLedOverride (std::optional<bool> lit) { ledOverride = lit; repaint(); }
 
     private:
-        juce::String labelText;
         juce::Colour led;
         std::optional<bool> ledOverride;
     };

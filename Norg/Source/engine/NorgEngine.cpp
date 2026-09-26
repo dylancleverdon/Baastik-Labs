@@ -1,5 +1,6 @@
 #include "NorgEngine.h"
 #include "TestToneSection.h"
+#include "organ/OrganSection.h"
 
 namespace norg
 {
@@ -19,7 +20,7 @@ namespace norg
             slot.volumeParam = volume;
         };
 
-        install (SectionId::organ,  std::make_unique<TestToneSection>(),      P::organOn,  P::organVolume);
+        install (SectionId::organ,  std::make_unique<organ::OrganSection>(), P::organOn,  P::organVolume);
         install (SectionId::piano,  std::make_unique<TestToneSection> (1.0f), P::pianoOn,  P::pianoVolume);
         install (SectionId::synth,  std::make_unique<TestToneSection> (0.5f), P::synthOn,  P::synthVolume);
         install (SectionId::sample, std::make_unique<TestToneSection> (2.0f), P::sampleOn, P::sampleVolume);
@@ -88,6 +89,12 @@ namespace norg
             const float amount = static_cast<float> (m.getControllerValue()) / 127.0f;
             for (auto& slot : slots)
                 slot.section->sustainPedal (amount);
+        }
+        else if (m.isControllerOfType (11))
+        {
+            const float amount = static_cast<float> (m.getControllerValue()) / 127.0f;
+            for (auto& slot : slots)
+                slot.section->expression (amount);
         }
         else if (m.isAllNotesOff() || m.isAllSoundOff())
         {

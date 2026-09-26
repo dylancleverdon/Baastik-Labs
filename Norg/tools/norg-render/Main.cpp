@@ -90,7 +90,7 @@ int main (int argc, char* argv[])
 
     if (const auto shot = argValue (args, "--screenshot"); shot.isNotEmpty())
     {
-        std::unique_ptr<juce::AudioProcessorEditor> editor (plugin->createEditorIfNeeded());
+        std::unique_ptr<juce::AudioProcessorEditor> editor (plugin->createEditorAndMakeActive());
         const int width = argValue (args, "--width", "1400").getIntValue();
         editor->setSize (width, width * editor->getHeight() / juce::jmax (1, editor->getWidth()));
         const auto image = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);

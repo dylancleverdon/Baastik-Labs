@@ -146,12 +146,17 @@ jobs:
           E2E_HOME="$RUNNER_TEMP/e2e-home"
           SUPPORT="$E2E_HOME/Library/Application Support/Norg"
           mkdir -p "$SUPPORT"
-          # Pretend the previous build is installed.
+          # Pretend the previous build is installed: its record and its bundles, so there is
+          # something to roll back to.
           python3 - "$PAYLOAD/release.json" "$SUPPORT/installed.json" <<'PY'
           import json, sys
           d = json.load(open(sys.argv[1])); d["build"] -= 1; d["version"] += "-previous"
           json.dump(d, open(sys.argv[2], "w"))
           PY
+          ditto "$PAYLOAD/Norg.component" "$E2E_HOME/Library/Audio/Plug-Ins/Components/Norg.component"
+          ditto "$PAYLOAD/Norg.vst3" "$E2E_HOME/Library/Audio/Plug-Ins/VST3/Norg.vst3"
+          ditto "$PAYLOAD/Norg.app" "$E2E_HOME/Applications/Norg.app"
+          ditto "$PAYLOAD/NorgUpdater" "$SUPPORT/NorgUpdater"
           # Work on a copy of the zip, so the one being published is never touched.
           mkdir -p "$RUNNER_TEMP/e2e-feed"
           ZIP="$RUNNER_TEMP/e2e-feed/Norg-${VERSION}-mac.zip"

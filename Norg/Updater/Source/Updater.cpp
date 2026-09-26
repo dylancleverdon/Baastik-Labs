@@ -123,7 +123,7 @@ namespace norg::update
         if (sha256OfFile (zip) != manifest->sha256)
         {
             cleanup();
-            return fail ("downloaded update does not match its signed checksum");
+            return fail ("downloaded update does not match its published checksum");
         }
 
         // 4. Extract and check what's inside

@@ -56,6 +56,9 @@ struct Settings
     Mode mode = Mode::Guided;
     std::string category { kAny };
     std::string genre { kNone };
+    // Forces one recipe (Guided mode). Empty = the category/genre profile picks.
+    // When category is "any", the category that lists this recipe is used.
+    std::string recipe;
     double chaos = 0.2; // 0 = strictly on-profile, 1 = anything the base allows
     std::uint64_t seed = 1;
     // Locked groups are copied from the base preset instead of generated.

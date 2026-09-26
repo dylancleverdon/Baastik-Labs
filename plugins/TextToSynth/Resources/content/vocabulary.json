@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "minEngine": 1,
+  "howToUse": [
+    "Words map to moves. Apply the moves that exist in the preset (check describe_preset first), in order, and stop once the change is clearly audible.",
+    "Scale the step by intensity: 'a touch/slightly' = 0.5x, plain = 1x, 'much/way/a lot' = 2x. Repeated requests ('still too harsh') take another step.",
+    "Prefer relative edits (add/scale) on existing values. Use set only for things that are off/absent or for a specific request.",
+    "If an FX mix is 0 but a macro routes to it, the macro controls it: move the macro value instead of the FX mix.",
+    "Steps and 'typical' ranges below come from Serum 2's factory library, in each parameter's own units."
+  ],
+  "amounts": {
+    "a touch / slightly / a little": 0.5,
+    "(no qualifier)": 1.0,
+    "more / noticeably": 1.5,
+    "much / a lot / way / really": 2.0
+  },
+  "typical": {
+    "fx.reverb.mix": {"bass": "0-15", "lead": "0-25", "pluck": "10-35", "pad": "25-45", "strings": "35-55", "arp": "20-40"},
+    "fx.reverb.size": {"bass": "15-30", "lead": "30-45", "pad": "45-70"},
+    "fx.delay.mix": {"lead": "10-30", "pad": "25-45", "arp": "35-55"},
+    "fx.delay.feedback": {"any": "30-50"},
+    "fx.distortion.drive": {"any": "20-45", "aggressive": "60-100"},
+    "fx.distortion.mix": {"subtle": "15-35", "any": "40-60"},
+    "filter1.cutoff": {"dark": "0.15-0.3", "neutral": "0.3-0.5", "bright": "0.6-1"},
+    "filter1.resonance": {"any": "5-15", "acid/resonant": "40-80"},
+    "env1.attack": {"pluck/bass/keys": "0-0.005 s", "pad": "0.1-0.8 s", "strings": "0.15-0.5 s"},
+    "env1.release": {"bass": "0.05-0.2 s", "pluck/keys": "0.3-0.8 s", "pad": "1-3 s"},
+    "oscA.unison": {"bass": "1-3", "lead/synth": "2-7", "pad/supersaw": "4-9"},
+    "oscA.detune": {"any": "0.01-0.1", "supersaw": "0.15-0.3"}
+  },
+  "descriptors": {
+    "darker": {
+      "opposite": "brighter",
+      "moves": [
+        {"target": "filter1.cutoff", "add": -0.08, "note": "If filter1 is off: turn it on, type MgL24, cutoff 0.35."},
+        {"target": "fx.eq.high_gain", "add": -3, "note": "Only if an EQ is present."},
+        {"target": "oscA.wt_pos", "note": "Moving toward sine-like frames darkens; only if the table's frames are known."}
+      ]
+    },
+    "brighter": {
+      "opposite": "darker",
+      "moves": [
+        {"target": "filter1.cutoff", "add": 0.08},
+        {"target": "filter1.resonance", "add": 5, "note": "Adds edge; skip if 'harsh' was mentioned."},
+        {"target": "fx.eq.high_gain", "add": 3, "note": "Only if an EQ is present."}
+      ]
+    },
+    "too harsh / less harsh / smoother / less piercing": {
+      "opposite": "more bite",
+      "moves": [
+        {"target": "filter1.resonance", "scale": 0.6, "note": "Resonance peaks read as harsh; do this first if resonance > 20."},
+        {"target": "fx.distortion.drive", "scale": 0.7},
+        {"target": "fx.distortion.mix", "scale": 0.7},
+        {"target": "filter1.cutoff", "add": -0.05},
+        {"target": "oscA.warp", "scale": 0.6, "note": "FM/sync warps add upper harmonics."},
+        {"add_fx": "eq", "params": {"high_gain": -4, "high_freq": 4000}, "note": "Only if no EQ exists; otherwise lower fx.eq.high_gain by 3."}
+      ]
+    },
+    "more bite / aggressive / edgier": {
+      "opposite": "too harsh",
+      "moves": [
+        {"target": "fx.distortion.drive", "add": 15, "note": "If no distortion: add_fx distortion with drive 35, mix 40."},
+        {"target": "filter1.resonance", "add": 8},
+        {"target": "filter1.cutoff", "add": 0.06}
+      ]
+    },
+    "drier / less reverb / less wash / tighter space": {
+      "opposite": "wetter",
+      "moves": [
+        {"target": "fx.reverb.mix", "scale": 0.6},
+        {"target": "fx.delay.mix", "scale": 0.6},
+        {"target": "fx.reverb.size", "add": -10, "note": "Only if the user wants it 'smaller' or 'tighter' as well."}
+      ]
+    },
+    "wetter / more space / more reverb / more ambient / spacey": {
+      "opposite": "drier",
+      "moves": [
+        {"target": "fx.reverb.mix", "add": 10, "note": "If no reverb: add_fx reverb with size 50, mix 25 (pads 35)."},
+        {"target": "fx.reverb.size", "add": 10},
+        {"target": "fx.delay.mix", "add": 8, "note": "For 'spacey'/'echoey' only; add_fx delay with feedback 40, mix 20 if absent."}
+      ]
+    },
+    "wider / bigger stereo": {
+      "opposite": "narrower",
+      "moves": [
+        {"target": "oscA.unison", "add": 2, "note": "Then detune >= 0.05 so voices spread; same for oscB/oscC if on."},
+        {"target": "oscA.stereo", "set": 100},
+        {"add_fx": "chorus", "params": {"mix": 25}, "note": "If no chorus/hyper; else raise their mix by 10."},
+        {"target": "fx.hyper.mix", "add": 10}
+      ]
+    },
+    "narrower / mono / more focused": {
+      "opposite": "wider",
+      "moves": [
+        {"target": "oscA.stereo", "scale": 0.5},
+        {"target": "fx.chorus.mix", "scale": 0.5},
+        {"target": "fx.hyper.mix", "scale": 0.5},
+        {"target": "oscA.unison", "add": -2, "note": "For basses, unison 1 on the low oscillator keeps the low end mono."}
+      ]
+    },
+    "fatter / thicker / fuller / bigger": {
+      "opposite": "thinner",
+      "moves": [
+        {"target": "oscA.unison", "add": 2},
+        {"target": "oscA.detune", "add": 0.04},
+        {"target": "sub.on", "set": true, "note": "Basses and leads: sub at level 0.5, octave -1 relative to the main osc."},
+        {"target": "oscB.on", "set": true, "note": "Layer a second osc an octave down or detuned (fine +/-8)."}
+      ]
+    },
+    "thinner / lighter / less body": {
+      "opposite": "fatter",
+      "moves": [
+        {"target": "sub.level", "scale": 0.5},
+        {"target": "oscA.unison", "add": -2},
+        {"add_fx": "eq", "params": {"low_gain": -4, "low_freq": 200}, "note": "Only if no EQ; else lower fx.eq.low_gain."}
+      ]
+    },
+    "muddy / boomy / less mud": {
+      "moves": [
+        {"target": "fx.eq.low_gain", "add": -3, "note": "Add an EQ with low_freq 250, low_gain -4 if absent."},
+        {"target": "fx.reverb.mix", "scale": 0.7},
+        {"target": "fx.reverb.size", "add": -10}
+      ]
+    },
+    "more low end / more bass / heavier": {
+      "moves": [
+        {"target": "sub.on", "set": true},
+        {"target": "sub.level", "add": 0.15},
+        {"target": "fx.eq.low_gain", "add": 3}
+      ]
+    },
+    "punchier / snappier / tighter": {
+      "moves": [
+        {"target": "env1.attack", "set": 0.001},
+        {"target": "env1.decay", "scale": 0.7, "note": "With sustain below 1 so the decay is audible."},
+        {"add_fx": "compressor", "params": {"threshold": 0.35, "ratio": 4, "attack": 15}, "note": "Only if no compressor."}
+      ]
+    },
+    "softer / gentler / less attack": {
+      "moves": [
+        {"target": "env1.attack", "add": 0.02},
+        {"target": "filter1.cutoff", "add": -0.04},
+        {"target": "fx.distortion.mix", "scale": 0.6}
+      ]
+    },
+    "pluckier / shorter / more staccato": {
+      "moves": [
+        {"target": "env1.sustain", "set": 0.1},
+        {"target": "env1.decay", "set": 0.35},
+        {"target": "env1.release", "set": 0.25},
+        {"mod": {"source": "env2", "target": "filter1.cutoff", "amount": 45}, "note": "With env2 attack 0, decay 0.25, sustain 0 and filter1 cutoff lowered by 0.15."}
+      ]
+    },
+    "longer / more sustained / legato-ish": {
+      "moves": [
+        {"target": "env1.sustain", "set": 0.9},
+        {"target": "env1.release", "add": 0.5}
+      ]
+    },
+    "longer tail / more release": {"moves": [{"target": "env1.release", "scale": 1.8}]},
+    "shorter tail / less release": {"moves": [{"target": "env1.release", "scale": 0.5}]},
+    "slower attack / swell / fade in": {"moves": [{"target": "env1.attack", "set": 0.4}]},
+    "more movement / more motion / evolving / alive": {
+      "opposite": "static",
+      "moves": [
+        {"mod": {"source": "lfo1", "target": "filter1.cutoff", "amount": 20}, "note": "lfo1 slow (1 bar or 4 bar synced) for pads, 1/4-1/8 for basses; add lfo_shape sine."},
+        {"mod": {"source": "lfo2", "target": "oscA.wt_pos", "amount": 25}, "note": "Wavetable motion; free rate ~0.2 Hz for pads."},
+        {"target": "fx.chorus.mix", "add": 10}
+      ]
+    },
+    "static / less movement / steadier": {
+      "opposite": "more movement",
+      "moves": [
+        {"note": "Halve amounts of LFO routes (edit the same mod with a smaller amount) rather than removing them."}
+      ]
+    },
+    "wobble / wub": {
+      "moves": [
+        {"target": "filter1.on", "set": true},
+        {"target": "filter1.cutoff", "set": 0.3},
+        {"mod": {"source": "lfo1", "target": "filter1.cutoff", "amount": 45}},
+        {"target": "lfo1.rate", "set": "1/8", "note": "1/4 for slow wubs, 1/16 for fast."},
+        {"lfo_shape": {"lfo": 1, "shape": "sine"}}
+      ]
+    },
+    "vibrato": {
+      "moves": [
+        {"mod": {"source": "lfo3", "target": "oscA.fine", "amount": 8, "bipolar": true}, "note": "Plus lfo3 sine, ~5 Hz free, rise 0.3 s. Repeat for other active oscs."}
+      ]
+    },
+    "dirtier / grittier / crunchier / saturated": {
+      "opposite": "cleaner",
+      "moves": [
+        {"target": "fx.distortion.drive", "add": 15, "note": "If absent: add_fx distortion, mode kTube or kOverdrive, drive 30, mix 35."},
+        {"target": "filter1.drive", "add": 15}
+      ]
+    },
+    "cleaner / purer": {
+      "opposite": "dirtier",
+      "moves": [
+        {"target": "fx.distortion.mix", "scale": 0.4},
+        {"target": "filter1.drive", "scale": 0.4},
+        {"target": "oscA.warp", "scale": 0.5}
+      ]
+    },
+    "warmer / analog / vintage": {
+      "moves": [
+        {"target": "filter1.type", "set": "MgL24", "note": "Moog-style ladder; keep the current cutoff."},
+        {"target": "filter1.cutoff", "add": -0.05},
+        {"target": "oscA.detune", "add": 0.02},
+        {"target": "oscA.random_phase", "set": 100},
+        {"add_fx": "chorus", "params": {"mix": 15}, "note": "Optional, only if 'vintage' or 'tape'."}
+      ]
+    },
+    "colder / digital / glassy": {
+      "moves": [
+        {"target": "filter1.type", "set": "L12"},
+        {"target": "oscA.random_phase", "set": 0},
+        {"target": "fx.distortion.mix", "scale": 0.5}
+      ]
+    },
+    "louder / quieter": {
+      "moves": [
+        {"target": "global.volume", "add": 0.08, "note": "Negative for quieter. Keep between 0.3 and 0.8."}
+      ]
+    },
+    "glide / portamento / slide": {
+      "moves": [
+        {"target": "global.mono", "set": true},
+        {"target": "global.legato", "set": true},
+        {"target": "global.glide", "set": 0.08}
+      ]
+    },
+    "detuned / chorusy / supersaw": {
+      "moves": [
+        {"target": "oscA.unison", "set": 7},
+        {"target": "oscA.detune", "set": 0.2},
+        {"target": "oscA.stereo", "set": 100}
+      ]
+    },
+    "higher / lower (pitch)": {
+      "moves": [
+        {"target": "oscA.octave", "add": 1, "note": "Negative for lower. Move every active oscillator (and sub) together."}
+      ]
+    }
+  },
+  "startingPoints": {
+    "bass / sub / 808 / reese / wobble / acid / moog": "Recipes: 808, acid_bass, fm_bass, moog_bass, reese, riddim_bass, wobble_bass. Basses: mono on, unison 1-3, cutoff 0.25-0.4.",
+    "lead / sync / pwm": "Recipes: sync_lead, pwm_lead, supersaw. Leads: glide 0.03-0.08, a little delay.",
+    "pad / drone / ambient": "Recipes: warm_analog_pad, evolving_pad, dreamy_sines, choir_pad, drone. Pads: attack 0.2-0.8, release 1.5-3, reverb mix 30+.",
+    "pluck / bell / mallet / keys": "Recipes: noise_pluck, nylon_pluck, bell_fm, marimba, vibes, fm_epiano, rhodes_wt, wurli, clav.",
+    "anything else": "Start from init and build it with edits, or from the user's own preset."
+  }
+}

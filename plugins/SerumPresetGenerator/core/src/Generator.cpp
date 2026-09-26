@@ -161,6 +161,8 @@ private:
 
         // Category.
         std::string category = settings_.category;
+        if (!settings_.recipe.empty() && (category == kAny || content_.categoryData(category).empty()))
+            category = categoryForRecipe(settings_.recipe);
         if (category == kAny || content_.categoryData(category).empty())
         {
             category.clear();
@@ -178,7 +180,7 @@ private:
         if (genreData.contains("perCategory") && genreData["perCategory"].contains(category))
             knobs_.applyLayer(genreData["perCategory"][category]);
 
-        const auto recipeId = knobs_.pick("recipe", rng, "none");
+        const auto recipeId = settings_.recipe.empty() ? knobs_.pick("recipe", rng, "none") : settings_.recipe;
         if (recipeId != "none" && !content_.recipe(recipeId).empty())
         {
             recipe_ = content_.recipe(recipeId);
@@ -189,6 +191,21 @@ private:
         knobs_.setChaos(std::clamp(settings_.chaos, 0.0, 1.0));
         result_.category = category;
         result_.genre = genre;
+    }
+
+    // The first category whose recipe choice lists id, or "any".
+    std::string categoryForRecipe(const std::string& id) const
+    {
+        for (const auto& c : content_.categories())
+        {
+            const auto& knobs = content_.categoryData(c.id).value("knobs", Json::object());
+            if (!knobs.contains("recipe"))
+                continue;
+            const auto& r = knobs["recipe"];
+            if ((r.is_string() && r.get<std::string>() == id) || (r.is_object() && r.contains("choose") && r["choose"].contains(id)))
+                return c.id;
+        }
+        return std::string(kAny);
     }
 
     template <typename Fn>

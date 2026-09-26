@@ -29,6 +29,7 @@ endif()
 
 add_subdirectory(libs/serum2)
 add_subdirectory(plugins/SerumPresetGenerator)
+add_subdirectory(plugins/TextToSynth)
 
 if(BAASTIK_BUILD_TOOLS)
     add_subdirectory(tools/serumtool)

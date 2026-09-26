@@ -7,6 +7,7 @@
 // Serum-saved presets to test against: tests/fixtures/*.SerumPreset plus any
 // directory listed in the SERUM_FIXTURES environment variable. Presets from
 // commercial packs can be tested locally this way without committing them.
+// Subfolders are searched too, so a whole preset library can be pointed at.
 inline std::vector<std::filesystem::path> fixturePresets()
 {
     std::vector<std::filesystem::path> dirs { BAASTIK_FIXTURES_DIR };
@@ -17,7 +18,7 @@ inline std::vector<std::filesystem::path> fixturePresets()
     for (const auto& dir : dirs)
     {
         std::error_code ec;
-        for (const auto& entry : std::filesystem::directory_iterator(dir, ec))
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(dir, ec))
             if (entry.path().extension() == ".SerumPreset")
                 presets.push_back(entry.path());
     }

@@ -3,7 +3,7 @@
 
   norg_release.py release-json --version V --build B --commit C --notes-file F --out release.json
   norg_release.py manifest --version V --build B --commit C --notes-file F --zip Z --zip-url U
-                           --signature S --out norg-update.json
+                           --out norg-update.json
   norg_release.py notes --since-tag-prefix norg-v --out notes.md
 """
 import argparse
@@ -43,9 +43,9 @@ def cmd_release_json(a):
 
 
 def cmd_manifest(a):
-    data = {"schema": 1, "version": a.version, "build": int(a.build), "commit": a.commit,
+    data = {"schema": 2, "version": a.version, "build": int(a.build), "commit": a.commit,
             "notes": read(a.notes_file), "zipName": a.zip.split("/")[-1], "zipUrl": a.zip_url,
-            "sha256": sha256(a.zip), "signature": a.signature, "publishedAt": now()}
+            "sha256": sha256(a.zip), "publishedAt": now()}
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
@@ -77,7 +77,6 @@ def main():
         s.add_argument("--out", required=True)
     m.add_argument("--zip", required=True)
     m.add_argument("--zip-url", required=True)
-    m.add_argument("--signature", required=True)
 
     h = sub.add_parser("sha256")
     h.add_argument("file")

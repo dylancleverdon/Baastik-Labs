@@ -21,5 +21,4 @@ option(NORG_COPY_AFTER_BUILD "Copy plugins into the user plug-in folders after b
 
 include(cmake/NorgDeps.cmake)
 
-add_subdirectory(third_party/monocypher)
 add_subdirectory(Norg)

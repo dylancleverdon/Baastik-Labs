@@ -101,7 +101,7 @@ jobs:
           mkdir -p out
           installer/macos/build-pkg.sh "$PAYLOAD" "$VERSION" out
           ditto -c -k --keepParent "$PAYLOAD" "out/Norg-${VERSION}-mac.zip"
-          cp installer/install.sh installer/uninstall.sh scripts/fetch-samples.sh out/
+          cp installer/install.sh installer/uninstall.sh out/
           ls -la out
 
       - name: Installer smoke test
@@ -112,10 +112,11 @@ jobs:
           test -d "$HOME/Applications/Norg.app"
           test -x "$HOME/Library/Application Support/Norg/NorgUpdater"
           test -f "$HOME/Library/Application Support/Norg/installed.json"
-          "$HOME/Library/Application Support/Norg/NorgUpdater" --status
-          ls -la "$HOME/Library/LaunchAgents" || true
-          # Don't let the background updater run on the CI machine.
+          # Don't let the background updater (which the installer starts) download on the CI machine.
           launchctl bootout "gui/$(id -u)/com.baastiklabs.norg.updater" 2>/dev/null || true
+          pkill -f NorgUpdater 2>/dev/null || true
+          test -f "$HOME/Library/LaunchAgents/com.baastiklabs.norg.updater.plist"
+          "$HOME/Library/Application Support/Norg/NorgUpdater" --status
 
       - name: auval (installed AU)
         run: |
@@ -131,40 +132,16 @@ jobs:
           pluginval/pluginval.app/Contents/MacOS/pluginval --strictness-level 8 --validate-in-process \
             --validate "$HOME/Library/Audio/Plug-Ins/VST3/Norg.vst3"
 
-      - name: Sign the update manifest
-        env:
-          NORG_UPDATE_SIGNING_KEY: ${{ secrets.NORG_UPDATE_SIGNING_KEY }}
-          PUBLISH: ${{ inputs.publish }}
+      - name: Write the update manifest
         run: |
-          SIGN=build/Norg/tools/norg-sign
-          if [ -z "${NORG_UPDATE_SIGNING_KEY}" ]; then
-            if [ "$PUBLISH" = "true" ]; then
-              echo "::error::The NORG_UPDATE_SIGNING_KEY repository secret is missing. Add it under Settings > Secrets and variables > Actions, then re-run."
-              exit 1
-            fi
-            echo "::warning::No signing key available; skipping manifest signing and the updater end-to-end test."
-            echo "SIGNED=false" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          if [ "$($SIGN public)" != "$(head -n1 Norg/Updater/update-public-key.txt)" ]; then
-            echo "::error::NORG_UPDATE_SIGNING_KEY does not match Norg/Updater/update-public-key.txt"
-            exit 1
-          fi
           ZIP="out/Norg-${VERSION}-mac.zip"
           URL="https://github.com/${{ github.repository }}/releases/download/norg-v${VERSION}/Norg-${VERSION}-mac.zip"
-          SHA=$(python3 scripts/ci/norg_release.py sha256 "$ZIP")
-          SIG=$($SIGN sign --version "$VERSION" --build "$BUILD" --zip-name "$(basename "$ZIP")" --url "$URL" --sha256 "$SHA")
           python3 scripts/ci/norg_release.py manifest --version "$VERSION" --build "$BUILD" --commit "${{ github.sha }}" \
-            --notes-file dist/notes.md --zip "$ZIP" --zip-url "$URL" --signature "$SIG" --out out/norg-update.json
+            --notes-file dist/notes.md --zip "$ZIP" --zip-url "$URL" --out out/norg-update.json
           cat out/norg-update.json
-          echo "SIGNED=true" >> "$GITHUB_ENV"
 
-      - name: Updater end-to-end test (local manifest)
-        if: env.SIGNED == 'true'
-        env:
-          NORG_UPDATE_SIGNING_KEY: ${{ secrets.NORG_UPDATE_SIGNING_KEY }}
+      - name: Updater end-to-end test (local feed)
         run: |
-          SIGN=build/Norg/tools/norg-sign
           UPDATER="$PAYLOAD/NorgUpdater"
           E2E_HOME="$RUNNER_TEMP/e2e-home"
           SUPPORT="$E2E_HOME/Library/Application Support/Norg"
@@ -179,13 +156,11 @@ jobs:
           mkdir -p "$RUNNER_TEMP/e2e-feed"
           ZIP="$RUNNER_TEMP/e2e-feed/Norg-${VERSION}-mac.zip"
           cp "out/Norg-${VERSION}-mac.zip" "$ZIP"
-          URL="file://$ZIP"
-          SHA=$(python3 scripts/ci/norg_release.py sha256 "$ZIP")
-          SIG=$($SIGN sign --version "$VERSION" --build "$BUILD" --zip-name "$(basename "$ZIP")" --url "$URL" --sha256 "$SHA")
           python3 scripts/ci/norg_release.py manifest --version "$VERSION" --build "$BUILD" --commit test \
-            --notes-file dist/notes.md --zip "$ZIP" --zip-url "$URL" --signature "$SIG" --out "$RUNNER_TEMP/local-manifest.json"
+            --notes-file dist/notes.md --zip "$ZIP" --zip-url "file://$ZIP" --out "$RUNNER_TEMP/local-manifest.json"
+          FEED=(--manifest-url "file://$RUNNER_TEMP/local-manifest.json" --allow-url-prefix "file://" --no-packs)
 
-          "$UPDATER" --home "$E2E_HOME" --check-now --manifest-url "file://$RUNNER_TEMP/local-manifest.json" --allow-url-prefix "file://"
+          "$UPDATER" --home "$E2E_HOME" --check-now "${FEED[@]}"
           test -d "$E2E_HOME/Library/Audio/Plug-Ins/Components/Norg.component"
           test -d "$E2E_HOME/Applications/Norg.app"
           python3 -c "import json,sys; assert json.load(open(sys.argv[1]))['build'] == int(sys.argv[2])" "$SUPPORT/installed.json" "$BUILD"
@@ -195,7 +170,7 @@ jobs:
 
           # A tampered zip must be refused.
           echo tampered >> "$ZIP"
-          if "$UPDATER" --home "$E2E_HOME" --check-now --manifest-url "file://$RUNNER_TEMP/local-manifest.json" --allow-url-prefix "file://"; then
+          if "$UPDATER" --home "$E2E_HOME" --check-now "${FEED[@]}"; then
             echo "::error::the updater accepted a tampered update"; exit 1
           fi
           echo "Updater end-to-end test passed"
@@ -223,6 +198,13 @@ jobs:
         with:
           name: norg-${{ needs.macos.outputs.version }}-mac
 
+      - uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Publish sample packs (only the first time, or when a pack version changes)
+        run: python3 src/scripts/ci/publish_packs.py --definitions src/installer/sample-packs.json --target "${{ github.sha }}"
+
       - name: Publish norg-v${{ env.VERSION }} and refresh norg-channel
         run: |
           ls -la out
@@ -243,11 +225,9 @@ jobs:
             echo "## Norg ${VERSION}"
             echo
             echo "**Install:** download [Norg-Installer.pkg](https://github.com/${GH_REPO}/releases/download/norg-channel/Norg-Installer.pkg) and open it."
-            echo "The first time, macOS may say it can't verify the developer: open **System Settings > Privacy & Security** and click **Open Anyway**."
+            echo "The first time only, macOS asks you to approve it: open **System Settings > Privacy & Security** and click **Open Anyway**."
             echo
-            echo "Or in Terminal: \`curl -fsSL https://github.com/${GH_REPO}/releases/download/norg-channel/install.sh | bash\`"
-            echo
-            echo "Norg updates itself in the background after that."
+            echo "After that Norg downloads its sampled grand piano and keeps itself up to date in the background."
             echo
             echo "### What's new"
             cat dist/notes.md
@@ -255,6 +235,6 @@ jobs:
           gh release edit norg-channel --notes-file channel-notes.md --prerelease --latest=false
 
           # Installer and scripts first, manifest last, so the feed never points at a missing file.
-          gh release upload norg-channel out/Norg-Installer.pkg out/install.sh out/uninstall.sh out/fetch-samples.sh --clobber
+          gh release upload norg-channel out/Norg-Installer.pkg out/install.sh out/uninstall.sh --clobber
           gh release upload norg-channel out/norg-update.json --clobber
           echo "Published Norg ${VERSION}"

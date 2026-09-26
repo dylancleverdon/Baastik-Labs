@@ -11,7 +11,12 @@ namespace norg::update
     struct Platform
     {
         virtual ~Platform() = default;
-        virtual bool download (const juce::String& url, const juce::File& destination, juce::String& error) = 0;
+        using ProgressFn = std::function<void (juce::int64 bytesSoFar)>;
+
+        // Downloads to `destination`. With `resume`, continues a partial file left by an earlier try.
+        virtual bool download (const juce::String& url, const juce::File& destination, juce::String& error,
+                               bool resume = false, ProgressFn progress = {}) = 0;
+        virtual bool extractArchive (const juce::File& tarGz, const juce::File& destinationDir, juce::String& error) = 0;
         virtual bool extractZip (const juce::File& zip, const juce::File& destinationDir, juce::String& error) = 0;
         virtual bool verifyCodeSignature (const juce::File& item, juce::String& error) = 0;
         virtual void refreshAudioComponents() = 0;
@@ -36,7 +41,7 @@ namespace norg::update
     public:
         using LogFn = std::function<void (const juce::String&)>;
 
-        Updater (Layout, Platform&, FileOps&, juce::String publicKeyHex, LogFn);
+        Updater (Layout, Platform&, FileOps&, LogFn);
 
         Outcome checkAndInstall (const RunOptions&);
         juce::Result rollbackToPrevious();
@@ -55,7 +60,6 @@ namespace norg::update
         Layout layout;
         Platform& platform;
         FileOps& fileOps;
-        juce::String publicKey;
         LogFn log;
         juce::String error;
     };

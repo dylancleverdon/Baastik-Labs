@@ -35,10 +35,12 @@ Linux needs the ALSA/X11/freetype `-dev` packages (see `.github/workflows/norg-b
   section (organ, piano, synth, sample) implements. No allocation, locks or I/O on the audio thread.
 - UI: `ui/MainPanel` is laid out at a fixed logical size (1400x640) and scaled by the editor.
   Colours, fonts and drawing helpers are in `ui/NorgTheme.*` and `ui/NorgLookAndFeel.*`.
-- Updates: `Norg/Updater` (the `NorgUpdater` helper) checks a signed manifest; only Ed25519-signed
-  builds from `norg-*` releases of this repo are installed. The public key is
-  `Norg/Updater/update-public-key.txt`; the private key is only in the `NORG_UPDATE_SIGNING_KEY`
-  secret. Installer files are in `installer/`.
+- Updates: `Norg/Updater` (the `NorgUpdater` helper) installs builds only from this repo's `norg-*`
+  releases over HTTPS, and only when they match the manifest's SHA-256. It also installs the sample
+  packs listed in `installer/sample-packs.json` (published by CI to the `norg-samples` release),
+  pre-transcoding them into the shared sample cache (`engine/sfz/SampleCache`). The user never has
+  to do anything by hand: keep it that way (no secrets, no terminal steps). Installer files are in
+  `installer/`.
 
 ## Versioning
 `VERSION` holds MAJOR.MINOR; CI appends its run number. Plugin state carries `schemaVersion`;

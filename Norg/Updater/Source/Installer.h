@@ -37,6 +37,12 @@ namespace norg::update
         juce::File logFile() const            { return logsDir().getChildFile ("updater.log"); }
         juce::File launchAgentPlist() const   { return launchAgentsDir().getChildFile (juce::String (launchAgentLabel) + ".plist"); }
 
+        // Sample libraries Norg installs for you, and their bookkeeping.
+        juce::File samplesDir() const         { return supportDir().getChildFile ("Samples"); }
+        juce::File packsStateJson() const     { return supportDir().getChildFile ("packs.json"); }
+        juce::File packsStatusJson() const    { return supportDir().getChildFile ("packs-status.json"); }
+        juce::File packsStagingDir() const    { return supportDir().getChildFile ("staging-packs"); }
+
         static constexpr const char* launchAgentLabel = "com.baastiklabs.norg.updater";
 
         // The updater replaces itself last, so a failure earlier never leaves it half-updated.

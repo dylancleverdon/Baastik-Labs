@@ -60,15 +60,47 @@ namespace norg::update
         class SystemPlatform final : public Platform
         {
         public:
-            bool download (const juce::String& url, const juce::File& destination, juce::String& error) override
+            bool download (const juce::String& url, const juce::File& destination, juce::String& error,
+                           bool resume, ProgressFn progress) override
             {
                 // curl (not a browser) so the download never gets a quarantine flag.
-                juce::String out;
-                const int code = run ({ "/usr/bin/curl", "-fsSL", "--retry", "2", "--connect-timeout", "20",
-                                        "--max-time", "900", "-o", destination.getFullPathName(), url }, out);
+                juce::StringArray args { "/usr/bin/curl", "-fsSL", "--retry", "3", "--connect-timeout", "20",
+                                         "--speed-limit", "1000", "--speed-time", "60" };
+                if (resume)
+                    args.addArray ({ "-C", "-" });
+                args.addArray ({ "-o", destination.getFullPathName(), url });
+
+                juce::ChildProcess process;
+                if (! process.start (args, 0))
+                {
+                    error = "could not start curl";
+                    return false;
+                }
+
+                // Report progress by watching the file grow.
+                while (process.isRunning())
+                {
+                    juce::Thread::sleep (500);
+                    if (progress)
+                        progress (destination.getSize());
+                }
+
+                const auto code = process.getExitCode();
                 if (code != 0 || ! destination.existsAsFile())
                 {
-                    error = "curl exited with " + juce::String (code) + ": " + out.trim();
+                    error = "download failed (curl exit " + juce::String (static_cast<int> (code)) + ")";
+                    return false;
+                }
+                return true;
+            }
+
+            bool extractArchive (const juce::File& tarGz, const juce::File& destinationDir, juce::String& error) override
+            {
+                juce::String out;
+                const int code = run ({ "/usr/bin/tar", "-xzf", tarGz.getFullPathName(), "-C", destinationDir.getFullPathName() }, out);
+                if (code != 0)
+                {
+                    error = "tar exited with " + juce::String (code) + ": " + out.trim();
                     return false;
                 }
                 return true;

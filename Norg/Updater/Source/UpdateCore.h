@@ -3,8 +3,12 @@
 #include <juce_core/juce_core.h>
 #include <optional>
 
-// Pure update logic: manifest parsing, signature checks, URL policy and the install decision.
+// Pure update logic: manifest parsing, URL policy and the install decision.
 // No file moves or network here, so all of it is unit-testable.
+//
+// Trust model: manifests and downloads come only over HTTPS from this repository's norg-*
+// releases (github.com's certificate proves where they came from), and every download must match
+// the SHA-256 in the manifest before anything is installed.
 namespace norg::update
 {
     // Norg releases live only under tags starting with "norg-" in this repo, so the updater can
@@ -24,7 +28,6 @@ namespace norg::update
         juce::String zipName;
         juce::String zipUrl;
         juce::String sha256;
-        juce::String signature;
         juce::String publishedAt;
     };
 
@@ -58,9 +61,6 @@ namespace norg::update
     std::optional<juce::MemoryBlock> fromHex (const juce::String& hex);
     juce::String toHex (const void* data, size_t size);
     juce::String sha256OfFile (const juce::File& file);
-
-    // Checks the manifest's Ed25519 signature over canonicalMessage() with the given public key.
-    bool verifyManifestSignature (const Manifest&, const juce::String& publicKeyHex);
 
     enum class Decision { install, upToDate, skipped, disabled };
 

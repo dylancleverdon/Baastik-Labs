@@ -1,0 +1,13 @@
+{
+  "comment": "Sample libraries Norg installs by itself. CI repackages each source into the norg-samples release (once per version) and publishes packs.json there; installed Norgs download what they're missing. Bump a version to ship a new copy.",
+  "packs": [
+    {
+      "id": "salamander-grand",
+      "name": "Salamander Grand Piano",
+      "version": 1,
+      "folder": "Salamander Grand Piano",
+      "source": "https://github.com/sfzinstruments/SalamanderGrandPiano/archive/3382bf9496bba2486f5ab0de55a264d1dfc38404.tar.gz",
+      "license": "CC-BY 3.0, Alexander Holm (Yamaha C5, 16 velocity layers)"
+    }
+  ]
+}

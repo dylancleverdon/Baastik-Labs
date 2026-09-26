@@ -1,4 +1,5 @@
 #include "SampleSource.h"
+#include "SampleCache.h"
 
 #include <juce_audio_formats/juce_audio_formats.h>
 
@@ -23,69 +24,12 @@ namespace norg::sfz
                 return wav;
 
         // Compressed or unusual formats: map a WAV copy from the cache, making it the first time.
-        const auto cached = cacheFileFor (file);
-        if (cached.existsAsFile() || transcode (file, cached))
+        const auto cached = cache::fileFor (file);
+        if (cached.existsAsFile() || cache::transcode (file, cached))
             if (auto wav = openWav (cached, error))
                 return wav;
 
         return decode (file, error);
-    }
-
-    juce::File SampleSource::cacheFolder()
-    {
-       #if JUCE_MAC
-        return juce::File::getSpecialLocation (juce::File::userHomeDirectory).getChildFile ("Library/Caches/Norg/Samples");
-       #else
-        return juce::File::getSpecialLocation (juce::File::userHomeDirectory).getChildFile (".cache/norg/samples");
-       #endif
-    }
-
-    juce::File SampleSource::cacheFileFor (const juce::File& sample)
-    {
-        // Keyed on path, size and date, so an edited sample is re-transcoded.
-        const auto key = sample.getFullPathName() + "|" + juce::String (sample.getSize()) + "|"
-                       + juce::String (sample.getLastModificationTime().toMilliseconds());
-        return cacheFolder().getChildFile (juce::String::toHexString (key.hashCode64()) + ".wav");
-    }
-
-    bool SampleSource::transcode (const juce::File& from, const juce::File& to)
-    {
-        juce::AudioFormatManager formats;
-        formats.registerBasicFormats();
-        std::unique_ptr<juce::AudioFormatReader> reader (formats.createReaderFor (from));
-        if (reader == nullptr || ! to.getParentDirectory().createDirectory())
-            return false;
-
-        const int channels = static_cast<int> (juce::jlimit (1u, 2u, reader->numChannels));
-        const auto temp = to.getSiblingFile (to.getFileNameWithoutExtension() + ".partial");
-        temp.deleteFile();
-
-        {
-            std::unique_ptr<juce::OutputStream> stream (temp.createOutputStream());
-            if (stream == nullptr)
-                return false;
-
-            juce::WavAudioFormat wav;
-            auto writer = wav.createWriterFor (stream, juce::AudioFormatWriterOptions()
-                                                           .withSampleRate (reader->sampleRate)
-                                                           .withNumChannels (channels)
-                                                           .withBitsPerSample (16));
-            if (writer == nullptr)
-                return false;
-
-            constexpr int chunk = 32768;
-            juce::AudioBuffer<float> buffer (channels, chunk);
-            for (juce::int64 start = 0; start < reader->lengthInSamples; start += chunk)
-            {
-                const int n = static_cast<int> (juce::jmin<juce::int64> (chunk, reader->lengthInSamples - start));
-                reader->read (&buffer, 0, n, start, true, channels > 1);
-                if (! writer->writeFromAudioSampleBuffer (buffer, 0, n))
-                    return false;
-            }
-        }
-
-        // Only a complete file ever appears under the final name.
-        return temp.moveFileTo (to);
     }
 
     std::unique_ptr<SampleSource> SampleSource::openWav (const juce::File& file, juce::String& error)

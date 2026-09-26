@@ -6,5 +6,4 @@ namespace norg::version
     inline constexpr const char* string = "@NORG_VERSION@";
     inline constexpr int build = @NORG_BUILD_NUMBER@;
     inline constexpr const char* commit = "@NORG_COMMIT@";
-    inline constexpr const char* updatePublicKeyHex = "@NORG_UPDATE_PUBKEY@";
 }

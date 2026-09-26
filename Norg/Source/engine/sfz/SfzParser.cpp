@@ -51,13 +51,13 @@ namespace norg::sfz
             juce::StringArray lines;
             lines.addLines (stripComments (text));
 
-            const auto substitute = [&defines] (juce::String text)
+            const auto substitute = [&defines] (juce::String input)
             {
                 // Longest names first, so $A doesn't eat part of $AB.
-                if (text.containsChar ('$'))
+                if (input.containsChar ('$'))
                     for (auto it = defines.rbegin(); it != defines.rend(); ++it)
-                        text = text.replace (it->first, it->second);
-                return text;
+                        input = input.replace (it->first, it->second);
+                return input;
             };
 
             for (auto line : lines)

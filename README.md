@@ -12,17 +12,15 @@ It runs as an AU (Logic, GarageBand), a VST3 (Ableton Live and others) and a sta
 
 ## Install (macOS)
 
-1. Download **[Norg-Installer.pkg](https://github.com/dylancleverdon/Baastik-Labs/releases/download/norg-channel/Norg-Installer.pkg)**.
-2. Open it. The first time, macOS says it can't verify the developer (Norg isn't notarized by Apple).
-   Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**, then
-   run the installer. No admin password is needed.
+1. Download **[Norg-Installer.pkg](https://github.com/dylancleverdon/Baastik-Labs/releases/download/norg-channel/Norg-Installer.pkg)** and open it.
+2. The first time only, macOS asks you to approve it (Norg isn't registered with Apple's paid
+   developer program): open **System Settings → Privacy & Security**, click **Open Anyway**, and the
+   installer runs. No admin password is needed.
 3. Open (or restart) your DAW and look for **Norg** by **Baastik Labs** in your instruments.
 
-Or install from Terminal, which skips step 2:
-
-```
-curl -fsSL https://github.com/dylancleverdon/Baastik-Labs/releases/download/norg-channel/install.sh | bash
-```
+That's it. Right after installing, Norg's background helper downloads and prepares the sampled grand
+piano (Salamander Grand, ~700 MB). The Piano section shows its progress and uses the modelled grand
+until it's ready, then switches over by itself.
 
 Everything installs into your own user folders:
 
@@ -31,24 +29,22 @@ Everything installs into your own user folders:
 | AU | `~/Library/Audio/Plug-Ins/Components/Norg.component` |
 | VST3 | `~/Library/Audio/Plug-Ins/VST3/Norg.vst3` |
 | Standalone | `~/Applications/Norg.app` |
-| Updater and settings | `~/Library/Application Support/Norg/` |
+| Helper, settings, sample libraries | `~/Library/Application Support/Norg/` |
 
 ## Updates
 
-You never need to reinstall. A small background updater checks for a new Norg when you log in and
-then every hour. When there is one it installs it quietly and shows a notification. Your DAW keeps
-the version it already loaded, and uses the new one the next time you open it.
+You never need to reinstall or download anything by hand. The background helper checks for a new
+Norg when you log in and then every hour, installs it quietly and shows a notification. Your DAW
+keeps the version it already loaded and uses the new one the next time you open it. New or updated
+sample libraries arrive the same way.
 
-Click **System** on Norg's panel to:
+Click **System** on Norg's panel to see the installed version and what's new, turn automatic updates
+on or off, **Check now**, or **Roll back** to the previous version (the build you rolled back from is
+then skipped; newer builds still install).
 
-- see the installed version and what's new,
-- turn automatic updates on or off,
-- **Check now**,
-- **Roll back** to the previous version. The build you rolled back from is then skipped, but newer
-  builds still install.
-
-Only updates signed with Norg's release key and published from this repository's `norg-*`
-releases are accepted. The updater logs to `~/Library/Logs/Norg/updater.log`.
+The helper only installs files downloaded over HTTPS from this repository's `norg-*` releases, and
+only if they match the SHA-256 checksum published with them. It logs to
+`~/Library/Logs/Norg/updater.log`.
 
 ## Uninstall
 
@@ -79,13 +75,15 @@ Add `-DNORG_COPY_AFTER_BUILD=ON` to copy the built plugins into your plug-in fol
 Norg lives on the `norg` branch. Every push to `norg` runs `.github/workflows/norg-release.yml`:
 build, tests, `auval`, pluginval, installer and updater smoke tests, then it publishes
 `norg-v<version>` and refreshes the `norg-channel` release that the install link and updater read.
-Nothing is published if any step fails.
+Nothing is published if any step fails, and no secrets or manual steps are involved.
 
-Publishing needs one repository secret, `NORG_UPDATE_SIGNING_KEY` (the Ed25519 seed matching
-`Norg/Updater/update-public-key.txt`).
+Sample libraries are listed in `installer/sample-packs.json`. CI repackages each one into the
+`norg-samples` release the first time (or when its version is bumped), and installed Norgs fetch
+whatever they're missing.
 
 ## Credits
 
 - Built with [JUCE](https://juce.com).
 - Fonts: Archivo Black and Barlow Semi Condensed ([SIL Open Font License](Norg/Resources/fonts)).
-- Update signatures: [Monocypher](https://monocypher.org) (BSD-2-Clause / CC0).
+- Salamander Grand Piano V3 by Alexander Holm ([CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/)),
+  SFZ mapping by kinwie via [sfzinstruments](https://github.com/sfzinstruments/SalamanderGrandPiano).

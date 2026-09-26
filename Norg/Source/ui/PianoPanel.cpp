@@ -1,6 +1,7 @@
 #include "PianoPanel.h"
 #include "PluginProcessor.h"
 #include "engine/piano/PianoSection.h"
+#include "SamplePacks.h"
 
 namespace norg::ui
 {
@@ -70,8 +71,20 @@ namespace norg::ui
             const bool wantSamples = processor.state().getParameter (paramId (P::pianoSampled))->getValue() >= 0.5f;
             const auto* kind = type == 0 ? "grand" : "upright";
 
-            if (! wantSamples || status.state == sfz::LibraryManager::State::empty)
-                note = juce::String ("Modelled ") + kind + (wantSamples ? "  (no library installed)" : "");
+            if (! wantSamples)
+                note = juce::String ("Modelled ") + kind;
+            else if (status.state == sfz::LibraryManager::State::empty)
+            {
+                // Is the background helper still bringing a library down?
+                juce::String progress;
+                const auto packs = update::parsePackStatus (update::Layout::forCurrentUser().packsStatusJson().loadFileAsString());
+                for (const auto& p : packs)
+                    if (p.state == "downloading" || p.state == "preparing")
+                        progress = (p.state == "downloading" ? "Downloading " : "Preparing ") + p.name + " "
+                                 + juce::String (juce::roundToInt (p.progress * 100.0f)) + "%";
+
+                note = progress.isNotEmpty() ? progress + "  (modelled until ready)" : juce::String ("Modelled ") + kind;
+            }
             else if (status.state == sfz::LibraryManager::State::loading)
                 note = "Loading samples...";
             else if (status.state == sfz::LibraryManager::State::failed)

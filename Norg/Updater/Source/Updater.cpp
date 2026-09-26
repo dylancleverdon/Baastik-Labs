@@ -2,8 +2,8 @@
 
 namespace norg::update
 {
-    Updater::Updater (Layout l, Platform& p, FileOps& ops, juce::String key, LogFn logFn)
-        : layout (std::move (l)), platform (p), fileOps (ops), publicKey (std::move (key)), log (std::move (logFn))
+    Updater::Updater (Layout l, Platform& p, FileOps& ops, LogFn logFn)
+        : layout (std::move (l)), platform (p), fileOps (ops), log (std::move (logFn))
     {
     }
 
@@ -99,12 +99,6 @@ namespace norg::update
         {
             cleanup();
             return fail ("manifest points at a URL outside Norg's releases: " + manifest->zipUrl);
-        }
-
-        if (! verifyManifestSignature (*manifest, publicKey))
-        {
-            cleanup();
-            return fail ("manifest signature is not valid; ignoring this update");
         }
 
         // 2. Decide

@@ -8,7 +8,7 @@
 
 namespace norg
 {
-    class NorgProcessor final : public juce::AudioProcessor
+    class NorgProcessor final : public juce::AudioProcessor, private juce::Timer
     {
     public:
         // Bumped whenever the saved-state format changes; older states are upgraded on load.
@@ -56,6 +56,7 @@ namespace norg
 
     private:
         void syncLibraries();
+        void timerCallback() override; // picks up sample libraries that arrive while Norg is open
 
         sfz::LibraryManager libraries;
         juce::AudioProcessorValueTreeState parameters;

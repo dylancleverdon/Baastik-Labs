@@ -2,16 +2,6 @@
 # Norg: the plugin, its updater helper, tools and tests.
 # ---------------------------------------------------------------------------
 
-# Public half of the Ed25519 key that signs updates. The private half lives only in the
-# NORG_UPDATE_SIGNING_KEY GitHub secret.
-set(NORG_UPDATE_PUBKEY_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Updater/update-public-key.txt")
-if(EXISTS "${NORG_UPDATE_PUBKEY_FILE}")
-    file(STRINGS "${NORG_UPDATE_PUBKEY_FILE}" NORG_UPDATE_PUBKEY LIMIT_COUNT 1)
-else()
-    message(WARNING "No update public key found; the updater will refuse every update.")
-    set(NORG_UPDATE_PUBKEY "")
-endif()
-
 set(NORG_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 configure_file(Source/common/NorgVersion.h.in "${NORG_GENERATED_DIR}/NorgVersion.h" @ONLY)
 

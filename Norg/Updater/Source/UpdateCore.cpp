@@ -1,8 +1,6 @@
 #include "UpdateCore.h"
-#include "UpdateCanonical.h"
 
 #include <juce_cryptography/juce_cryptography.h>
-#include <monocypher-ed25519.h>
 
 namespace norg::update
 {
@@ -46,15 +44,13 @@ namespace norg::update
         m.zipName     = getString (parsed, "zipName");
         m.zipUrl      = getString (parsed, "zipUrl");
         m.sha256      = getString (parsed, "sha256").toLowerCase();
-        m.signature   = getString (parsed, "signature").toLowerCase();
         m.publishedAt = getString (parsed, "publishedAt");
 
-        if (m.schema != 1)                         error = "unsupported manifest schema " + juce::String (m.schema);
+        if (m.schema != 2)                         error = "unsupported manifest schema " + juce::String (m.schema);
         else if (m.version.isEmpty())              error = "manifest has no version";
         else if (m.build <= 0)                     error = "manifest has no build number";
         else if (! isSafeZipName (m.zipName))      error = "manifest zip name is not allowed";
         else if (m.sha256.length() != 64 || ! isHex (m.sha256))       error = "manifest sha256 is malformed";
-        else if (m.signature.length() != 128 || ! isHex (m.signature)) error = "manifest signature is malformed";
 
         if (error.isNotEmpty())
             return std::nullopt;
@@ -163,30 +159,6 @@ namespace norg::update
             return {};
 
         return juce::SHA256 (in).toHexString().toLowerCase();
-    }
-
-    bool verifyManifestSignature (const Manifest& m, const juce::String& publicKeyHex)
-    {
-        const auto key = fromHex (publicKeyHex);
-        const auto sig = fromHex (m.signature);
-
-        if (! key || key->getSize() != 32 || ! sig || sig->getSize() != 64)
-            return false;
-
-        // An all-zero key means the build was made without a real key: never trust it.
-        bool allZero = true;
-        for (size_t i = 0; i < key->getSize(); ++i)
-            allZero = allZero && static_cast<const juce::uint8*> (key->getData())[i] == 0;
-        if (allZero)
-            return false;
-
-        const auto message = canonicalMessage (m.version.toStdString(), m.build, m.zipName.toStdString(),
-                                               m.zipUrl.toStdString(), m.sha256.toStdString());
-
-        return crypto_ed25519_check (static_cast<const uint8_t*> (sig->getData()),
-                                     static_cast<const uint8_t*> (key->getData()),
-                                     reinterpret_cast<const uint8_t*> (message.data()),
-                                     message.size()) == 0;
     }
 
     Decision decide (const Manifest& m, const std::optional<ReleaseInfo>& installed,

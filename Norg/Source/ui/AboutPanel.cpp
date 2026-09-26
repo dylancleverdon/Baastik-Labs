@@ -174,7 +174,7 @@ namespace norg::ui
         g.setFont (Fonts::display (12.0f));
         g.setColour (colours::oledDim);
         g.drawFittedText ("Norg by Baastik Labs. Handmade in Sweden-ish. A fan project, not affiliated with Clavia.\n"
-                          "Built with JUCE. Fonts: Archivo Black and Barlow (SIL OFL). Update signing: Monocypher.",
+                          "Built with JUCE. Fonts: Archivo Black and Barlow (SIL OFL). Salamander Grand Piano: Alexander Holm (CC-BY 3.0).",
                           credits.toNearestInt(), juce::Justification::centredLeft, 3);
     }
 }

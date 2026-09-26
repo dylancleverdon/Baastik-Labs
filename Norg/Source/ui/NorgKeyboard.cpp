@@ -2,8 +2,8 @@
 
 namespace norg::ui
 {
-    NorgKeyboard::NorgKeyboard (juce::MidiKeyboardState& state)
-        : juce::MidiKeyboardComponent (state, horizontalKeyboard)
+    NorgKeyboard::NorgKeyboard (juce::MidiKeyboardState& keyboardState)
+        : juce::MidiKeyboardComponent (keyboardState, horizontalKeyboard)
     {
         setScrollButtonsVisible (false);
         setColour (shadowColourId, juce::Colours::black.withAlpha (0.5f));

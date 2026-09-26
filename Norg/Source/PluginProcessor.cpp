@@ -10,9 +10,31 @@ namespace norg
     {
         snapshot.resetToDefaults();
         syncLibraries();
+        startTimer (3000);
     }
 
-    NorgProcessor::~NorgProcessor() = default;
+    NorgProcessor::~NorgProcessor()
+    {
+        stopTimer();
+    }
+
+    void NorgProcessor::timerCallback()
+    {
+        // A slot left on "automatic" with nothing loaded yet: the background helper may have just
+        // finished installing a library, so look again.
+        for (int panel = 0; panel < numPanels; ++panel)
+            for (auto use : { LibraryUse::grand, LibraryUse::upright })
+            {
+                const int slot = panel * 3 + static_cast<int> (use);
+                if (getLibraryChoice (panel, use).isEmpty()
+                    && libraries.status (slot).state == sfz::LibraryManager::State::empty
+                    && resolveLibrary (panel, use).isNotEmpty())
+                {
+                    syncLibraries();
+                    return;
+                }
+            }
+    }
 
     void NorgProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     {

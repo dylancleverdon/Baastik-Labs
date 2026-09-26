@@ -7,8 +7,12 @@
 //   NorgUpdater --install-agent        (re)install the launchd agent; run by the installer
 //   NorgUpdater --status               print what's installed, as JSON
 //
-// Test hooks: --home <dir>, --manifest-url <url>, --allow-url-prefix <prefix>, --public-key <hex>.
+// Every --auto / --check-now run also installs any sample library (pack) that's missing, so the
+// sampled instruments work without anyone downloading anything by hand.
+//
+// Test hooks: --home <dir>, --manifest-url <url>, --packs-url <url>, --allow-url-prefix <prefix>, --no-packs.
 
+#include "SamplePacks.h"
 #include "Updater.h"
 #include "NorgVersion.h"
 
@@ -52,12 +56,9 @@ int main (int argc, char* argv[])
         logFile.appendText (line + "\n");
     };
 
-    const auto keyOverride = argValue (args, "--public-key");
-    const juce::String publicKey = keyOverride.isNotEmpty() ? keyOverride : juce::String (norg::version::updatePublicKeyHex);
-
     auto platform = createSystemPlatform();
     FileOps fileOps;
-    Updater updater (layout, *platform, fileOps, publicKey, log);
+    Updater updater (layout, *platform, fileOps, log);
 
     if (args.contains ("--status"))
     {
@@ -107,15 +108,16 @@ int main (int argc, char* argv[])
         if (args[i] == "--allow-url-prefix" && i + 1 < args.size())
             options.extraAllowedPrefixes.add (args[i + 1]);
 
-    switch (updater.checkAndInstall (options))
+    const auto outcome = updater.checkAndInstall (options);
+
+    bool packsOk = true;
+    if (! args.contains ("--no-packs"))
     {
-        case Outcome::installed:
-        case Outcome::upToDate:
-        case Outcome::skipped:
-        case Outcome::disabled:
-            return 0;
-        case Outcome::failed:
-            break;
+        const auto packs = argValue (args, "--packs-url");
+        PackInstaller installer (layout, *platform, fileOps, log);
+        packsOk = installer.installAll (packs.isNotEmpty() ? packs : juce::String (packsUrl), options.extraAllowedPrefixes,
+                                        options.manualCheck || updater.loadSettings().autoUpdate);
     }
-    return 2;
+
+    return outcome == Outcome::failed ? 2 : (packsOk ? 0 : 3);
 }

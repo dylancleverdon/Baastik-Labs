@@ -18,10 +18,6 @@ namespace norg::sfz
     public:
         static std::unique_ptr<SampleSource> open (const juce::File&, juce::String& error);
 
-        // Where transcoded samples are kept, and the cache file a given sample maps to.
-        static juce::File cacheFolder();
-        static juce::File cacheFileFor (const juce::File& sample);
-
         int numChannels() const { return channels; }
         juce::int64 numFrames() const { return frames; }
         double sampleRate() const { return rate; }
@@ -55,7 +51,6 @@ namespace norg::sfz
 
         static std::unique_ptr<SampleSource> openWav (const juce::File&, juce::String& error);
         static std::unique_ptr<SampleSource> decode (const juce::File&, juce::String& error);
-        static bool transcode (const juce::File& from, const juce::File& to);
 
         Format format = Format::pcm16;
         int channels = 1;

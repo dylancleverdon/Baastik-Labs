@@ -1,45 +1,17 @@
+#include "SamplePacks.h"
 #include "Updater.h"
-#include "UpdateCanonical.h"
+#include "engine/sfz/SampleCache.h"
+
+#include <cstdlib>
 
 #include <catch2/catch_test_macros.hpp>
+#include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_cryptography/juce_cryptography.h>
-#include <monocypher-ed25519.h>
 
 using namespace norg::update;
 
 namespace
 {
-    // A throwaway key pair for tests, derived from a fixed seed.
-    struct TestKey
-    {
-        TestKey()
-        {
-            uint8_t seed[32];
-            for (int i = 0; i < 32; ++i)
-                seed[i] = static_cast<uint8_t> (i * 7 + 3);
-            crypto_ed25519_key_pair (secret, publicKey, seed);
-        }
-
-        juce::String publicHex() const { return toHex (publicKey, 32); }
-
-        juce::String sign (const Manifest& m) const
-        {
-            const auto msg = canonicalMessage (m.version.toStdString(), m.build, m.zipName.toStdString(),
-                                               m.zipUrl.toStdString(), m.sha256.toStdString());
-            uint8_t sig[64];
-            crypto_ed25519_sign (sig, secret, reinterpret_cast<const uint8_t*> (msg.data()), msg.size());
-            return toHex (sig, 64);
-        }
-
-        uint8_t secret[64] {}, publicKey[32] {};
-    };
-
-    const TestKey& testKey()
-    {
-        static TestKey key;
-        return key;
-    }
-
     juce::String manifestJson (const Manifest& m)
     {
         auto* obj = new juce::DynamicObject();
@@ -51,20 +23,18 @@ namespace
         obj->setProperty ("zipName", m.zipName);
         obj->setProperty ("zipUrl", m.zipUrl);
         obj->setProperty ("sha256", m.sha256);
-        obj->setProperty ("signature", m.signature);
         return juce::JSON::toString (juce::var (obj));
     }
 
     Manifest sampleManifest()
     {
         Manifest m;
-        m.schema = 1;
+        m.schema = 2;
         m.version = "0.1.42";
         m.build = 42;
         m.zipName = "Norg-0.1.42-mac.zip";
         m.zipUrl = juce::String (allowedAssetPrefix) + "v0.1.42/Norg-0.1.42-mac.zip";
         m.sha256 = juce::String::repeatedString ("ab", 32);
-        m.signature = testKey().sign (m);
         return m;
     }
 
@@ -125,15 +95,30 @@ namespace
     {
         int notifications = 0;
 
-        bool download (const juce::String& url, const juce::File& destination, juce::String& error) override
+        int downloads = 0;
+
+        bool download (const juce::String& url, const juce::File& destination, juce::String& error,
+                       bool, ProgressFn progress) override
         {
+            ++downloads;
             const auto source = juce::URL (url).getLocalFile();
             if (! source.existsAsFile())
             {
                 error = "not found: " + url;
                 return false;
             }
+            if (progress)
+                progress (source.getSize());
             return source.copyFileTo (destination);
+        }
+
+        bool extractArchive (const juce::File& tarGz, const juce::File& destination, juce::String& error) override
+        {
+            juce::ChildProcess tar;
+            if (! tar.start (juce::StringArray { "tar", "-xzf", tarGz.getFullPathName(), "-C", destination.getFullPathName() }))
+                return false;
+            error = tar.readAllProcessOutput();
+            return tar.waitForProcessToFinish (60000) && tar.getExitCode() == 0;
         }
 
         bool extractZip (const juce::File& zip, const juce::File& destination, juce::String& error) override
@@ -169,13 +154,12 @@ namespace
                 builder.writeToStream (out, nullptr);
             }
 
-            manifest.schema = 1;
+            manifest.schema = 2;
             manifest.version = version;
             manifest.build = build;
             manifest.zipName = zip.getFileName();
             manifest.zipUrl = juce::URL (zip).toString (false);
             manifest.sha256 = sha256OfFile (zip);
-            manifest.signature = testKey().sign (manifest);
 
             manifestFile = root.getChildFile ("norg-update-" + juce::String (build) + ".json");
             manifestFile.replaceWithText (manifestJson (manifest));
@@ -202,15 +186,8 @@ namespace
         FakePlatform platform;
         FileOps ops;
         juce::StringArray logLines;
-        Updater updater { layout, platform, ops, testKey().publicHex(),
-                          [this] (const juce::String& s) { logLines.add (s); } };
+        Updater updater { layout, platform, ops, [this] (const juce::String& s) { logLines.add (s); } };
     };
-}
-
-TEST_CASE ("canonical message format is stable", "[updater]")
-{
-    CHECK (canonicalMessage ("0.1.2", 2, "Norg-0.1.2-mac.zip", "https://x/y.zip", "ff")
-           == "norg-update-v1\nversion=0.1.2\nbuild=2\nzip=Norg-0.1.2-mac.zip\nurl=https://x/y.zip\nsha256=ff\n");
 }
 
 TEST_CASE ("manifest parsing", "[updater]")
@@ -228,7 +205,7 @@ TEST_CASE ("manifest parsing", "[updater]")
     SECTION ("bad fields are rejected")
     {
         auto m = sampleManifest();
-        m.schema = 2;
+        m.schema = 1; // the old signed format is no longer accepted
         CHECK_FALSE (parseManifest (manifestJson (m), error).has_value());
 
         m = sampleManifest();
@@ -252,28 +229,6 @@ TEST_CASE ("only norg-* release URLs from this repo are accepted", "[updater]")
     CHECK_FALSE (isAllowedAssetUrl ("https://github.com/dylancleverdon/Baastik-Labs/releases/download/norg-v1/../../x.zip"));
     CHECK_FALSE (isAllowedAssetUrl ("file:///tmp/Norg.zip"));
     CHECK (isAllowedAssetUrl ("file:///tmp/Norg.zip", { "file://" }));
-}
-
-TEST_CASE ("manifest signatures", "[updater]")
-{
-    const auto key = testKey().publicHex();
-    auto m = sampleManifest();
-    CHECK (verifyManifestSignature (m, key));
-
-    SECTION ("tampering with any signed field breaks the signature")
-    {
-        auto t = m; t.version = "0.1.43";                 CHECK_FALSE (verifyManifestSignature (t, key));
-        t = m;      t.build = 43;                         CHECK_FALSE (verifyManifestSignature (t, key));
-        t = m;      t.zipUrl = t.zipUrl + "x";            CHECK_FALSE (verifyManifestSignature (t, key));
-        t = m;      t.sha256 = juce::String::repeatedString ("cd", 32); CHECK_FALSE (verifyManifestSignature (t, key));
-    }
-
-    SECTION ("wrong, missing or all-zero keys never verify")
-    {
-        CHECK_FALSE (verifyManifestSignature (m, juce::String::repeatedString ("11", 32)));
-        CHECK_FALSE (verifyManifestSignature (m, juce::String::repeatedString ("00", 32)));
-        CHECK_FALSE (verifyManifestSignature (m, ""));
-    }
 }
 
 TEST_CASE ("install decisions", "[updater]")
@@ -394,13 +349,14 @@ TEST_CASE ("end-to-end update run with a fake network", "[updater]")
         CHECK_FALSE (h.layout.installedJson().exists());
     }
 
-    SECTION ("a manifest signed with another key is rejected")
+    SECTION ("a manifest whose checksum doesn't match the download is rejected")
     {
         auto m = release.manifest;
-        m.signature = juce::String::repeatedString ("0f", 64);
+        m.sha256 = juce::String::repeatedString ("0f", 32);
         release.manifestFile.replaceWithText (manifestJson (m));
         CHECK (h.updater.checkAndInstall (release.options()) == Outcome::failed);
-        CHECK (h.updater.lastError().contains ("signature"));
+        CHECK (h.updater.lastError().contains ("checksum"));
+        CHECK_FALSE (h.layout.installedJson().exists());
     }
 
     SECTION ("a manifest pointing outside Norg's releases is rejected")
@@ -419,4 +375,146 @@ TEST_CASE ("end-to-end update run with a fake network", "[updater]")
         CHECK (h.updater.checkAndInstall (release.options()) == Outcome::disabled);
         CHECK (h.updater.checkAndInstall (release.options (true)) == Outcome::installed);
     }
+}
+
+//==============================================================================
+namespace
+{
+    // A sample pack on disk: a folder with an SFZ, a FLAC and a WAV, tarred up, plus its packs.json.
+    struct FakePack
+    {
+        FakePack (const juce::File& root, int version, bool corruptChecksum = false)
+        {
+            const auto folder = root.getChildFile ("src").getChildFile ("Test Piano");
+            folder.getChildFile ("samples").createDirectory();
+            folder.getChildFile ("Test Piano.sfz").replaceWithText ("<region> sample=samples/a.flac key=60\n<region> sample=samples/b.wav key=62\n");
+            writeSine (folder.getChildFile ("samples/a.flac"), std::make_unique<juce::FlacAudioFormat>());
+            writeSine (folder.getChildFile ("samples/b.wav"), std::make_unique<juce::WavAudioFormat>());
+
+            archive = root.getChildFile ("test-piano-v" + juce::String (version) + ".tar.gz");
+            juce::ChildProcess tar;
+            REQUIRE (tar.start (juce::StringArray { "tar", "-czf", archive.getFullPathName(), "-C",
+                                                    root.getChildFile ("src").getFullPathName(), "Test Piano" }));
+            tar.waitForProcessToFinish (60000);
+            REQUIRE (archive.existsAsFile());
+
+            auto* pack = new juce::DynamicObject();
+            pack->setProperty ("id", "test-piano");
+            pack->setProperty ("name", "Test Piano");
+            pack->setProperty ("folder", "Test Piano");
+            pack->setProperty ("version", version);
+            pack->setProperty ("url", juce::URL (archive).toString (false));
+            pack->setProperty ("sha256", corruptChecksum ? juce::String::repeatedString ("00", 32) : sha256OfFile (archive));
+            pack->setProperty ("size", archive.getSize());
+            auto* list = new juce::DynamicObject();
+            list->setProperty ("packs", juce::Array<juce::var> { juce::var (pack) });
+
+            listFile = root.getChildFile ("packs-v" + juce::String (version) + ".json");
+            listFile.replaceWithText (juce::JSON::toString (juce::var (list)));
+        }
+
+        static void writeSine (const juce::File& file, std::unique_ptr<juce::AudioFormat> format)
+        {
+            juce::AudioBuffer<float> audio (1, 4800);
+            for (int i = 0; i < 4800; ++i)
+                audio.setSample (0, i, 0.5f * std::sin (0.05f * static_cast<float> (i)));
+            std::unique_ptr<juce::OutputStream> out (file.createOutputStream());
+            auto writer = format->createWriterFor (out, juce::AudioFormatWriterOptions().withSampleRate (48000.0)
+                                                            .withNumChannels (1).withBitsPerSample (16));
+            REQUIRE (writer != nullptr);
+            writer->writeFromAudioSampleBuffer (audio, 0, 4800);
+        }
+
+        juce::String listUrl() const { return juce::URL (listFile).toString (false); }
+
+        juce::File archive, listFile;
+    };
+
+    struct PackHarness
+    {
+        PackHarness()
+        {
+            cache.dir.getChildFile ("cache").createDirectory();
+            setenv ("NORG_SAMPLE_CACHE", cache.dir.getChildFile ("cache").getFullPathName().toRawUTF8(), 1);
+        }
+        ~PackHarness() { unsetenv ("NORG_SAMPLE_CACHE"); }
+
+        TempHome home, source, cache;
+        Layout layout { home.dir };
+        FakePlatform platform;
+        FileOps ops;
+        PackInstaller installer { layout, platform, ops, [] (const juce::String&) {} };
+    };
+}
+
+TEST_CASE ("pack lists are parsed and bad entries skipped", "[packs]")
+{
+    juce::String error;
+    const auto packs = parsePacks (R"({"packs":[
+        {"id":"grand","name":"Grand","folder":"Grand","version":1,"url":"u","sha256":"0000000000000000000000000000000000000000000000000000000000000000","size":5},
+        {"id":"../evil","name":"x","folder":"x","version":1,"url":"u","sha256":"0000000000000000000000000000000000000000000000000000000000000000"},
+        {"id":"escape","name":"x","folder":"../../x","version":1,"url":"u","sha256":"0000000000000000000000000000000000000000000000000000000000000000"}
+    ]})", error);
+    REQUIRE (packs.size() == 1);
+    CHECK (packs[0].id == "grand");
+    CHECK (packs[0].size == 5);
+}
+
+TEST_CASE ("sample packs download, prepare and install themselves", "[packs]")
+{
+    PackHarness h;
+    FakePack pack (h.source.dir, 1);
+
+    REQUIRE (h.installer.installAll (pack.listUrl(), { "file://" }, false));
+
+    const auto installed = h.layout.samplesDir().getChildFile ("Test Piano");
+    CHECK (installed.getChildFile ("Test Piano.sfz").existsAsFile());
+    CHECK_FALSE (h.layout.packsStagingDir().getChildFile ("test-piano").exists());
+
+    // The FLAC was prepared into the cache ahead of time, under the name the plugin will look for.
+    CHECK (norg::sfz::cache::fileFor (installed.getChildFile ("samples/a.flac")).existsAsFile());
+
+    const auto status = parsePackStatus (h.layout.packsStatusJson().loadFileAsString());
+    REQUIRE (status.size() == 1);
+    CHECK (status[0].state == "ready");
+
+    SECTION ("a second run doesn't download it again")
+    {
+        const int before = h.platform.downloads;
+        REQUIRE (h.installer.installAll (pack.listUrl(), { "file://" }, false));
+        CHECK (h.platform.downloads == before + 1); // just the list
+    }
+
+    SECTION ("a newer version installs only when upgrades are allowed")
+    {
+        TempHome newer;
+        FakePack v2 (newer.dir, 2);
+        const int before = h.platform.downloads;
+        REQUIRE (h.installer.installAll (v2.listUrl(), { "file://" }, false));
+        CHECK (h.platform.downloads == before + 1);
+
+        REQUIRE (h.installer.installAll (v2.listUrl(), { "file://" }, true));
+        CHECK (h.platform.downloads == before + 3);
+        CHECK (juce::JSON::parse (h.layout.packsStateJson().loadFileAsString())["test-piano"].operator int() == 2);
+    }
+}
+
+TEST_CASE ("a pack that fails its checksum is not installed", "[packs]")
+{
+    PackHarness h;
+    FakePack pack (h.source.dir, 1, true);
+
+    CHECK_FALSE (h.installer.installAll (pack.listUrl(), { "file://" }, false));
+    CHECK_FALSE (h.layout.samplesDir().getChildFile ("Test Piano").exists());
+    const auto status = parsePackStatus (h.layout.packsStatusJson().loadFileAsString());
+    REQUIRE (status.size() == 1);
+    CHECK (status[0].state == "failed");
+}
+
+TEST_CASE ("packs must come from Norg's own releases", "[packs]")
+{
+    PackHarness h;
+    FakePack pack (h.source.dir, 1);
+    CHECK_FALSE (h.installer.installAll (pack.listUrl(), {}, false)); // file:// not allowed here
+    CHECK_FALSE (h.layout.samplesDir().getChildFile ("Test Piano").exists());
 }

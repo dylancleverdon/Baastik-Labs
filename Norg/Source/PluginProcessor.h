@@ -43,14 +43,25 @@ namespace norg
 
         juce::AudioProcessorValueTreeState& state() { return parameters; }
 
+        // Sample libraries used by each panel. The choice is stored with the program; an empty
+        // path means "automatic" (the first suitable installed library), "none" means modelled.
+        enum class LibraryUse { grand = 0, upright = 1, sample = 2 };
+        juce::String getLibraryChoice (int panel, LibraryUse) const;
+        void setLibraryChoice (int panel, LibraryUse, const juce::String& path);
+        juce::String resolveLibrary (int panel, LibraryUse) const;
+        sfz::LibraryManager& libraryManager() { return libraries; }
+
         // The on-screen keyboard feeds notes in through this.
         juce::MidiKeyboardState& keyboardState() { return keyboard; }
 
     private:
+        void syncLibraries();
+
+        sfz::LibraryManager libraries;
         juce::AudioProcessorValueTreeState parameters;
         ParamTable paramTable;
         ParamSnapshot snapshot;
-        NorgEngine engine { 0 };
+        NorgEngine engine { 0, &libraries };
         juce::MidiKeyboardState keyboard;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NorgProcessor)

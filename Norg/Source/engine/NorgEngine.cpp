@@ -1,6 +1,7 @@
 #include "NorgEngine.h"
 #include "TestToneSection.h"
 #include "organ/OrganSection.h"
+#include "piano/PianoSection.h"
 
 namespace norg
 {
@@ -10,7 +11,7 @@ namespace norg
         float taper (float v) { return v * v; }
     }
 
-    NorgEngine::NorgEngine (int panel) : panelIndex (panel)
+    NorgEngine::NorgEngine (int panel, sfz::LibraryManager* libraries) : panelIndex (panel)
     {
         const auto install = [this] (SectionId id, std::unique_ptr<Section> section, P on, P volume)
         {
@@ -21,7 +22,7 @@ namespace norg
         };
 
         install (SectionId::organ,  std::make_unique<organ::OrganSection>(), P::organOn,  P::organVolume);
-        install (SectionId::piano,  std::make_unique<TestToneSection> (1.0f), P::pianoOn,  P::pianoVolume);
+        install (SectionId::piano,  std::make_unique<piano::PianoSection> (libraries), P::pianoOn, P::pianoVolume);
         install (SectionId::synth,  std::make_unique<TestToneSection> (0.5f), P::synthOn,  P::synthVolume);
         install (SectionId::sample, std::make_unique<TestToneSection> (2.0f), P::sampleOn, P::sampleVolume);
     }

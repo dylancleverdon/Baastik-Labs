@@ -116,10 +116,12 @@ namespace norg::ui
         if (buttons.isEmpty())
             return;
 
-        auto area = getLocalBounds();
-        const int w = area.getWidth() / buttons.size();
-        for (auto* b : buttons)
-            b->setBounds (area.removeFromLeft (w));
+        const int columns = numColumns > 0 ? numColumns : buttons.size();
+        const int rows = (buttons.size() + columns - 1) / columns;
+        const int w = getWidth() / columns;
+        const int h = getHeight() / rows;
+        for (int i = 0; i < buttons.size(); ++i)
+            buttons[i]->setBounds ((i % columns) * w, (i / columns) * h, w, h);
     }
 
     //==============================================================================

@@ -3,6 +3,7 @@
 //   norg-render --out demo.wav [--seconds 8] [--rate 48000] [--block 256]
 //               [--set param_id=value ...]      (plain parameter values, e.g. --set mode=1 --set organ_volume=0.6)
 //               [--midi song.mid]               (otherwise a short built-in demo phrase is played)
+//               [--library grand=/path/x.sfz]   (sample library for the grand / upright / sample slot)
 //   norg-render --screenshot panel.png [--width 1400] [--set ...]   (renders the editor to a PNG instead)
 
 #include "PluginProcessor.h"
@@ -104,6 +105,30 @@ int main (int argc, char* argv[])
         std::cout << "wrote " << file.getFullPathName() << std::endl;
         plugin->editorBeingDeleted (editor.get());
         return 0;
+    }
+
+    for (int i = 0; i < args.size(); ++i)
+    {
+        if (args[i] != "--library" || i + 1 >= args.size())
+            continue;
+        const auto use = args[i + 1].upToFirstOccurrenceOf ("=", false, false);
+        const auto path = juce::File::getCurrentWorkingDirectory().getChildFile (args[i + 1].fromFirstOccurrenceOf ("=", false, false)).getFullPathName();
+        norg->setLibraryChoice (0, use == "upright" ? norg::NorgProcessor::LibraryUse::upright
+                                 : use == "sample" ? norg::NorgProcessor::LibraryUse::sample
+                                                   : norg::NorgProcessor::LibraryUse::grand, path);
+    }
+
+    const auto loadStart = juce::Time::getMillisecondCounterHiRes();
+    if (! norg->libraryManager().waitUntilIdle (10 * 60 * 1000))
+        std::cerr << "sample libraries are still loading" << std::endl;
+    for (int slot = 0; slot < 3; ++slot)
+    {
+        const auto st = norg->libraryManager().status (slot);
+        if (st.state == norg::sfz::LibraryManager::State::ready)
+            std::cout << "library slot " << slot << ": " << st.name << " loaded in "
+                      << juce::roundToInt (juce::Time::getMillisecondCounterHiRes() - loadStart) << " ms" << std::endl;
+        else if (st.state == norg::sfz::LibraryManager::State::failed)
+            std::cout << "library slot " << slot << " failed: " << st.error << std::endl;
     }
 
     const auto midiPath = argValue (args, "--midi");

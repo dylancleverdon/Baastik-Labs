@@ -1,5 +1,7 @@
 #include "SectionPanels.h"
 #include "OrganPanel.h"
+#include "PianoPanel.h"
+#include "PluginProcessor.h"
 #include "params/Parameters.h"
 
 namespace norg::ui
@@ -51,17 +53,16 @@ namespace norg::ui
         }
     }
 
-    StagePanel::StagePanel (juce::AudioProcessorValueTreeState& state)
-        : organ (std::make_unique<OrganPanel> (state, DrawbarStyle::sliding)),
-          piano (state, "Piano", paramId (P::pianoOn), paramId (P::pianoVolume)),
-          synth (state, "Synth", paramId (P::synthOn), paramId (P::synthVolume)),
-          rotary (std::make_unique<RotaryPanel> (state))
+    StagePanel::StagePanel (NorgProcessor& p)
+        : organ (std::make_unique<OrganPanel> (p.state(), DrawbarStyle::sliding)),
+          piano (std::make_unique<PianoPanel> (p)),
+          synth (p.state(), "Synth", paramId (P::synthOn), paramId (P::synthVolume)),
+          rotary (std::make_unique<RotaryPanel> (p.state()))
     {
-        piano.setNote ("Grand, EPs and Clav coming soon");
         synth.setNote ("Synth coming soon");
         effects.setNote ("Effects and reverb coming soon");
 
-        for (auto* c : std::initializer_list<juce::Component*> { organ.get(), &piano, &synth, rotary.get(), &effects })
+        for (auto* c : std::initializer_list<juce::Component*> { organ.get(), piano.get(), &synth, rotary.get(), &effects })
             addAndMakeVisible (c);
     }
 
@@ -72,22 +73,21 @@ namespace norg::ui
         const int width = getWidth() - 28;
         const int organWidth = width * 48 / 100;
         const int pianoWidth = (width - organWidth) / 2;
-        layoutPanel (getLocalBounds(), { { organ.get(), organWidth }, { &piano, pianoWidth }, { &synth, width - organWidth - pianoWidth } },
+        layoutPanel (getLocalBounds(), { { organ.get(), organWidth }, { piano.get(), pianoWidth }, { &synth, width - organWidth - pianoWidth } },
                      *rotary, effects);
     }
 
     //==============================================================================
-    ElectroPanel::ElectroPanel (juce::AudioProcessorValueTreeState& state)
-        : organ (std::make_unique<OrganPanel> (state, DrawbarStyle::leds)),
-          piano (state, "Piano", paramId (P::pianoOn), paramId (P::pianoVolume)),
-          sample (state, "Sample", paramId (P::sampleOn), paramId (P::sampleVolume)),
-          rotary (std::make_unique<RotaryPanel> (state))
+    ElectroPanel::ElectroPanel (NorgProcessor& p)
+        : organ (std::make_unique<OrganPanel> (p.state(), DrawbarStyle::leds)),
+          piano (std::make_unique<PianoPanel> (p)),
+          sample (p.state(), "Sample", paramId (P::sampleOn), paramId (P::sampleVolume)),
+          rotary (std::make_unique<RotaryPanel> (p.state()))
     {
-        piano.setNote ("Pianos coming soon");
         sample.setNote ("Tape strings, flute and choir coming soon");
         effects.setNote ("Effects coming soon");
 
-        for (auto* c : std::initializer_list<juce::Component*> { organ.get(), &piano, &sample, rotary.get(), &effects })
+        for (auto* c : std::initializer_list<juce::Component*> { organ.get(), piano.get(), &sample, rotary.get(), &effects })
             addAndMakeVisible (c);
     }
 
@@ -98,7 +98,7 @@ namespace norg::ui
         const int width = getWidth() - 28;
         const int organWidth = width * 52 / 100;
         const int pianoWidth = (width - organWidth) / 2;
-        layoutPanel (getLocalBounds(), { { organ.get(), organWidth }, { &piano, pianoWidth }, { &sample, width - organWidth - pianoWidth } },
+        layoutPanel (getLocalBounds(), { { organ.get(), organWidth }, { piano.get(), pianoWidth }, { &sample, width - organWidth - pianoWidth } },
                      *rotary, effects);
     }
 }

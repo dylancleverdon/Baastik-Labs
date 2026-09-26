@@ -2,6 +2,11 @@
 
 #include "Widgets.h"
 
+namespace norg
+{
+    class NorgProcessor;
+}
+
 namespace norg::ui
 {
     // A section frame with its ON button and VOLUME knob; later phases add each engine's controls.
@@ -23,18 +28,20 @@ namespace norg::ui
 
     class OrganPanel;
     class RotaryPanel;
+    class PianoPanel;
 
     // Norg Stage: Organ | Piano | Synth, with the rotary and effects strip underneath.
     class StagePanel final : public juce::Component
     {
     public:
-        explicit StagePanel (juce::AudioProcessorValueTreeState&);
+        explicit StagePanel (NorgProcessor&);
         ~StagePanel() override;
         void resized() override;
 
     private:
         std::unique_ptr<OrganPanel> organ;
-        InstrumentSection piano, synth;
+        std::unique_ptr<PianoPanel> piano;
+        InstrumentSection synth;
         std::unique_ptr<RotaryPanel> rotary;
         SectionFrame effects { "Effects" };
     };
@@ -43,13 +50,14 @@ namespace norg::ui
     class ElectroPanel final : public juce::Component
     {
     public:
-        explicit ElectroPanel (juce::AudioProcessorValueTreeState&);
+        explicit ElectroPanel (NorgProcessor&);
         ~ElectroPanel() override;
         void resized() override;
 
     private:
         std::unique_ptr<OrganPanel> organ;
-        InstrumentSection piano, sample;
+        std::unique_ptr<PianoPanel> piano;
+        InstrumentSection sample;
         std::unique_ptr<RotaryPanel> rotary;
         SectionFrame effects { "Effects" };
     };

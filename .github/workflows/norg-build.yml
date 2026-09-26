@@ -101,7 +101,7 @@ jobs:
           mkdir -p out
           installer/macos/build-pkg.sh "$PAYLOAD" "$VERSION" out
           ditto -c -k --keepParent "$PAYLOAD" "out/Norg-${VERSION}-mac.zip"
-          cp installer/install.sh installer/uninstall.sh out/
+          cp installer/install.sh installer/uninstall.sh scripts/fetch-samples.sh out/
           ls -la out
 
       - name: Installer smoke test
@@ -255,6 +255,6 @@ jobs:
           gh release edit norg-channel --notes-file channel-notes.md --prerelease --latest=false
 
           # Installer and scripts first, manifest last, so the feed never points at a missing file.
-          gh release upload norg-channel out/Norg-Installer.pkg out/install.sh out/uninstall.sh --clobber
+          gh release upload norg-channel out/Norg-Installer.pkg out/install.sh out/uninstall.sh out/fetch-samples.sh --clobber
           gh release upload norg-channel out/norg-update.json --clobber
           echo "Published Norg ${VERSION}"

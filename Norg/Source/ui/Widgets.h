@@ -57,6 +57,7 @@ namespace norg::ui
     public:
         ChoiceButtons (juce::AudioProcessorValueTreeState&, const juce::String& paramId, juce::StringArray labels);
 
+        void setColumns (int columns) { numColumns = columns; resized(); }
         void resized() override;
 
     private:
@@ -64,6 +65,7 @@ namespace norg::ui
 
         juce::OwnedArray<LedButton> buttons;
         std::unique_ptr<juce::ParameterAttachment> attachment;
+        int numColumns = 0; // 0 = all in one row
     };
 
     // The small black OLED display.

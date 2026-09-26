@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Section.h"
+#include "sfz/SampleLibrary.h"
 
 #include <array>
 #include <memory>
@@ -14,7 +15,7 @@ namespace norg
     class NorgEngine
     {
     public:
-        explicit NorgEngine (int panelIndex = 0);
+        explicit NorgEngine (int panelIndex = 0, sfz::LibraryManager* libraries = nullptr);
         ~NorgEngine();
 
         void prepare (double sampleRate, int maxBlockSize);

@@ -76,3 +76,16 @@ NORG_PARAM(rotaryOn,       "rotary_on",        "Rotary On",         Bool,   0, 1
 NORG_PARAM(rotaryFast,     "rotary_fast",      "Rotary Fast",       Bool,   0, 1, 0,  -1, "", "", 2, Panel)
 NORG_PARAM(rotaryStop,     "rotary_stop",      "Rotary Stop Mode",  Bool,   0, 1, 0,  -1, "", "", 2, Panel)
 NORG_PARAM(rotaryDrive,    "rotary_drive",     "Rotary Drive",      Float,  0, 1, 0.25f, -1, "", "", 2, Panel)
+
+// --- Piano (phase 3) ---------------------------------------------------------------------------
+NORG_PARAM(pianoType,        "piano_type",         "Piano Type",           Choice, 0, 4, 2, -1, "Grand|Upright|Tine EP|Reed EP|Clav", "", 3, Panel)
+NORG_PARAM(pianoTineModel,   "piano_tine_model",   "Piano Tine Model",     Choice, 0, 2, 0, -1, "Mk I|Mk II|Suitcase", "", 3, Panel)
+NORG_PARAM(pianoReedModel,   "piano_reed_model",   "Piano Reed Model",     Choice, 0, 1, 0, -1, "200A|140B", "", 3, Panel)
+NORG_PARAM(pianoTimbre,      "piano_timbre",       "Piano Timbre",         Choice, 0, 3, 1, -1, "Soft|Mid|Bright|Dyno", "", 3, Panel)
+NORG_PARAM(pianoClavPickup,  "piano_clav_pickup",  "Piano Clav Pickup",    Choice, 0, 3, 2, -1, "Neck|Bridge|Both|Phase", "", 3, Panel)
+NORG_PARAM(pianoClavFilter,  "piano_clav_filter",  "Piano Clav Filter",    Choice, 0, 3, 2, -1, "Soft|Medium|Treble|Brilliant", "", 3, Panel)
+NORG_PARAM(pianoSampled,     "piano_sampled",      "Piano Use Samples",    Bool,   0, 1, 1, -1, "", "", 3, Panel)
+NORG_PARAM(pianoStringRes,   "piano_string_res",   "Piano String Resonance", Bool, 0, 1, 1, -1, "", "", 3, Panel)
+NORG_PARAM(pianoPedalNoise,  "piano_pedal_noise",  "Piano Pedal Noise",    Bool,   0, 1, 1, -1, "", "", 3, Panel)
+NORG_PARAM(pianoSoftRelease, "piano_soft_release", "Piano Soft Release",   Bool,   0, 1, 0, -1, "", "", 3, Panel)
+NORG_PARAM(pianoStretch,     "piano_stretch",      "Piano Stretch Tuning", Bool,   0, 1, 1, -1, "", "", 3, Panel)

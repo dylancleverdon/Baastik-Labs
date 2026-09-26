@@ -17,8 +17,8 @@ namespace norg::ui
         : processor (p),
           modeButtons (p.state(), paramId (P::mode), { "Stage", "Electro" }),
           masterVolume (p.state(), paramId (P::masterVolume), "Master Level"),
-          stagePanel (p.state()),
-          electroPanel (p.state()),
+          stagePanel (p),
+          electroPanel (p),
           keyboard (p.keyboardState())
     {
         addAndMakeVisible (logo);

@@ -9,6 +9,7 @@ namespace norg
           paramTable (parameters)
     {
         snapshot.resetToDefaults();
+        syncLibraries();
     }
 
     NorgProcessor::~NorgProcessor() = default;
@@ -62,6 +63,53 @@ namespace norg
         auto state = juce::ValueTree::fromXml (*xml);
         // Future schema upgrades go here (state.getProperty ("schemaVersion") < stateSchemaVersion).
         parameters.replaceState (state);
+        syncLibraries();
+    }
+
+    namespace
+    {
+        juce::Identifier libraryProperty (int panel, NorgProcessor::LibraryUse use)
+        {
+            static const char* names[] = { "lib_grand", "lib_upright", "lib_sample" };
+            return (panel == 1 ? juce::String ("b_") : juce::String()) + names[static_cast<int> (use)];
+        }
+    }
+
+    juce::String NorgProcessor::getLibraryChoice (int panel, LibraryUse use) const
+    {
+        return parameters.state.getProperty (libraryProperty (panel, use)).toString();
+    }
+
+    void NorgProcessor::setLibraryChoice (int panel, LibraryUse use, const juce::String& path)
+    {
+        parameters.state.setProperty (libraryProperty (panel, use), path, nullptr);
+        syncLibraries();
+    }
+
+    juce::String NorgProcessor::resolveLibrary (int panel, LibraryUse use) const
+    {
+        const auto choice = getLibraryChoice (panel, use);
+        if (choice == "none")
+            return {};
+        if (choice.isNotEmpty())
+            return choice;
+        if (use == LibraryUse::sample)
+            return {}; // the Sample section defaults to its built-in tape voices
+
+        // Automatic: the first installed library that looks like the right kind of piano.
+        const auto installed = sfz::LibraryManager::findInstalledLibraries();
+        const auto* keyword = use == LibraryUse::grand ? "grand" : "upright";
+        for (const auto& f : installed)
+            if (f.getFullPathName().containsIgnoreCase (keyword))
+                return f.getFullPathName();
+        return {};
+    }
+
+    void NorgProcessor::syncLibraries()
+    {
+        for (int panel = 0; panel < numPanels; ++panel)
+            for (auto use : { LibraryUse::grand, LibraryUse::upright, LibraryUse::sample })
+                libraries.request (panel * 3 + static_cast<int> (use), resolveLibrary (panel, use));
     }
 }
 

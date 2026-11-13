@@ -290,6 +290,10 @@ struct MandelUniform {
     glow: f32,
     pixel: f32,
     light: f32,
+    /// the reference point (for the closed-form cardioid/bulb test in shallow views)
+    ref_c: [f32; 2],
+    shallow: f32,
+    _p: f32,
 }
 
 const MAX_ORBIT: usize = 8001;
@@ -311,11 +315,18 @@ fn region_point(region: usize, dive: u32) -> (f64, f64) {
     }
 }
 
+/// A lower-resolution picture (and its bind group for the upscale pass).
+type LowRes = ((u32, u32), wgpu::Texture, wgpu::TextureView, wgpu::BindGroup);
+
 pub struct Mandelbrot {
     uniform: wgpu::Buffer,
     orbit_buf: wgpu::Buffer,
     bg: wgpu::BindGroup,
     pipeline: wgpu::RenderPipeline,
+    up_layout: wgpu::BindGroupLayout,
+    p_up: wgpu::RenderPipeline,
+    sampler: wgpu::Sampler,
+    low: Option<LowRes>,
     center: Cdd,
     target: Cdd,
     scale: f64,
@@ -343,6 +354,8 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     let module = gpu.shader("mandelbrot", scene_source(include_str!("../shaders/scenes/mandelbrot.wgsl")));
     let layout = gpu.layout("mandelbrot", &[Bind::Uniform, Bind::StorageRead]);
     let pl = gpu.pipeline_layout("mandelbrot", &[&globals.layout, &layout]);
+    let up_layout = gpu.layout("mandelbrot-up", &[Bind::Texture, Bind::Sampler]);
+    let up_pl = gpu.pipeline_layout("mandelbrot-up", &[&globals.layout, &layout, &up_layout]);
     let uniform = gpu.uniform_buffer("mandel-u", std::mem::size_of::<MandelUniform>() as u64);
     let orbit_buf = gpu.storage_buffer("mandel-orbit", (MAX_ORBIT * 8) as u64);
     let (job_tx, job_rx) = mpsc::channel::<SteerRequest>();
@@ -358,6 +371,10 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     Box::new(Mandelbrot {
         bg: gpu.bind_group("mandelbrot", &layout, &[uniform.as_entire_binding(), orbit_buf.as_entire_binding()]),
         pipeline: gpu.fullscreen_pipeline("mandelbrot", &module, "fs_mandel", &pl, HDR_FORMAT, None),
+        p_up: gpu.fullscreen_pipeline("mandelbrot-up", &module, "fs_up", &up_pl, HDR_FORMAT, None),
+        sampler: gpu.sampler(wgpu::FilterMode::Linear, wgpu::AddressMode::ClampToEdge),
+        up_layout,
+        low: None,
         uniform,
         orbit_buf,
         center: start,
@@ -510,6 +527,11 @@ impl Scene for Mandelbrot {
             + a.beat * ctx.info.dt * p.f("cycle") * 0.4)
             .rem_euclid(1.0);
         let offset = self.center.minus(self.reference).to_f64();
+        // the fractal is drawn at a lower resolution for lower quality, then scaled up smoothly
+        let res = [0.6, 0.8, 1.0][p.choice_index("quality").min(2)];
+        let low_size =
+            (((ctx.size.0 as f32 * res).round() as u32).max(16), ((ctx.size.1 as f32 * res).round() as u32).max(16));
+        let reference = self.reference.to_f64();
         let u = MandelUniform {
             offset: [offset.0 as f32, offset.1 as f32],
             scale: self.scale as f32,
@@ -520,18 +542,32 @@ impl Scene for Mandelbrot {
             color_offset: self.color_offset,
             relief: p.f("relief"),
             glow: p.f("glow") * (0.5 + a.bass * 1.5),
-            pixel: (2.0 * self.scale / ctx.size.1.max(1) as f64) as f32,
+            pixel: (2.0 * self.scale / low_size.1 as f64) as f32,
             light: self.angle as f32 * 0.5 + 0.8,
+            ref_c: [reference.0 as f32, reference.1 as f32],
+            shallow: if self.scale > 1e-3 { 1.0 } else { 0.0 },
+            _p: 0.0,
         };
         gpu.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&u));
-        gpu::fullscreen(
-            ctx.encoder,
-            "mandelbrot",
-            ctx.target,
-            &self.pipeline,
-            &[&ctx.globals.bind_group, &self.bg],
-            Some(wgpu::Color::BLACK),
-        );
+        let globals = &ctx.globals.bind_group;
+        if low_size == ctx.size {
+            self.low = None;
+            gpu::fullscreen(ctx.encoder, "mandelbrot", ctx.target, &self.pipeline, &[globals, &self.bg], None);
+            return;
+        }
+        if self.low.as_ref().map(|l| l.0) != Some(low_size) {
+            let t = gpu.render_texture("mandel-low", low_size, HDR_FORMAT);
+            let v = t.create_view(&Default::default());
+            let bg = gpu.bind_group(
+                "mandelbrot-up",
+                &self.up_layout,
+                &[wgpu::BindingResource::TextureView(&v), wgpu::BindingResource::Sampler(&self.sampler)],
+            );
+            self.low = Some((low_size, t, v, bg));
+        }
+        let (_, _, view, up_bg) = self.low.as_ref().unwrap();
+        gpu::fullscreen(ctx.encoder, "mandelbrot", view, &self.pipeline, &[globals, &self.bg], None);
+        gpu::fullscreen(ctx.encoder, "mandelbrot-up", ctx.target, &self.p_up, &[globals, &self.bg, up_bg], None);
     }
 }
 

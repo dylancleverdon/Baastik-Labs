@@ -12,10 +12,30 @@ struct MandelU {
     glow: f32,
     pixel: f32,         // complex-plane size of a pixel
     light: f32,         // light direction (radians)
+    ref_c: vec2f,       // the reference point itself
+    shallow: f32,       // 1 when zoomed out enough for the closed-form interior tests
+    p0: f32,
 };
 
 @group(1) @binding(0) var<uniform> M: MandelU;
 @group(1) @binding(1) var<storage, read> orbit: array<vec2f>;
+// the lower-resolution picture, for the upscale pass
+@group(2) @binding(0) var low_tex: texture_2d<f32>;
+@group(2) @binding(1) var low_samp: sampler;
+
+@fragment
+fn fs_up(in: FsIn) -> @location(0) vec4f {
+    return vec4f(textureSampleLevel(low_tex, low_samp, in.uv, 0.0).rgb, 1.0);
+}
+
+// Inside the main cardioid or the period-2 bulb (where most of the set's area is when zoomed out).
+fn in_main_bulbs(c: vec2f) -> bool {
+    let x = c.x - 0.25;
+    let q = x * x + c.y * c.y;
+    let cardioid = q * (q + x) < 0.25 * c.y * c.y;
+    let bulb = (c.x + 1.0) * (c.x + 1.0) + c.y * c.y < 0.0625;
+    return cardioid || bulb;
+}
 
 fn cmul(a: vec2f, b: vec2f) -> vec2f { return vec2f(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
 
@@ -31,10 +51,15 @@ fn fs_mandel(in: FsIn) -> @location(0) vec4f {
     var i = 0u;
     var escaped = false;
     var trap = 1e9;
+    // points inside the set never escape and would run the whole budget: catch them early,
+    // in closed form near the top, and by noticing their orbit repeat (Brent) everywhere
+    var inside = M.shallow > 0.5 && in_main_bulbs(M.ref_c + dc);
+    var saved = vec2f(1e30);
+    var check_at = 16u;
     // how many times the derivative was scaled down by 1e15 (to stay in f32 range)
     var der_scale = 0.0;
     loop {
-        if (i >= M.max_iter) { break; }
+        if (i >= M.max_iter || inside) { break; }
         let zr = orbit[m];
         der = 2.0 * cmul(zr + dz, der) + vec2f(1.0, 0.0);
         dz = 2.0 * cmul(zr, dz) + cmul(dz, dz) + dc;
@@ -45,6 +70,15 @@ fn fs_mandel(in: FsIn) -> @location(0) vec4f {
         if (r2 > 1e4) {
             escaped = true;
             break;
+        }
+        let ds = z - saved;
+        if (dot(ds, ds) < 1e-12 * max(r2, 1e-6)) {
+            inside = true;
+            break;
+        }
+        if (i == check_at) {
+            saved = z;
+            check_at = check_at * 2u;
         }
         // rebase onto the start of the orbit when the pixel's own value is the smaller one,
         // or when the reference orbit runs out

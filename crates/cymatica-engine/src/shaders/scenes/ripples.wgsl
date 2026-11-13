@@ -240,7 +240,7 @@ fn fs_render(in: FsIn) -> @location(0) vec4f {
 
     // water plane (one parallax refinement step)
     if (ray.y >= -1e-4) {
-        return vec4f(sky(ray), 1.0);
+        return vec4f(sky(ray) * G.bg_alpha, 1.0);
     }
     var t = -cam.pos.y / ray.y;
     var hit = cam.pos + ray * t;
@@ -265,7 +265,7 @@ fn fs_render(in: FsIn) -> @location(0) vec4f {
         let refl = reflect(ray, vec3f(0.0, 1.0, 0.0));
         stone = stone + sky(refl) * 0.08;
         let fog = exp(-max(td - 1.5, 0.0) * 0.9);
-        return vec4f(mix(sky(vec3f(ray.x, 0.02, ray.z)) * 0.6, stone, fog), 1.0);
+        return vec4f(mix(sky(vec3f(ray.x, 0.02, ray.z)) * 0.6, stone, fog) * G.bg_alpha, 1.0);
     }
     if (abs(hit.x) > 1.0 || abs(hit.z) > 1.0) {
         // coping around the edge

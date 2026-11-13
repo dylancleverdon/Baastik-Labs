@@ -140,6 +140,50 @@ pub fn self_test(args: Vec<String>) -> Result<()> {
     Ok(())
 }
 
+/// Renders every built-in preset's thumbnail (as the Presets tab shows them) into a contact sheet,
+/// failing if any comes out black: `cymatica thumbnails --out presets.png [--only liquid]`.
+pub fn thumbnails(args: Vec<String>) -> Result<()> {
+    use crate::thumbnails::{demo_frames, render, Job, SIZE};
+    let a = Args(args);
+    let out = PathBuf::from(a.value("--out").unwrap_or_else(|| "cymatica-presets.png".into()));
+    let only = a.value("--only");
+    let settings = crate::settings::Settings::default();
+    let presets: Vec<_> = crate::presets::builtin_presets()
+        .into_iter()
+        .filter(|p| only.as_deref().is_none_or(|s| p.scene == s))
+        .collect();
+    let mut r = OfflineRenderer::new(SIZE)?;
+    eprintln!("{} preset thumbnails on {} ({:?})", presets.len(), r.gpu.adapter_info.name, r.gpu.adapter_info.backend);
+    let frames = demo_frames();
+    let cols = 6u32;
+    let rows = (presets.len() as u32).div_ceil(cols).max(1);
+    let mut sheet = image::RgbaImage::new(SIZE.0 * cols, SIZE.1 * rows);
+    let mut failures = Vec::new();
+    for (i, p) in presets.iter().enumerate() {
+        let t0 = std::time::Instant::now();
+        let img = render(&mut r, &Job::for_preset(p, &settings), &frames)?;
+        let stats = image_stats(&img);
+        eprintln!(
+            "  {:<36} mean {:.3} lit {:.3}  ({:.1}s)",
+            p.key(),
+            stats.mean_luma,
+            stats.lit_fraction,
+            t0.elapsed().as_secs_f32()
+        );
+        if stats.mean_luma < 0.01 || stats.lit_fraction < 0.005 {
+            failures.push(format!("{} rendered an (almost) black thumbnail", p.key()));
+        }
+        let (x, y) = ((i as u32 % cols) * SIZE.0, (i as u32 / cols) * SIZE.1);
+        image::imageops::overlay(&mut sheet, &img, x as i64, y as i64);
+    }
+    sheet.save(&out)?;
+    eprintln!("contact sheet: {}", out.display());
+    if !failures.is_empty() {
+        bail!("thumbnails failed:\n{}", failures.join("\n"));
+    }
+    Ok(())
+}
+
 /// Updater test hooks used by CI (mirrors Norg's updater e2e test).
 /// `cymatica update --home H --manifest-url file://... --allow-url-prefix file:// --current-build N --check-now`
 /// `cymatica update --home H --rollback`

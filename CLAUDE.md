@@ -9,7 +9,7 @@ branch.
   `text-to-synth`, ...), and never touch those branches from a Cymatica session.
 - Work on your `claude/*` session branch (CI runs there), then push or merge into `cymatica` to ship.
 - **Every push to `cymatica` becomes an update** on the user's Mac: `cymatica-release.yml` builds,
-  tests, self-tests every scene on Metal, runs the real app window for 27 s (`CYMATICA_SMOKE_TEST`),
+  tests, self-tests every scene on Metal, runs the real app window for 36 s (`CYMATICA_SMOKE_TEST`: every scene, the Presets tab's thumbnails, the overlay and wallpaper windows),
   runs the install and updater end-to-end tests, then publishes `cymatica-v<version>` plus the
   rolling `cymatica-channel` release. Installed copies pick it
   up within an hour. Only push to `cymatica` when the build is green.

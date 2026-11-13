@@ -24,8 +24,10 @@ port of cava's own algorithm.
 Everything is customizable: 23 themes (Synthwave, Vaporwave, Catppuccin, Dracula, Nord, Gruvbox,
 Tokyo Night, your cava colours...), every scene setting can follow the music (bass, kicks, beat...),
 a look panel (glow, trails, kaleidoscope, chromatic aberration, CRT scanlines, Synesthesia colours
-by musical key), presets you can save and share, auto-pilot that changes scenes on the beat, HDR on
-XDR displays, render scale up to 2x supersampling, live-wallpaper mode and 8K screenshots.
+by musical key), presets with picture previews that you can save and share, auto-pilot that changes
+scenes on the beat, HDR on XDR displays, render scale up to 2x supersampling, live-wallpaper mode,
+a see-through overlay window (Bars or Phosphor floating over everything, clicks pass through) and
+8K screenshots.
 
 ## Install (macOS)
 
@@ -49,7 +51,8 @@ Already use cava? **Audio → Import my cava config** picks up your source, bar 
 
 ## Keys
 H hide panel · ←/→ scenes · ↑/↓ presets · T theme · R randomize · M mutate · F fullscreen ·
-D auto-pilot · S screenshot · I info · Space freeze · 1–9 jump to a scene
+D auto-pilot · S screenshot · I info · Space freeze · 1–9 jump to a scene · Esc back to a normal
+window (from fullscreen, wallpaper or overlay; for the overlay, Cmd-Tab to Cymatica first)
 
 ## Uninstall
 ```

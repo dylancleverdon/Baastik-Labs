@@ -48,6 +48,9 @@ pub struct GlobalsUniform {
     pub energy: f32,
     pub seed: f32,
     pub spectrum_len: u32,
+    /// 1 normally; 0 in the see-through overlay window (scenes leave their backdrops out).
+    pub bg_alpha: f32,
+    pub _pad: [f32; 3],
 }
 
 /// Everything a frame needs from the outside world.
@@ -60,11 +63,13 @@ pub struct FrameInfo {
     pub palette_shift: f32,
     pub note_color: [f32; 3],
     pub seed: f32,
+    /// Rendering for a see-through window: no backdrops, and the output's alpha follows brightness.
+    pub transparent: bool,
 }
 
 impl FrameInfo {
     pub fn new(time: f32, dt: f32, frame: u64, audio: AudioFrame) -> Self {
-        Self { time, dt, frame, audio, palette_shift: 0.0, note_color: [1.0, 1.0, 1.0], seed: 0.0 }
+        Self { time, dt, frame, audio, palette_shift: 0.0, note_color: [1.0, 1.0, 1.0], seed: 0.0, transparent: false }
     }
 }
 
@@ -224,6 +229,8 @@ impl GlobalsGpu {
             energy: a.loudness.max(a.bass * 0.85),
             seed: info.seed,
             spectrum_len: a.spectrum.len().clamp(1, SPECTRUM_BINS) as u32,
+            bg_alpha: if info.transparent { 0.0 } else { 1.0 },
+            _pad: [0.0; 3],
         };
         gpu.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&u));
         if !a.spectrum.is_empty() {
@@ -247,8 +254,8 @@ mod tests {
 
     #[test]
     fn uniform_layout_matches_wgsl() {
-        // WGSL struct Globals is 288 bytes (see shaders/globals.wgsl).
-        assert_eq!(std::mem::size_of::<GlobalsUniform>(), 288);
+        // WGSL struct Globals is 304 bytes (see shaders/globals.wgsl).
+        assert_eq!(std::mem::size_of::<GlobalsUniform>(), 304);
         assert_eq!(std::mem::offset_of!(GlobalsUniform, hits), 112);
         assert_eq!(std::mem::offset_of!(GlobalsUniform, bands), 128);
         assert_eq!(std::mem::offset_of!(GlobalsUniform, chroma), 160);

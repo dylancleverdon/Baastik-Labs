@@ -103,3 +103,52 @@ fn ripples_stay_water_under_busy_music() {
     let (first, last) = (lumas[0], *lumas.last().unwrap());
     assert!(last < first * 1.25, "ripples brightened from {first} to {last}");
 }
+
+#[test]
+fn overlay_output_is_see_through_except_the_visuals() {
+    // the see-through overlay window: backdrops go, alpha follows brightness
+    let Some(mut r) = renderer((320, 180)) else { return };
+    r.transparent = true;
+    let theme = &builtin_themes()[0];
+    for scene in ["bars", "phosphor"] {
+        let mut last = None;
+        r.render_sequence(
+            scene,
+            &ParamSet::default(),
+            &ParamSet::default(),
+            theme,
+            &mut OfflineAudio::demo(48000),
+            22.0,
+            30.0,
+            1,
+            1.0,
+            |_, img| {
+                last = Some(img.clone());
+                Ok(())
+            },
+        )
+        .unwrap();
+        let img = last.unwrap();
+        let n = (img.width() * img.height()) as f32;
+        let clear: Vec<_> = img.pixels().filter(|p| p[3] < 8).collect();
+        let solid = img.pixels().filter(|p| p[3] > 200).count() as f32 / n;
+        // glow may add light near the shapes (premultiplied), but must not tint the whole desktop
+        let haze = clear.iter().map(|p| *p.0[..3].iter().max().unwrap() as f32).sum::<f32>() / clear.len() as f32;
+        assert!(clear.len() as f32 / n > 0.4, "{scene}: only {:.0}% see-through", clear.len() as f32 / n * 100.0);
+        assert!(solid > 0.002, "{scene}: nothing solid ({:.2}%)", solid * 100.0);
+        assert!(haze < 20.0, "{scene}: the see-through part is tinted ({haze:.1}/255 on average)");
+    }
+    // and a normal render stays fully opaque
+    r.transparent = false;
+    let img = r
+        .render(
+            "bars",
+            &ParamSet::default(),
+            &ParamSet::default(),
+            theme,
+            FrameInfo::new(1.0, 1.0 / 60.0, 1, Default::default()),
+            1.0,
+        )
+        .unwrap();
+    assert!(img.pixels().all(|p| p[3] == 255));
+}

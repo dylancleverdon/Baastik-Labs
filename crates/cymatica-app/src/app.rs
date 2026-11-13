@@ -39,6 +39,13 @@ struct Running {
     frame: u64,
     fps: f32,
     accent: [u8; 3],
+    /// Surface alpha modes for a normal window and for the see-through overlay (if supported).
+    alpha_opaque: wgpu::CompositeAlphaMode,
+    alpha_clear: Option<wgpu::CompositeAlphaMode>,
+    /// Whether the window currently takes the mouse (None: re-apply on the next frame).
+    hittest: Option<bool>,
+    /// Wallpaper or overlay (sized to the screen) last time the mode was applied.
+    was_floating: bool,
 }
 
 pub struct App {
@@ -60,22 +67,40 @@ pub struct App {
     mic_status: macos::Mic,
     mic_checked: Instant,
     smoke: Option<Smoke>,
+    thumbs: crate::thumbnails::Thumbnails,
 }
 
-/// `CYMATICA_SMOKE_TEST=<seconds>`: run the real window for that long, visiting every scene, then
-/// quit, failing unless every scene reached the screen. CI runs this on a macOS runner.
+/// `CYMATICA_SMOKE_TEST=<seconds>`: run the real window for that long, visiting every scene, the
+/// Presets tab (whose thumbnails render in the background) and the overlay and wallpaper
+/// windows, then quit, failing unless every phase reached the screen and thumbnails arrived.
+/// CI runs this on a macOS runner.
 struct Smoke {
     seconds: f32,
     start: Option<Instant>,
-    /// frames presented while each scene was current
+    /// frames presented in each phase
     presented: Vec<u64>,
-    scene: usize,
+    phase: usize,
 }
+
+/// The window modes the smoke test visits after the scenes.
+const SMOKE_WINDOWS: [WindowMode; 2] = [WindowMode::Overlay, WindowMode::Wallpaper];
+
+/// The scene whose presets the smoke test shows in the Presets tab (cheap to render).
+const SMOKE_PRESETS_SCENE: &str = "bars";
 
 impl Smoke {
     fn from_env() -> Option<Self> {
         let seconds: f32 = std::env::var("CYMATICA_SMOKE_TEST").ok()?.parse().ok()?;
-        Some(Self { seconds: seconds.max(1.0), start: None, presented: vec![0; scenes().len()], scene: usize::MAX })
+        let phases = Self::phase_names().len();
+        Some(Self { seconds: seconds.max(1.0), start: None, presented: vec![0; phases], phase: usize::MAX })
+    }
+
+    /// Every scene, then the Presets tab, then the window modes.
+    fn phase_names() -> Vec<String> {
+        let mut names: Vec<String> = scenes().iter().map(|s| s.id.to_string()).collect();
+        names.push("presets tab".into());
+        names.extend(SMOKE_WINDOWS.iter().map(|m| format!("{m:?} window").to_lowercase()));
+        names
     }
 }
 
@@ -106,22 +131,27 @@ pub fn run() -> anyhow::Result<()> {
         mic_status: macos::Mic::NotDetermined,
         mic_checked: Instant::now(),
         smoke: Smoke::from_env(),
+        thumbs: crate::thumbnails::Thumbnails::new(),
     };
     let event_loop = EventLoop::new()?;
     event_loop.run_app(&mut app)?;
     app.settings.save();
     if let Some(s) = &app.smoke {
         let elapsed = s.start.map(|t| t.elapsed().as_secs_f32()).unwrap_or(0.0);
-        let per_scene: Vec<String> =
-            scenes().iter().zip(&s.presented).map(|(info, n)| format!("{} {n}", info.id)).collect();
+        let per_phase: Vec<String> =
+            Smoke::phase_names().iter().zip(&s.presented).map(|(name, n)| format!("{name} {n}")).collect();
         let msg = format!(
             "smoke test: {} frames in {elapsed:.1} s ({})",
             s.presented.iter().sum::<u64>(),
-            per_scene.join(", ")
+            per_phase.join(", ")
         );
         log::info!("{msg}");
         println!("{msg}");
-        anyhow::ensure!(s.presented.iter().all(|&n| n > 0), "smoke test failed: a scene never reached the screen");
+        anyhow::ensure!(s.presented.iter().all(|&n| n > 0), "smoke test failed: a phase never reached the screen");
+        let wanted: Vec<_> = app.presets.iter().filter(|p| p.scene == SMOKE_PRESETS_SCENE).collect();
+        let ready = wanted.iter().filter(|p| app.thumbs.get(&p.key()).is_some()).count();
+        println!("smoke test: {ready} of {} preset thumbnails ready", wanted.len());
+        anyhow::ensure!(ready > 0, "smoke test failed: no preset thumbnail was rendered");
     }
     Ok(())
 }
@@ -156,6 +186,14 @@ impl App {
             && caps.formats.contains(&wgpu::TextureFormat::Rgba16Float);
         let hdr_active = self.settings.hdr && edr_supported;
         let format = pick_format(&caps, hdr_active);
+        let alpha_opaque = if caps.alpha_modes.contains(&wgpu::CompositeAlphaMode::Opaque) {
+            wgpu::CompositeAlphaMode::Opaque
+        } else {
+            caps.alpha_modes[0]
+        };
+        let alpha_clear = [wgpu::CompositeAlphaMode::PreMultiplied, wgpu::CompositeAlphaMode::PostMultiplied]
+            .into_iter()
+            .find(|m| caps.alpha_modes.contains(m));
         let size = window.inner_size();
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -164,7 +202,7 @@ impl App {
             height: size.height.max(1),
             present_mode: wgpu::PresentMode::AutoVsync,
             desired_maximum_frame_latency: 2,
-            alpha_mode: caps.alpha_modes[0],
+            alpha_mode: alpha_opaque,
             view_formats: vec![],
             // Auto = extended linear sRGB (EDR) for Rgba16Float where supported, sRGB otherwise
             color_space: wgpu::SurfaceColorSpace::Auto,
@@ -206,29 +244,52 @@ impl App {
             frame: 0,
             fps: 60.0,
             accent,
+            alpha_opaque,
+            alpha_clear,
+            hittest: None,
+            was_floating: false,
         })
     }
 
-    fn apply_window_mode(&self) {
-        let Some(r) = &self.run else { return };
+    fn apply_window_mode(&mut self) {
+        let Some(r) = self.run.as_mut() else { return };
         let mode = self.settings.window_mode;
+        let overlay = mode == WindowMode::Overlay;
+        let floating = matches!(mode, WindowMode::Wallpaper | WindowMode::Overlay);
         match mode {
             WindowMode::Fullscreen => r.window.set_fullscreen(Some(Fullscreen::Borderless(None))),
             _ => r.window.set_fullscreen(None),
         }
         macos::set_wallpaper(&r.window, mode == WindowMode::Wallpaper);
-        if mode == WindowMode::Wallpaper {
+        // the see-through overlay: a transparent window and surface, on every Space
+        r.window.set_transparent(overlay);
+        macos::set_overlay(&r.window, overlay);
+        let alpha = if overlay { r.alpha_clear.unwrap_or(r.alpha_opaque) } else { r.alpha_opaque };
+        if r.config.alpha_mode != alpha {
+            r.config.alpha_mode = alpha;
+            r.surface.configure(&r.gpu.device, &r.config);
+        }
+        if floating {
             if let Some(m) = r.window.current_monitor() {
                 let _ = r.window.request_inner_size(m.size());
                 r.window.set_outer_position(m.position());
             }
+        } else if r.was_floating {
+            // back from wallpaper/overlay: a normal-sized window again
+            let _ = r.window.request_inner_size(winit::dpi::LogicalSize::new(1440.0, 900.0));
         }
-        r.window.set_window_level(if self.settings.always_on_top && mode != WindowMode::Wallpaper {
+        r.was_floating = floating;
+        r.window.set_window_level(if overlay || (self.settings.always_on_top && mode != WindowMode::Wallpaper) {
             WindowLevel::AlwaysOnTop
         } else {
             WindowLevel::Normal
         });
-        r.window.set_decorations(mode != WindowMode::Wallpaper);
+        r.window.set_decorations(!floating);
+        r.hittest = None;
+        if overlay {
+            self.ui
+                .toast("Overlay: clicks pass through while the panel is hidden. Cmd-Tab to Cymatica, then Esc leaves");
+        }
     }
 
     fn switch_scene(&mut self, delta: i64) {
@@ -465,6 +526,13 @@ impl App {
             ui::apply_style(&r.egui_ctx, theme.accent);
         }
 
+        // preset pictures for the Presets tab (rendered in the background, cached on disk)
+        if self.settings.panel_open && self.ui.tab == ui::Tab::Presets {
+            let scene = &self.settings.scene;
+            self.thumbs.want(self.presets.iter().filter(|p| &p.scene == scene), &self.settings);
+        }
+        self.thumbs.poll(&r.egui_ctx);
+
         // ---- UI
         let status = self.audio.status();
         let window_size = (r.config.width, r.config.height);
@@ -490,6 +558,7 @@ impl App {
             cava_config_found: self.cava_config_path.is_some(),
             is_macos: cfg!(target_os = "macos"),
             frozen: self.frozen.is_some(),
+            thumbnails: &self.thumbs,
         };
         let raw = r.egui_state.take_egui_input(&r.window);
         let mut actions = ui::UiActions::default();
@@ -531,6 +600,7 @@ impl App {
             let params = self.settings.scene_params.get(&scene).unwrap_or(&empty);
             let mut fi = FrameInfo::new(r.sim_time, dt, r.frame, audio.clone());
             fi.seed = (r.frame % 1000) as f32;
+            fi.transparent = self.settings.window_mode == WindowMode::Overlay && r.config.alpha_mode != r.alpha_opaque;
             r.renderer.render(
                 &r.gpu,
                 &mut enc,
@@ -560,7 +630,7 @@ impl App {
             r.gpu.queue.submit([enc.finish()]);
             r.window.pre_present_notify();
             r.gpu.queue.present(output);
-            if let Some(n) = self.smoke.as_mut().and_then(|s| s.presented.get_mut(s.scene)) {
+            if let Some(n) = self.smoke.as_mut().and_then(|s| s.presented.get_mut(s.phase)) {
                 *n += 1;
             }
         }
@@ -568,9 +638,18 @@ impl App {
             r.egui_renderer.free_texture(id);
         }
 
-        // cursor auto-hide when the panel is closed and the mouse rests
+        // cursor auto-hide when the panel is closed and the mouse rests (never over the desktop)
         let idle = self.last_input.elapsed() > Duration::from_secs(3);
-        r.window.set_cursor_visible(!(idle && !self.settings.panel_open));
+        let on_desktop = matches!(self.settings.window_mode, WindowMode::Wallpaper | WindowMode::Overlay);
+        r.window.set_cursor_visible(on_desktop || !(idle && !self.settings.panel_open));
+        // the overlay lets clicks through to the apps below, except while the panel is open
+        if self.settings.window_mode != WindowMode::Wallpaper {
+            let take_mouse = self.settings.window_mode != WindowMode::Overlay || self.settings.panel_open;
+            if r.hittest != Some(take_mouse) {
+                let _ = r.window.set_cursor_hittest(take_mouse);
+                r.hittest = Some(take_mouse);
+            }
+        }
 
         self.handle_actions(actions, event_loop);
 
@@ -609,13 +688,27 @@ impl App {
         let Some(s) = self.smoke.as_mut() else { return };
         let start = *s.start.get_or_insert_with(Instant::now);
         let all = scenes();
-        let want = (start.elapsed().as_secs_f32() / s.seconds * all.len() as f32) as usize;
-        if want >= all.len() {
+        let phases = s.presented.len();
+        let want = (start.elapsed().as_secs_f32() / s.seconds * phases as f32) as usize;
+        if want >= phases {
+            self.settings.window_mode = WindowMode::Window;
             event_loop.exit();
-        } else if want != s.scene {
-            s.scene = want;
-            log::info!("smoke test: {}", all[want].id);
-            self.set_scene(all[want].id);
+        } else if want != s.phase {
+            s.phase = want;
+            log::info!("smoke test: {}", Smoke::phase_names()[want]);
+            if want < all.len() {
+                self.set_scene(all[want].id);
+            } else if want == all.len() {
+                self.set_scene(SMOKE_PRESETS_SCENE);
+                self.settings.panel_open = true;
+                self.ui.tab = ui::Tab::Presets;
+            } else {
+                // panel closed, so the overlay also lets clicks through
+                self.settings.panel_open = false;
+                self.ui.tab = ui::Tab::Scene;
+                self.settings.window_mode = SMOKE_WINDOWS[want - all.len() - 1];
+                self.apply_window_mode();
+            }
         }
     }
 

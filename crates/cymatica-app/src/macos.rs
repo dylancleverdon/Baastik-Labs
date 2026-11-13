@@ -44,6 +44,22 @@ mod imp {
         }
     }
 
+    /// See-through overlay: on every Space and over full-screen apps, without a window shadow.
+    /// (Transparency, level and click-through are set through winit.)
+    pub fn set_overlay(window: &Window, on: bool) {
+        let Some(w) = ns_window(window) else { return };
+        w.setHasShadow(!on);
+        if on {
+            w.setCollectionBehavior(
+                NSWindowCollectionBehavior::CanJoinAllSpaces
+                    | NSWindowCollectionBehavior::Stationary
+                    | NSWindowCollectionBehavior::FullScreenAuxiliary,
+            );
+        } else if w.collectionBehavior().contains(NSWindowCollectionBehavior::FullScreenAuxiliary) {
+            w.setCollectionBehavior(NSWindowCollectionBehavior::Default);
+        }
+    }
+
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub enum Mic {
         NotDetermined,
@@ -87,6 +103,8 @@ mod imp {
     use super::*;
 
     pub fn set_wallpaper(_: &Window, _: bool) {}
+
+    pub fn set_overlay(_: &Window, _: bool) {}
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub enum Mic {

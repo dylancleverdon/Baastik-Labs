@@ -16,6 +16,8 @@ pub enum WindowMode {
     Fullscreen,
     /// Behind the desktop icons (macOS), like a live wallpaper.
     Wallpaper,
+    /// See-through, over everything, click-through while the panel is hidden.
+    Overlay,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

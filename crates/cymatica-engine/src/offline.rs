@@ -83,6 +83,8 @@ impl OfflineAudio {
 pub struct OfflineRenderer {
     /// Crossfade seconds used when consecutive renders switch scenes.
     pub crossfade: f32,
+    /// Render as for the see-through overlay window (no backdrops, alpha follows brightness).
+    pub transparent: bool,
     pub gpu: Gpu,
     _instance: wgpu::Instance,
     pub renderer: Renderer,
@@ -108,7 +110,17 @@ impl OfflineRenderer {
             (padded_row * size.1) as u64,
             wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
         );
-        Ok(Self { crossfade: 0.0, gpu, _instance: instance, renderer, size, target, readback, padded_row })
+        Ok(Self {
+            crossfade: 0.0,
+            transparent: false,
+            gpu,
+            _instance: instance,
+            renderer,
+            size,
+            target,
+            readback,
+            padded_row,
+        })
     }
 
     pub fn size(&self) -> (u32, u32) {
@@ -116,24 +128,27 @@ impl OfflineRenderer {
     }
 
     /// Renders one frame and returns it as RGBA8 (sRGB).
-    pub fn render(
+    /// Records one frame into `enc` (shared by `render` and `step`).
+    #[allow(clippy::too_many_arguments)]
+    fn encode(
         &mut self,
+        enc: &mut wgpu::CommandEncoder,
         scene: &str,
         scene_params: &ParamSet,
         look: &ParamSet,
         theme: &Theme,
-        info: FrameInfo,
+        mut info: FrameInfo,
         render_scale: f32,
-    ) -> Result<image::RgbaImage> {
+    ) {
+        info.transparent |= self.transparent;
         let view = self.target.create_view(&Default::default());
-        let mut enc = self.gpu.device.create_command_encoder(&Default::default());
         let rs = (
             ((self.size.0 as f32 * render_scale) as u32).max(16),
             ((self.size.1 as f32 * render_scale) as u32).max(16),
         );
         self.renderer.render(
             &self.gpu,
-            &mut enc,
+            enc,
             RenderRequest {
                 scene,
                 scene_params,
@@ -146,6 +161,40 @@ impl OfflineRenderer {
                 crossfade: self.crossfade,
             },
         );
+    }
+
+    /// Like `render`, but without reading the picture back: for letting a simulation develop.
+    pub fn step(
+        &mut self,
+        scene: &str,
+        scene_params: &ParamSet,
+        look: &ParamSet,
+        theme: &Theme,
+        info: FrameInfo,
+        render_scale: f32,
+    ) -> Result<()> {
+        let mut enc = self.gpu.device.create_command_encoder(&Default::default());
+        let frame = info.frame;
+        self.encode(&mut enc, scene, scene_params, look, theme, info, render_scale);
+        self.gpu.queue.submit([enc.finish()]);
+        if frame % 16 == 15 {
+            // don't let hundreds of frames queue up
+            self.gpu.device.poll(wgpu::PollType::wait_indefinitely())?;
+        }
+        Ok(())
+    }
+
+    pub fn render(
+        &mut self,
+        scene: &str,
+        scene_params: &ParamSet,
+        look: &ParamSet,
+        theme: &Theme,
+        info: FrameInfo,
+        render_scale: f32,
+    ) -> Result<image::RgbaImage> {
+        let mut enc = self.gpu.device.create_command_encoder(&Default::default());
+        self.encode(&mut enc, scene, scene_params, look, theme, info, render_scale);
         enc.copy_texture_to_buffer(
             wgpu::TexelCopyTextureInfo {
                 texture: &self.target,

@@ -141,14 +141,28 @@ jobs:
             exit 1
           fi
 
+      - name: Preset thumbnails on Metal (every built-in preset)
+        timeout-minutes: 10
+        run: |
+          if dist/Cymatica.app/Contents/MacOS/Cymatica thumbnails --out out/Cymatica-presets.png 2> thumbnails.log; then
+            cat thumbnails.log
+          elif grep -q "no GPU adapter" thumbnails.log; then
+            cat thumbnails.log
+            echo "::warning::this runner has no Metal GPU; preset thumbnails weren't checked"
+          else
+            cat thumbnails.log
+            exit 1
+          fi
+
       - name: Window smoke test (the real app window, every scene)
         timeout-minutes: 5
         run: |
           # a launch crash can't be fixed by an update (the updater runs inside the app), so the
-          # windowed path (AppKit window, Metal surface, egui, mic prompt) is tested here
+          # windowed path (AppKit window, Metal surface, egui, mic prompt, the overlay and
+          # wallpaper windows) is tested here
           export CYMATICA_SUPPORT_DIR="$RUNNER_TEMP/smoke-support"
           set +e
-          CYMATICA_SMOKE_TEST=27 dist/Cymatica.app/Contents/MacOS/Cymatica > "$RUNNER_TEMP/smoke.log" 2>&1
+          CYMATICA_SMOKE_TEST=36 dist/Cymatica.app/Contents/MacOS/Cymatica > "$RUNNER_TEMP/smoke.log" 2>&1
           status=$?
           set -e
           tail -n 40 "$RUNNER_TEMP/smoke.log"

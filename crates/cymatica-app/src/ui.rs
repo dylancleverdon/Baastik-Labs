@@ -58,6 +58,7 @@ pub struct UiInfo<'a> {
     pub cava_config_found: bool,
     pub is_macos: bool,
     pub frozen: bool,
+    pub thumbnails: &'a crate::thumbnails::Thumbnails,
 }
 
 /// What the app should do after the UI ran.
@@ -616,17 +617,33 @@ fn audio_tab(ui: &mut egui::Ui, s: &mut Settings, info: &UiInfo, act: &mut UiAct
 fn presets_tab(ui: &mut egui::Ui, st: &mut UiState, s: &mut Settings, info: &UiInfo, act: &mut UiActions) {
     let scene_name = cymatica_engine::scene::scene_info(&s.scene).map(|i| i.name).unwrap_or("");
     ui.label(RichText::new(format!("{scene_name} presets")).strong());
-    for p in info.presets.iter().filter(|p| p.scene == s.scene) {
-        ui.horizontal(|ui| {
-            let label = if p.builtin { p.name.clone() } else { format!("{} (mine)", p.name) };
-            if ui.add(egui::Button::new(label).min_size(Vec2::new(220.0, 24.0))).clicked() {
-                act.load_preset = Some(p.clone());
+    // a grid of pictures (rendered in the background; a plain tile until each one is ready)
+    let thumb = Vec2::new(128.0, 72.0);
+    let presets: Vec<&Preset> = info.presets.iter().filter(|p| p.scene == s.scene).collect();
+    egui::Grid::new("preset-grid").num_columns(3).spacing([8.0, 6.0]).show(ui, |ui| {
+        for (i, p) in presets.iter().enumerate() {
+            ui.vertical(|ui| {
+                ui.set_width(thumb.x);
+                let button = match info.thumbnails.get(&p.key()) {
+                    Some(tex) => {
+                        egui::Button::image(egui::Image::from_texture(tex).fit_to_exact_size(thumb).corner_radius(4.0))
+                    }
+                    None => egui::Button::new(RichText::new("preview soon").small().weak()).min_size(thumb),
+                };
+                if ui.add(button).on_hover_text(&p.name).clicked() {
+                    act.load_preset = Some((*p).clone());
+                }
+                let name = if p.builtin { p.name.clone() } else { format!("{} (mine)", p.name) };
+                ui.add(egui::Label::new(RichText::new(name).small()).truncate());
+                if !p.builtin && ui.small_button("Delete").clicked() {
+                    act.delete_preset = Some((*p).clone());
+                }
+            });
+            if i % 3 == 2 {
+                ui.end_row();
             }
-            if !p.builtin && ui.small_button("Delete").clicked() {
-                act.delete_preset = Some(p.clone());
-            }
-        });
-    }
+        }
+    });
     ui.add_space(6.0);
     ui.label(RichText::new("Save current settings").strong());
     ui.horizontal(|ui| {
@@ -664,6 +681,12 @@ fn display_tab(ui: &mut egui::Ui, s: &mut Settings, info: &UiInfo, act: &mut UiA
             (WindowMode::Window, "Window", "A normal window"),
             (WindowMode::Fullscreen, "Fullscreen", "Fill the screen (F)"),
             (WindowMode::Wallpaper, "Wallpaper", "Live wallpaper behind your desktop icons (macOS)"),
+            (
+                WindowMode::Overlay,
+                "Overlay",
+                "See-through, over everything: best with Bars and Phosphor. Clicks pass through while this \
+                 panel is hidden; Cmd-Tab to Cymatica and press Esc to leave.",
+            ),
         ] {
             if ui.selectable_label(s.window_mode == mode, label).on_hover_text(tip).clicked() && s.window_mode != mode {
                 s.window_mode = mode;
@@ -871,7 +894,9 @@ fn draw_toasts(ctx: &egui::Context, st: &mut UiState, s: &Settings, info: &UiInf
                 .corner_radius(CornerRadius::same(10))
                 .inner_margin(egui::Margin::symmetric(14, 8))
                 .show(ui, |ui| {
-                    ui.label(RichText::new(msg).strong());
+                    // one line each: an anchored area starts out with no width, and wrapping
+                    // would then put a letter or two on each line
+                    ui.add(egui::Label::new(RichText::new(msg).strong()).extend());
                 });
             ui.add_space(4.0);
         }
@@ -882,7 +907,9 @@ fn draw_toasts(ctx: &egui::Context, st: &mut UiState, s: &Settings, info: &UiInf
                 .inner_margin(egui::Margin::symmetric(14, 8))
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        ui.label(RichText::new(format!("Cymatica {version} is ready")).strong());
+                        ui.add(
+                            egui::Label::new(RichText::new(format!("Cymatica {version} is ready")).strong()).extend(),
+                        );
                         if ui.button("Restart now").clicked() {
                             act.install_update = true;
                         }

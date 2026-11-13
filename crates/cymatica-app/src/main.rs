@@ -7,6 +7,7 @@ mod macos;
 mod paths;
 mod presets;
 mod settings;
+mod thumbnails;
 mod ui;
 mod updates;
 
@@ -48,6 +49,7 @@ fn main() {
     let result = match cmd {
         "render" => cli::render(rest),
         "self-test" => cli::self_test(rest),
+        "thumbnails" => cli::thumbnails(rest),
         "update" => cli::update(rest),
         "--version" | "version" => {
             println!("Cymatica {} (build {})", updates::VERSION, updates::build_number());

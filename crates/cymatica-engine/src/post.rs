@@ -81,6 +81,8 @@ struct PostUniform {
     note_tint: f32,
     frame: u32,
     note_color: [f32; 4],
+    transparent: u32,
+    _pad: [u32; 3],
 }
 
 /// How the composite writes its output.
@@ -114,6 +116,8 @@ pub struct LookFrame {
     pub frame: u64,
     pub kick: f32,
     pub note_color: [f32; 3],
+    /// See-through window: the output's alpha follows brightness.
+    pub transparent: bool,
 }
 
 struct Sized {
@@ -278,6 +282,8 @@ impl Post {
             note_tint: look.f("note_tint"),
             frame: frame.frame as u32,
             note_color: [frame.note_color[0], frame.note_color[1], frame.note_color[2], 1.0],
+            transparent: frame.transparent as u32,
+            _pad: [0; 3],
         };
         let sized = self.sized.as_ref().unwrap();
         let mut ubuf = 0usize;
@@ -300,8 +306,9 @@ impl Post {
             self.trail_flip = 1 - self.trail_flip;
         }
 
-        // 2. bloom down chain
-        let mips = &sized.mips;
+        // 2. bloom down chain. Over a desktop (the see-through window) only the finer levels are
+        // used: the wide ones would tint the whole screen, the fine ones make a neon halo.
+        let mips = &sized.mips[..if frame.transparent { 3 } else { BLOOM_MIPS }];
         for i in 0..mips.len() {
             let (input, in_size) = if i == 0 { (source, size) } else { (&mips[i - 1].1, mips[i - 1].2) };
             let mut u = base;

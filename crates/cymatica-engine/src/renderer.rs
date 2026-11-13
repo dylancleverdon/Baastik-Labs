@@ -153,8 +153,13 @@ impl Renderer {
             }
         }
 
-        let look_frame =
-            LookFrame { time: info.time, frame: info.frame, kick: info.audio.onset[0], note_color: info.note_color };
+        let look_frame = LookFrame {
+            time: info.time,
+            frame: info.frame,
+            kick: info.audio.onset[0],
+            note_color: info.note_color,
+            transparent: info.transparent,
+        };
         let look = Params::new(LOOK_PARAMS, req.look, &info.audio);
         self.post.run(gpu, encoder, &scene_view, size, req.output, req.output_mode, &look, &look_frame);
     }

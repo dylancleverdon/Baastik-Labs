@@ -27,7 +27,7 @@ fn fs_bg(in: FsIn) -> @location(0) vec4f {
             c = c * 0.75;
         }
     }
-    return vec4f(c, 1.0);
+    return vec4f(c * G.bg_alpha, 1.0);
 }
 
 // ---------- bars, reflections and caps ----------

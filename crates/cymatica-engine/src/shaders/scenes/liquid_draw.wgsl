@@ -143,7 +143,7 @@ fn tank_room(uv: vec2f) -> vec3f {
 
 @fragment
 fn fs_background(in: FsIn) -> @location(0) vec4f {
-    return vec4f(tank_room(in.uv), 1.0);
+    return vec4f(tank_room(in.uv) * G.bg_alpha, 1.0);
 }
 
 // ---------- particle impostors ----------

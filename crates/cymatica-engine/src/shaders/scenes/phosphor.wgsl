@@ -119,8 +119,8 @@ fn fs_screen(in: FsIn) -> @location(0) vec4f {
     if (inside) {
         c = textureSampleLevel(prev, samp, uv, 0.0).rgb;
         // faint glass base so the screen reads as a tube
-        c = c + phosphor_color(0.5) * 0.004;
-        if (P.graticule != 0u) {
+        c = c + phosphor_color(0.5) * 0.004 * G.bg_alpha;
+        if (P.graticule != 0u && G.bg_alpha > 0.5) {
             let px = uv * G.resolution;
             let cell = min(G.resolution.x, G.resolution.y) * 0.105;
             let gp = abs(fract((px - G.resolution * 0.5) / cell + 0.5) - 0.5) * cell;

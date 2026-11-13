@@ -28,6 +28,10 @@ struct PostU {
     note_tint: f32,
     frame: u32,
     note_color: vec4f,
+    transparent: u32,
+    tp0: u32,
+    tp1: u32,
+    tp2: u32,
 };
 
 @group(0) @binding(0) var<uniform> U: PostU;
@@ -217,6 +221,7 @@ fn fs_composite(in: FsIn) -> @location(0) vec4f {
     col.g = textureSampleLevel(src, samp, uv, 0.0).g;
     col.b = textureSampleLevel(src, samp, uv - dir * ca, 0.0).b;
     col = safe(col);
+    let core = col;
     let bloom = safe(textureSampleLevel(aux, samp, uv, 0.0).rgb);
     col = col + bloom * U.bloom;
 
@@ -253,11 +258,21 @@ fn fs_composite(in: FsIn) -> @location(0) vec4f {
     // film grain + dither
     let n = hash21(in.pos.xy + vec2f(f32(U.frame % 1024u) * 17.0, f32(U.frame % 777u) * 3.0)) - 0.5;
     outc = outc * (1.0 + n * U.grain * 0.5);
+
+    // see-through window: opacity follows the brightness of the picture itself (black lets the
+    // desktop through, bright shapes cover it), while bloom only adds light on top: the colour is
+    // premultiplied, so glow brighter than its alpha shines onto what's behind like real neon
+    var alpha = 1.0;
+    if (U.transparent != 0u) {
+        let v = pow(clamp(max(max(core.r, core.g), core.b) * U.exposure, 0.0, 1.0), 1.0 / 2.2);
+        alpha = clamp((v - 0.06) / 0.45, 0.0, 1.0);
+    }
+
     if (U.output_mode == 1u) {
         outc = linear_to_srgb(saturate3(outc));
-        outc = outc + n / 255.0;
+        outc = outc + n / 255.0 * alpha;
     } else if (U.output_mode == 0u) {
         outc = outc + n * outc * 0.004;
     }
-    return vec4f(outc, 1.0);
+    return vec4f(outc, alpha);
 }

@@ -37,6 +37,11 @@ struct Globals {
     energy: f32,
     seed: f32,
     spectrum_len: u32,
+    // 1 normally; 0 in the see-through overlay window, where scenes leave their backdrops out
+    bg_alpha: f32,
+    pad0: f32,
+    pad1: f32,
+    pad2: f32,
 };
 
 @group(0) @binding(0) var<uniform> G: Globals;
@@ -75,4 +80,6 @@ fn palette_cycle(t: f32) -> vec3f {
     let u = fract((t + G.palette_shift) * 0.5) * 2.0;
     return palette(1.0 - abs(u - 1.0));
 }
-fn background(uv_y: f32) -> vec3f { return mix(G.bg_top.rgb, G.bg_bottom.rgb, clamp(uv_y, 0.0, 1.0)); }
+fn background(uv_y: f32) -> vec3f {
+    return mix(G.bg_top.rgb, G.bg_bottom.rgb, clamp(uv_y, 0.0, 1.0)) * G.bg_alpha;
+}

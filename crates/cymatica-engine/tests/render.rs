@@ -152,3 +152,25 @@ fn overlay_output_is_see_through_except_the_visuals() {
         .unwrap();
     assert!(img.pixels().all(|p| p[3] == 255));
 }
+
+#[test]
+fn ripples_dont_fill_up_over_time() {
+    // with busy music, energy used to pile up over ~10 s until the pool glittered white (most
+    // visible looking straight down at a sand floor)
+    let Some(mut r) = renderer((240, 135)) else { return };
+    let theme = builtin_themes().into_iter().find(|t| t.id == "gold").unwrap();
+    let mut params = ParamSet::default();
+    let info = cymatica_engine::scene::scene_info("ripples").unwrap();
+    params.set(info.params, "tilt", ParamValue::Number(1.0));
+    params.set(info.params, "spin", ParamValue::Number(0.0));
+    params.set(info.params, "floor", ParamValue::Text("sand".into()));
+    let mut audio = OfflineAudio::demo(48000);
+    let mut lumas = Vec::new();
+    r.render_sequence("ripples", &params, &ParamSet::default(), &theme, &mut audio, 18.0, 30.0, 240, 1.0, |_, img| {
+        lumas.push(image_stats(img).mean_luma);
+        Ok(())
+    })
+    .unwrap();
+    let (first, last) = (lumas[0], *lumas.last().unwrap());
+    assert!(last < first * 1.1, "ripples brightened from {first} to {last} over 8 s");
+}

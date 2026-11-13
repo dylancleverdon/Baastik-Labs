@@ -163,6 +163,11 @@ impl OfflineRenderer {
         );
     }
 
+    /// Starts a scene's simulation over (e.g. between thumbnails of the same scene).
+    pub fn reset_scene(&mut self, id: &str) {
+        self.renderer.reset_scene(&self.gpu, id);
+    }
+
     /// Like `render`, but without reading the picture back: for letting a simulation develop.
     pub fn step(
         &mut self,

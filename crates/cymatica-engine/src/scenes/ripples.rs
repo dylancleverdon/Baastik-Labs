@@ -65,7 +65,8 @@ struct RipUniform {
     floor_style: u32,
     time: f32,
     faraday: f32,
-    faraday_freq: f32,
+    /// the Faraday sources' oscillation phase (radians)
+    faraday_phase: f32,
     wave_gain: f32,
     _pad: f32,
 }
@@ -107,6 +108,11 @@ pub struct Ripples {
     yaw: f32,
     clear_pending: bool,
     pending_drops: Vec<Drop>,
+    /// Faraday sources: their frequency glides to the dominant note's, and their phase advances
+    /// continuously (computing sin(time * frequency) instead jumps whenever the note changes, and
+    /// every jump fires a burst of glittering grid-scale ripples)
+    faraday_freq: f32,
+    faraday_phase: f32,
 }
 
 pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
@@ -143,6 +149,8 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
         yaw: 0.6,
         clear_pending: true,
         pending_drops: Vec::new(),
+        faraday_freq: 9.0,
+        faraday_phase: 0.0,
     })
 }
 
@@ -258,14 +266,23 @@ impl Scene for Ripples {
         self.pending_drops.clear();
         self.music_drops(ctx);
         let drops = std::mem::take(&mut self.pending_drops);
-        let mut data = drops.clone();
+        // wave steps this frame (~120 a second); a drop is spread over all of them, so it puts the
+        // same energy into the water at 30, 60 or 120 frames a second
+        let dt = ctx.info.dt.clamp(0.0, 0.1);
+        let steps = ((dt * 120.0).round() as usize).clamp(1, 4);
+        let mut data: Vec<Drop> = drops
+            .iter()
+            .map(|d| Drop { pos_r_s: [d.pos_r_s[0], d.pos_r_s[1], d.pos_r_s[2], d.pos_r_s[3] * 2.0 / steps as f32] })
+            .collect();
         data.resize(MAX_DROPS, Drop::default());
         gpu.queue.write_buffer(&self.drops, 0, bytemuck::cast_slice(&data));
 
-        let dt = ctx.info.dt.clamp(0.0, 0.1);
         self.yaw += dt * p.f("spin") * 0.4;
         let a = &ctx.info.audio;
         let faraday = if p.choice_index("mode") == 3 { (0.3 + a.loudness) * (0.3 + p.f("waves")) } else { 0.0 };
+        let target = 9.0 + a.note as f32 * 1.3;
+        self.faraday_freq += (target - self.faraday_freq) * (dt * 2.0).min(1.0);
+        self.faraday_phase = (self.faraday_phase + dt * self.faraday_freq).rem_euclid(std::f32::consts::TAU);
         let u = RipUniform {
             sim_size: [size as f32, size as f32],
             yaw: self.yaw,
@@ -274,12 +291,14 @@ impl Scene for Ripples {
             caustics: p.f("caustics"),
             reflections: p.f("reflections"),
             tint: p.f("tint"),
-            damping: 0.999 - p.f("damping") * 0.02,
+            // (per wave step; the default keeps about a fifth of a wave's height after a second,
+            // so busy music can't keep filling the pool until it glitters)
+            damping: 0.997 - p.f("damping") * 0.03,
             drop_count: drops.len() as u32,
             floor_style: p.choice_index("floor") as u32,
             time: ctx.info.time,
             faraday,
-            faraday_freq: 9.0 + a.note as f32 * 1.3,
+            faraday_phase: self.faraday_phase,
             wave_gain: 1.0,
             _pad: 0.0,
         };
@@ -294,9 +313,6 @@ impl Scene for Ripples {
             self.clear_pending = false;
         }
         let globals = &ctx.globals.bind_group;
-        // two wave steps per 60 Hz frame (drops only on the first)
-        let steps = ((dt * 120.0).round() as usize).clamp(1, 4);
-        // (drops are re-applied on each sub-step, which just makes them slightly taller)
         for _ in 0..steps {
             gpu::fullscreen(
                 enc,

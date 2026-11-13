@@ -14,7 +14,7 @@ struct RipU {
     floor_style: u32,
     time: f32,
     faraday: f32,
-    faraday_freq: f32,
+    faraday_phase: f32,
     wave_gain: f32,
     _pad: f32,
 };
@@ -87,10 +87,10 @@ fn fs_step(in: FsIn) -> @location(0) vec4f {
             let a = f32(k) * TAU / 3.0 + R.time * 0.05;
             let c = vec2f(cos(a), sin(a)) * 0.35;
             let r = length(xz - c);
-            info.r = info.r + sin(R.time * R.faraday_freq) * exp(-r * r * 900.0) * R.faraday * 0.02;
+            info.r = info.r + sin(R.faraday_phase) * exp(-r * r * 300.0) * R.faraday * 0.005;
         }
     }
-    // keep the edges calm
+    // keep the edges calm (a wide soft absorbing band instead makes grid-scale glitter)
     let edge = max(abs(xz.x), abs(xz.y));
     info.g = info.g * select(1.0, 0.9, edge > 0.985);
     return vec4f(clamp(info.r, -2.0, 2.0), clamp(info.g, -2.0, 2.0), 0.0, 1.0);
@@ -125,7 +125,10 @@ fn vs_caustics(@builtin(vertex_index) vi: u32) -> CausticOut {
     let surface = vec3f(xz.x, height_at(xz), xz.y);
     var out: CausticOut;
     out.old_pos = floor_hit(vec3f(xz.x, 0.0, xz.y), flat_ray);
-    out.new_pos = floor_hit(surface, ray);
+    // a very rough surface would stretch caustic triangles across the floor, and the frame time
+    // with them: light lands at most this far from where a flat surface would put it
+    let shift = floor_hit(surface, ray) - out.old_pos;
+    out.new_pos = out.old_pos + clamp(shift, vec3f(-0.05), vec3f(0.05));
     // project onto the floor texture (pool coords -1..1 → clip)
     out.pos = vec4f(out.new_pos.x, -out.new_pos.z, 0.0, 1.0);
     return out;

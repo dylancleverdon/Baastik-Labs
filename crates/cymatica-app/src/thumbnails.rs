@@ -65,6 +65,8 @@ pub fn demo_frames() -> Vec<AudioFrame> {
 /// Renders one thumbnail with a renderer of `SIZE`.
 pub fn render(r: &mut OfflineRenderer, job: &Job, frames: &[AudioFrame]) -> anyhow::Result<image::RgbaImage> {
     let (last, warm) = frames.split_last().ok_or_else(|| anyhow::anyhow!("no audio frames"))?;
+    // every preset starts from a fresh simulation, not the previous preset's state
+    r.reset_scene(&job.scene);
     let info = |i: usize, a: &AudioFrame| {
         FrameInfo::new((START + i as f64 / FPS) as f32, (1.0 / FPS) as f32, i as u64, a.clone())
     };

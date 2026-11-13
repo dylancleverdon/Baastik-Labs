@@ -19,10 +19,10 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Two builds signed with the same local identity
+      - name: Two builds signed with the same local identity (existing and brand-new HOME)
         timeout-minutes: 5
         run: |
-          export CYMATICA_SUPPORT_DIR="$RUNNER_TEMP/support" CYMATICA_SIGN_DEBUG=1
+          export CYMATICA_SIGN_DEBUG=1
           T="$RUNNER_TEMP/sign"
           for v in A B; do
             mkdir -p "$T/$v.app/Contents/MacOS"
@@ -31,17 +31,25 @@ jobs:
             /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.baastiklabs.cymatica" \
               -c "Add :CFBundleExecutable string Cymatica" -c "Add :CFBundlePackageType string APPL" "$T/$v.app/Contents/Info.plist"
           done
-          A=$(bash packaging/macos/sign-local.sh sign "$T/A.app" || true)
-          B=$(bash packaging/macos/sign-local.sh sign "$T/B.app" || true)
-          echo "A: $A  B: $B"
-          echo "------- signing log"; cat "$CYMATICA_SUPPORT_DIR/signing/signing.log" || true; echo "-------"
-          codesign -dvv "$T/A.app" 2>&1 | grep -E "Authority|Signature" || true
-          REQ=$(bash packaging/macos/sign-local.sh requirement "$T/A.app")
-          echo "designated requirement: $REQ"
-          test "$A" = identity
-          echo "$REQ" | grep -q "certificate"
-          codesign --verify --strict "$T/B.app"
-          codesign --verify -R="$REQ" "$T/B.app"
+          check() {
+            local support="${CYMATICA_SUPPORT_DIR:-$HOME/Library/Application Support/Cymatica}"
+            local A B REQ
+            A=$(bash packaging/macos/sign-local.sh sign "$T/A.app" || true)
+            B=$(bash packaging/macos/sign-local.sh sign "$T/B.app" || true)
+            echo "[$1] A: $A  B: $B"
+            echo "------- [$1] signing log"; cat "$support/signing/signing.log" || true; echo "-------"
+            codesign -dvv "$T/A.app" 2>&1 | grep -E "Authority|Signature" || true
+            REQ=$(bash packaging/macos/sign-local.sh requirement "$T/A.app")
+            echo "[$1] designated requirement: $REQ"
+            test "$A" = identity
+            test "$B" = identity
+            echo "$REQ" | grep -q "certificate"
+            codesign --verify --strict "$T/B.app"
+            codesign --verify -R="$REQ" "$T/B.app"
+          }
+          CYMATICA_SUPPORT_DIR="$RUNNER_TEMP/support" check "runner HOME"
+          # what the install.sh smoke test does: a brand-new HOME without any keychain
+          HOME="$RUNNER_TEMP/fresh-home" check "fresh HOME"
           echo "B satisfies A's designated requirement: the microphone permission will survive updates"
 
   linux:
@@ -157,13 +165,14 @@ jobs:
         run: |
           IHOME="$RUNNER_TEMP/install-home"
           mkdir -p "$IHOME"
-          HOME="$IHOME" CYMATICA_FEED="file://$FEED/cymatica-update.json" CYMATICA_NO_LAUNCH=1 bash packaging/macos/install.sh
+          HOME="$IHOME" CYMATICA_FEED="file://$FEED/cymatica-update.json" CYMATICA_NO_LAUNCH=1 CYMATICA_SIGN_DEBUG=1 \
+            bash packaging/macos/install.sh
           echo "--- signing log"; cat "$IHOME/Library/Application Support/Cymatica/signing/signing.log" || true
           test -x "$IHOME/Applications/Cymatica.app/Contents/MacOS/Cymatica"
           codesign --verify --strict "$IHOME/Applications/Cymatica.app"
           codesign -dvv "$IHOME/Applications/Cymatica.app" 2>&1 | grep -E "Authority|Signature|Identifier" || true
           if ! codesign -dvv "$IHOME/Applications/Cymatica.app" 2>&1 | grep -q "Authority=Cymatica Local Signing"; then
-            echo "::warning::install.sh fell back to ad-hoc signing (see the signing job)"
+            echo "::error::install.sh fell back to ad-hoc signing"; exit 1
           fi
           "$IHOME/Applications/Cymatica.app/Contents/MacOS/Cymatica" --version
 

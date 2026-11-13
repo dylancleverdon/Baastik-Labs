@@ -46,14 +46,18 @@ have_identity() {
 
 add_to_search_list() {
   # codesign looks identities up through the user's keychain search list: append ours (keeping
-  # whatever is already there).
-  local current
-  current=$(security list-keychains -d user | sed -e 's/^ *"//' -e 's/" *$//')
-  if ! printf '%s\n' "$current" | grep -qxF "$KC"; then
-    # shellcheck disable=SC2086
-    IFS=$'\n' read -r -d '' -a list < <(printf '%s\n' "$current" && printf '\0')
-    limited security list-keychains -d user -s "${list[@]}" "$KC" >>"$LOG" 2>&1 || true
+  # whatever is already there). The list can be empty (e.g. a fresh HOME), and macOS's bash 3.2
+  # treats "${list[@]}" of an empty array as unbound under `set -u`, hence ${list[@]+...}.
+  local current line
+  local list=()
+  current=$(security list-keychains -d user 2>>"$LOG" | sed -e 's/^ *"//' -e 's/" *$//')
+  if printf '%s\n' "$current" | grep -qxF "$KC"; then
+    return 0
   fi
+  while IFS= read -r line; do
+    [ -n "$line" ] && list+=("$line")
+  done <<<"$current"
+  limited security list-keychains -d user -s ${list[@]+"${list[@]}"} "$KC" >>"$LOG" 2>&1 || true
 }
 
 ensure() {

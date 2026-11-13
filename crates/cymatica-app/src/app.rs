@@ -56,6 +56,9 @@ pub struct App {
     autopilot: Autopilot,
     cava_config_path: Option<std::path::PathBuf>,
     mic_requested: bool,
+    /// last known microphone permission, and when it was last checked
+    mic_status: macos::Mic,
+    mic_checked: Instant,
     smoke: Option<Smoke>,
 }
 
@@ -100,6 +103,8 @@ pub fn run() -> anyhow::Result<()> {
         autopilot: Autopilot::new(),
         cava_config_path,
         mic_requested: false,
+        mic_status: macos::Mic::NotDetermined,
+        mic_checked: Instant::now(),
         smoke: Smoke::from_env(),
     };
     let event_loop = EventLoop::new()?;
@@ -572,9 +577,22 @@ impl App {
         // first launch: ask for microphone access up front (BlackHole counts as a microphone)
         if !self.mic_requested && cfg!(target_os = "macos") {
             self.mic_requested = true;
-            if macos::mic_permission() == macos::Mic::NotDetermined {
+            self.mic_status = macos::mic_permission();
+            if self.mic_status == macos::Mic::NotDetermined {
                 macos::request_mic_permission();
             }
+        }
+        // An input opened before access was granted can stay silent, so once access arrives (from
+        // the prompt or later in System Settings) the input is opened again.
+        if self.mic_requested && self.mic_status != macos::Mic::Authorized && self.mic_checked.elapsed().as_secs() >= 2
+        {
+            self.mic_checked = Instant::now();
+            let now = macos::mic_permission();
+            if now == macos::Mic::Authorized {
+                log::info!("microphone access granted: reopening the audio input");
+                self.audio.set_input(self.settings.input.clone());
+            }
+            self.mic_status = now;
         }
 
         if let Some(t) = self.dirty_at {

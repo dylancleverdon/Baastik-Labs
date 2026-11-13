@@ -9,10 +9,6 @@ on:
     branches: ['claude/**']
   workflow_dispatch:
 
-concurrency:
-  group: cymatica-ci-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: read
 

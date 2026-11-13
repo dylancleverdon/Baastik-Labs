@@ -27,6 +27,12 @@ TIMEOUT="${CYMATICA_SIGN_TIMEOUT:-60}"
 
 log() { mkdir -p "$DIR" && echo "$(date '+%F %T') $*" >>"$LOG"; }
 
+if [ -n "${CYMATICA_SIGN_DEBUG:-}" ]; then
+  mkdir -p "$DIR"
+  exec 2>>"$LOG"
+  set -x
+fi
+
 # Runs a command with a time limit (macOS has no `timeout`; perl's alarm does the job).
 limited() {
   /usr/bin/perl -e 'alarm shift @ARGV; exec @ARGV or die "exec: $!"' "$TIMEOUT" "$@"
@@ -87,13 +93,20 @@ EOF
   limited security create-keychain -p "$pw" "$KC" >>"$LOG" 2>&1 || { rm -rf "$tmp"; return 1; }
   limited security set-keychain-settings "$KC" >>"$LOG" 2>&1 # never auto-lock
   limited security unlock-keychain -p "$pw" "$KC" >>"$LOG" 2>&1
-  limited security import "$tmp/identity.p12" -k "$KC" -P "$pw" -f pkcs12 -A -T /usr/bin/codesign >>"$LOG" 2>&1 \
-    || { rm -rf "$tmp"; return 1; }
-  limited security set-key-partition-list -S apple-tool:,apple:,codesign:,unsigned: -s -k "$pw" "$KC" >>"$LOG" 2>&1 || true
+  if ! limited security import "$tmp/identity.p12" -k "$KC" -P "$pw" -f pkcs12 -A -T /usr/bin/codesign >>"$LOG" 2>&1; then
+    log "PKCS#12 import failed; importing the key and certificate separately"
+    limited security import "$tmp/key.pem" -k "$KC" -t priv -f openssl -A -T /usr/bin/codesign >>"$LOG" 2>&1 \
+      || { rm -rf "$tmp"; return 1; }
+    limited security import "$tmp/cert.pem" -k "$KC" -t cert -f pemseq >>"$LOG" 2>&1 \
+      || { rm -rf "$tmp"; return 1; }
+  fi
+  limited security set-key-partition-list -S apple-tool:,apple:,codesign:,unsigned: -s -k "$pw" "$KC" >>"$LOG" 2>&1 \
+    || log "set-key-partition-list failed (codesign may still work)"
   "$OPENSSL" x509 -in "$tmp/cert.pem" -noout -fingerprint -sha1 | sed 's/.*=//; s/://g' >"$IDFILE"
   rm -rf "$tmp"
   add_to_search_list
-  have_identity
+  security find-identity -p codesigning "$KC" >>"$LOG" 2>&1 || true
+  have_identity || { log "the new identity isn't usable for code signing"; return 1; }
 }
 
 sign() {

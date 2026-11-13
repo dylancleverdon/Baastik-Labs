@@ -74,6 +74,12 @@ struct BeamOut {
     @location(3) t: f32,
 };
 
+// The beam is specified for a 1080-pixel-high picture, so the trace looks the same at any size:
+// a 5K screen, a small window, a lower render scale or a preset thumbnail.
+fn px_scale() -> f32 { return G.resolution.y / 1080.0; }
+// (a beam that would be thinner than ~a pixel is drawn wider, and dimmer to match)
+fn beam_px() -> f32 { return max(P.beam * px_scale(), 0.7); }
+
 @vertex
 fn vs_beam(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> BeamOut {
     let a = sample_pos(ii);
@@ -82,7 +88,9 @@ fn vs_beam(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     let len = length(d);
     let dir = select(vec2f(1.0, 0.0), d / len, len > 1e-4);
     let nrm = vec2f(-dir.y, dir.x);
-    let w = P.beam * 2.5 + 1.0;
+    let s = px_scale();
+    let bw = beam_px();
+    let w = bw * 2.5 + 1.0;
     let corner = array<vec2f, 6>(vec2f(0.0, -1.0), vec2f(1.0, -1.0), vec2f(1.0, 1.0), vec2f(0.0, -1.0), vec2f(1.0, 1.0), vec2f(0.0, 1.0));
     let c = corner[vi];
     let along = c.x * (len + 2.0 * w) - w;
@@ -91,8 +99,8 @@ fn vs_beam(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     out.pos = vec4f(p / G.resolution * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);
     out.local = vec2f(along, c.y * w);
     out.len = len;
-    // equal energy per segment: slow beams (short segments) are brighter
-    out.energy = P.intensity * 2.2 / max(len, 0.6) * P.beam;
+    // equal energy per segment: slow beams (short segments) are brighter (lengths in 1080p pixels)
+    out.energy = P.intensity * 2.2 / max(len / s, 0.6) * P.beam * (P.beam * s / bw);
     out.t = f32(ii) / f32(max(P.count, 1u));
     return out;
 }
@@ -102,7 +110,8 @@ fn fs_beam(in: BeamOut) -> @location(0) vec4f {
     // distance from the pixel to the segment
     let x = clamp(in.local.x, 0.0, in.len);
     let d = length(vec2f(in.local.x - x, in.local.y));
-    let g = exp(-d * d / (P.beam * P.beam * 0.8));
+    let bw = beam_px();
+    let g = exp(-d * d / (bw * bw * 0.8));
     let col = phosphor_color(in.t) * g * min(in.energy, 6.0);
     return vec4f(col, 0.0);
 }

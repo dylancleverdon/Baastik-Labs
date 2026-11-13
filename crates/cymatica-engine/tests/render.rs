@@ -76,3 +76,30 @@ fn scenes_react_to_the_music() {
         assert!(d > 0.01, "{scene} looks the same with and without music ({d})");
     }
 }
+
+#[test]
+fn ripples_stay_water_under_busy_music() {
+    // the demo track's busiest stretch used to pile grid-scale ripples into a white sheet
+    let Some(mut r) = renderer((240, 135)) else { return };
+    let theme = cymatica_engine::theme::builtin_themes().into_iter().find(|t| t.id == "ocean-deep").unwrap();
+    let mut audio = OfflineAudio::demo(48000);
+    let mut lumas = Vec::new();
+    r.render_sequence(
+        "ripples",
+        &ParamSet::default(),
+        &ParamSet::default(),
+        &theme,
+        &mut audio,
+        27.0,
+        30.0,
+        120,
+        1.0,
+        |_, img| {
+            lumas.push(image_stats(img).mean_luma);
+            Ok(())
+        },
+    )
+    .unwrap();
+    let (first, last) = (lumas[0], *lumas.last().unwrap());
+    assert!(last < first * 1.25, "ripples brightened from {first} to {last}");
+}

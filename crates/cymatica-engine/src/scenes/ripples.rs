@@ -183,7 +183,8 @@ impl Ripples {
 
     fn add_drop(&mut self, x: f32, z: f32, radius: f32, strength: f32) {
         if self.pending_drops.len() < MAX_DROPS {
-            self.pending_drops.push(Drop { pos_r_s: [x, z, radius.max(0.004), strength] });
+            // at least ~3 cells wide: narrower drops are pure grid-scale noise
+            self.pending_drops.push(Drop { pos_r_s: [x, z, radius.max(0.012), strength] });
         }
     }
 
@@ -200,7 +201,8 @@ impl Ripples {
             0 | 1 => {
                 for (i, &e) in a.bands.iter().enumerate() {
                     let fi = i as f32 / (n - 1) as f32;
-                    let chance = rate * e * e * 9.0 * dt;
+                    // (the highs drop less often: dozens of small rings a second turn into glitter)
+                    let chance = rate * e * e * 5.0 * dt * (1.0 - 0.5 * fi);
                     if self.rand() < chance {
                         let (x, z) = if mode == 0 {
                             let r = 0.05 + 0.82 * fi;
@@ -210,7 +212,10 @@ impl Ripples {
                             (self.rand() * 1.9 - 0.95, self.rand() * 1.9 - 0.95)
                         };
                         let radius = (0.02 + 0.07 * (1.0 - fi)) * (0.4 + size);
-                        let strength = 0.045 * e * gain * if self.rand() < 0.5 { 1.0 } else { -0.8 };
+                        // smaller drops are lower too, so the highs' ripples aren't steeper than
+                        // the bass's (steep ripples turn into glitter)
+                        let height = 0.045 * e * gain * (0.3 + 0.7 * (1.0 - fi));
+                        let strength = height * if self.rand() < 0.5 { 1.0 } else { -0.8 };
                         self.add_drop(x, z, radius, strength);
                     }
                 }
@@ -227,10 +232,8 @@ impl Ripples {
             self.add_drop(ang.cos() * 0.55, ang.sin() * 0.55, 0.05 * (0.5 + size), -0.06 * a.onset[1] * gain);
         }
         if a.hits[2] != self.last_hits[2] && mode != 0 {
-            for _ in 0..3 {
-                let (x, z) = (self.rand() * 1.9 - 0.95, self.rand() * 1.9 - 0.95);
-                self.add_drop(x, z, 0.015 * (0.5 + size), 0.02 * gain);
-            }
+            let (x, z) = (self.rand() * 1.9 - 0.95, self.rand() * 1.9 - 0.95);
+            self.add_drop(x, z, 0.015 * (0.5 + size), 0.01 * gain);
         }
         self.last_hits = a.hits;
     }

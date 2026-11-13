@@ -46,7 +46,11 @@ fn height_at(xz: vec2f) -> f32 {
 }
 
 fn normal_at(xz: vec2f) -> vec3f {
-    let e = 2.0 / R.sim_size.x;
+    return normal_at_scale(xz, 2.0 / R.sim_size.x);
+}
+
+// slopes measured over +-e: a wider e ignores ripples finer than that
+fn normal_at_scale(xz: vec2f, e: f32) -> vec3f {
     let hx = height_at(xz + vec2f(e, 0.0)) - height_at(xz - vec2f(e, 0.0));
     let hz = height_at(xz + vec2f(0.0, e)) - height_at(xz - vec2f(0.0, e));
     return normalize(vec3f(-hx, 2.0 * e, -hz));
@@ -57,8 +61,17 @@ fn normal_at(xz: vec2f) -> vec3f {
 fn fs_step(in: FsIn) -> @location(0) vec4f {
     let p = vec2i(in.pos.xy);
     var info = load_w(p);
-    let avg = (load_w(p + vec2i(1, 0)).r + load_w(p - vec2i(1, 0)).r + load_w(p + vec2i(0, 1)).r + load_w(p - vec2i(0, 1)).r) * 0.25;
+    let n0 = load_w(p + vec2i(1, 0));
+    let n1 = load_w(p - vec2i(1, 0));
+    let n2 = load_w(p + vec2i(0, 1));
+    let n3 = load_w(p - vec2i(0, 1));
+    let avg = (n0.r + n1.r + n2.r + n3.r) * 0.25;
+    let avg_v = (n0.g + n1.g + n2.g + n3.g) * 0.25;
     info.g = info.g + (avg - info.r) * 2.0;
+    // viscosity: this scheme keeps grid-scale ripples forever, and with busy music they pile up
+    // into a glittering white sheet; blending velocity towards its neighbours damps them hard
+    // (checkerboard: x0.76 per step) while long waves are left alone
+    info.g = mix(info.g, avg_v, 0.12);
     info.g = info.g * R.damping;
     info.r = info.r + info.g;
     // drops
@@ -106,7 +119,8 @@ fn vs_caustics(@builtin(vertex_index) vi: u32) -> CausticOut {
     let xz = vec2f(g) / f32(CAUSTIC_GRID) * 2.0 - 1.0;
     let light = normalize(LIGHT);
     let flat_ray = refract(light, vec3f(0.0, 1.0, 0.0), 1.0 / 1.333);
-    let n = normal_at(xz);
+    // slopes at the caustic mesh's own scale: finer ripples would focus every quad into a dot
+    let n = normal_at_scale(xz, 2.0 / f32(CAUSTIC_GRID));
     let ray = refract(light, n, 1.0 / 1.333);
     let surface = vec3f(xz.x, height_at(xz), xz.y);
     var out: CausticOut;

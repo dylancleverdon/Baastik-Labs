@@ -1,0 +1,12 @@
+/target/
+/out/
+/dist/
+.DS_Store
+*.swp
+.idea/
+.vscode/
+# never commit signing material
+*.p12
+*.keychain-db
+*private*.key
+*.pem

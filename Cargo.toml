@@ -1,0 +1,51 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/cymatica-audio",
+    "crates/cymatica-engine",
+    "crates/cymatica-update",
+    "crates/cymatica-app",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+rust-version = "1.85"
+
+[workspace.dependencies]
+cymatica-audio = { path = "crates/cymatica-audio" }
+cymatica-engine = { path = "crates/cymatica-engine" }
+cymatica-update = { path = "crates/cymatica-update" }
+wgpu = "30"
+naga = { version = "30", features = ["wgsl-in", "msl-out", "spv-out"] }
+winit = "0.30.13"
+egui = "0.37"
+egui-wgpu = "0.37"
+egui-winit = "0.37"
+cpal = "0.18"
+realfft = "3.5"
+rustfft = "6.4"
+bytemuck = { version = "1.25", features = ["derive"] }
+glam = { version = "0.34", features = ["bytemuck", "serde"] }
+pollster = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+image = { version = "0.25", default-features = false, features = ["png"] }
+hound = "3.5"
+sha2 = "0.11"
+log = "0.4"
+anyhow = "1"
+rtrb = "0.3"
+parking_lot = "0.12"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4

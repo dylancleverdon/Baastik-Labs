@@ -8,8 +8,9 @@ pub mod ink;
 pub mod liquid;
 pub mod phosphor;
 pub mod ripples;
+pub mod stardust;
 
-pub static ALL: [SceneInfo; 6] = [
+pub static ALL: [SceneInfo; 7] = [
     SceneInfo {
         id: "liquid",
         name: "Liquid",
@@ -46,6 +47,13 @@ pub static ALL: [SceneInfo; 6] = [
         create: chladni::create,
     },
     SceneInfo {
+        id: "stardust",
+        name: "Stardust",
+        tagline: "A galaxy of millions of stars: bass is gravity, kicks are supernovas",
+        params: stardust::PARAMS,
+        create: stardust::create,
+    },
+    SceneInfo {
         id: "phosphor",
         name: "Phosphor",
         tagline: "An oscilloscope drawn by a simulated CRT electron beam",
@@ -67,5 +75,7 @@ pub fn shader_sources() -> Vec<(&'static str, String)> {
         ("chladni-sim", format!("{}\n{}", include_str!("../shaders/scenes/chladni_common.wgsl"), include_str!("../shaders/scenes/chladni_sim.wgsl"))),
         ("chladni-draw", format!("{}\n{}", include_str!("../shaders/scenes/chladni_common.wgsl"), include_str!("../shaders/scenes/chladni_draw.wgsl"))),
         ("phosphor", include_str!("../shaders/scenes/phosphor.wgsl").to_string()),
+        ("stardust-sim", format!("{}\n{}", include_str!("../shaders/scenes/stardust_common.wgsl"), include_str!("../shaders/scenes/stardust_sim.wgsl"))),
+        ("stardust-draw", format!("{}\n{}", include_str!("../shaders/scenes/stardust_common.wgsl"), include_str!("../shaders/scenes/stardust_draw.wgsl"))),
     ]
 }

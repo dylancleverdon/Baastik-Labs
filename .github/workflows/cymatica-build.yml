@@ -54,6 +54,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libasound2-dev pkg-config mesa-vulkan-drivers
       - uses: Swatinem/rust-cache@v2
+      - name: Format and lint
+        run: |
+          rustup component add rustfmt clippy
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets -- -D warnings
       - name: Tests (incl. cava golden test and shader → Metal translation)
         run: cargo test --workspace
       - name: Self-test (every scene, lavapipe)

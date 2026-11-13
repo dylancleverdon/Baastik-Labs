@@ -8,7 +8,14 @@ use crate::scene::{scene_source, Scene, SceneCtx};
 use bytemuck::{Pod, Zeroable};
 
 pub static PARAMS: &[ParamDef] = &[
-    choice("jets", "Jets", "Flow", &[("orbit", "Orbiting"), ("fountain", "Fountain"), ("rain", "Rain")], "orbit", "Where the ink comes from."),
+    choice(
+        "jets",
+        "Jets",
+        "Flow",
+        &[("orbit", "Orbiting"), ("fountain", "Fountain"), ("rain", "Rain")],
+        "orbit",
+        "Where the ink comes from.",
+    ),
     float("jet_force", "Jet force", "Flow", 0.0, 1.0, 0.7, "How hard each band pushes its ink."),
     float("splash", "Kick splash", "Flow", 0.0, 1.0, 0.7, "Big bursts on kicks."),
     float("swirl", "Bass swirl", "Flow", 0.0, 1.0, 0.35, "The bass stirs the whole fluid."),
@@ -18,8 +25,23 @@ pub static PARAMS: &[ParamDef] = &[
     float("ink", "Ink amount", "Look", 0.0, 1.0, 0.55, "How much colour each jet carries."),
     float("shading", "Gloss", "Look", 0.0, 1.0, 0.6, "Glossy 3D lighting on the ink."),
     float("brightness", "Brightness", "Look", 0.2, 3.0, 1.0, "Overall ink brightness."),
-    choice("color_by", "Colour by", "Look", &[("band", "Frequency band"), ("flow", "Flowing")], "band", "How ink gets its colour."),
-    choice("quality", "Simulation detail", "Quality", &[("low", "Low"), ("medium", "Medium"), ("high", "High"), ("insane", "Insane")], "high", "Fluid grid resolution.").fixed(),
+    choice(
+        "color_by",
+        "Colour by",
+        "Look",
+        &[("band", "Frequency band"), ("flow", "Flowing")],
+        "band",
+        "How ink gets its colour.",
+    ),
+    choice(
+        "quality",
+        "Simulation detail",
+        "Quality",
+        &[("low", "Low"), ("medium", "Medium"), ("high", "High"), ("insane", "Insane")],
+        "high",
+        "Fluid grid resolution.",
+    )
+    .fixed(),
 ];
 
 #[repr(C)]
@@ -243,7 +265,7 @@ impl Ink {
         if a.hits[0] != self.last_hits[0] && splash > 0.0 {
             let cx = 0.25 + self.rand() * 0.5;
             let cy = 0.25 + self.rand() * 0.5;
-            let base = self.rand() * 6.283;
+            let base = self.rand() * std::f32::consts::TAU;
             for k in 0..6 {
                 let ang = base + k as f32 / 6.0 * std::f32::consts::TAU;
                 let mag = splash * a.onset[0] * 14.0;
@@ -266,7 +288,7 @@ impl Ink {
         }
         if a.hits[2] != self.last_hits[2] {
             for _ in 0..2 {
-                let ang = self.rand() * 6.283;
+                let ang = self.rand() * std::f32::consts::TAU;
                 out.push(Splat {
                     pos_radius: [self.rand(), self.rand(), 0.0002, 0.0],
                     force: [ang.cos() * 2.0, ang.sin() * 2.0, 0.0, 0.0],
@@ -339,7 +361,11 @@ impl Scene for Ink {
         let g = self.grids.as_ref().unwrap();
         let enc = &mut *ctx.encoder;
         let globals = &ctx.globals.bind_group;
-        let run = |enc: &mut wgpu::CommandEncoder, label: &str, view: &wgpu::TextureView, pipe: &wgpu::RenderPipeline, bg: &wgpu::BindGroup| {
+        let run = |enc: &mut wgpu::CommandEncoder,
+                   label: &str,
+                   view: &wgpu::TextureView,
+                   pipe: &wgpu::RenderPipeline,
+                   bg: &wgpu::BindGroup| {
             gpu::fullscreen(enc, label, view, pipe, &[globals, bg], None);
         };
         if self.clear_pending {

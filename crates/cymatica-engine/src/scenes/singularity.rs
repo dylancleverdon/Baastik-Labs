@@ -14,14 +14,29 @@ pub static PARAMS: &[ParamDef] = &[
     float("brightness", "Brightness", "Disk", 0.2, 3.0, 1.0, "How bright the disk burns (the bass heats it)."),
     float("turbulence", "Turbulence", "Disk", 0.0, 1.0, 0.7, "Streaks and clumps in the disk."),
     float("doppler", "Doppler beaming", "Disk", 0.0, 1.0, 0.8, "The side coming toward you is brighter (physics)."),
-    choice("color_mode", "Colour", "Disk", &[("physical", "Physical (blackbody)"), ("theme", "Theme colours")], "physical", "Real temperature colours or the theme."),
+    choice(
+        "color_mode",
+        "Colour",
+        "Disk",
+        &[("physical", "Physical (blackbody)"), ("theme", "Theme colours")],
+        "physical",
+        "Real temperature colours or the theme.",
+    ),
     float("jets", "Jets", "Music", 0.0, 1.0, 0.6, "Relativistic jets on big kicks."),
     float("shock", "Shockwaves", "Music", 0.0, 1.0, 0.7, "Kicks send rings through the disk."),
     float("stars", "Stars", "Space", 0.0, 2.0, 1.0, "Background starfield brightness."),
     float("tilt", "Camera tilt", "Camera", 0.0, 1.0, 0.18, "Edge-on (0) to top-down (1)."),
     float("orbit", "Camera orbit", "Camera", -1.0, 1.0, 0.05, "Circles the black hole."),
     float("zoom", "Zoom", "Camera", 0.0, 1.0, 0.5, "Closer or further."),
-    choice("quality", "Ray steps", "Quality", &[("low", "Low"), ("medium", "Medium"), ("high", "High"), ("insane", "Insane")], "high", "More steps = more accurate light bending.").fixed(),
+    choice(
+        "quality",
+        "Ray steps",
+        "Quality",
+        &[("low", "Low"), ("medium", "Medium"), ("high", "High"), ("insane", "Insane")],
+        "high",
+        "More steps = more accurate light bending.",
+    )
+    .fixed(),
 ];
 
 #[repr(C)]
@@ -126,6 +141,13 @@ impl Scene for Singularity {
             _p: [0.0; 2],
         };
         gpu.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&u));
-        gpu::fullscreen(ctx.encoder, "singularity", ctx.target, &self.pipeline, &[&ctx.globals.bind_group, &self.bg], Some(wgpu::Color::BLACK));
+        gpu::fullscreen(
+            ctx.encoder,
+            "singularity",
+            ctx.target,
+            &self.pipeline,
+            &[&ctx.globals.bind_group, &self.bg],
+            Some(wgpu::Color::BLACK),
+        );
     }
 }

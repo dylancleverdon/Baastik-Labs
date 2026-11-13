@@ -145,7 +145,8 @@ mod tests {
     #[test]
     fn apply_respects_switches() {
         let mut s = Settings { scene: "bars".into(), theme: "nord".into(), ..Default::default() };
-        s.autopilot = settings::Autopilot { change_scene: false, change_preset: false, change_theme: true, ..Default::default() };
+        s.autopilot =
+            settings::Autopilot { change_scene: false, change_preset: false, change_theme: true, ..Default::default() };
         apply(Change { big: true }, &mut s, &crate::presets::builtin_presets(), 99);
         assert_eq!(s.scene, "bars");
     }

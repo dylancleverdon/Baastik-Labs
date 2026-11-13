@@ -1,5 +1,8 @@
 //! Colour themes: a gradient palette (interpolated in OKLab), a background and an accent.
 
+// The OKLab matrices are quoted exactly as published.
+#![allow(clippy::excessive_precision)]
+
 use serde::{Deserialize, Serialize};
 
 pub type Rgb8 = [u8; 3];
@@ -32,11 +35,41 @@ fn theme(id: &str, name: &str, stops: &[u32], bg: [u32; 2], accent: u32) -> Them
 /// The built-in themes, in menu order.
 pub fn builtin_themes() -> Vec<Theme> {
     vec![
-        theme("synthwave", "Synthwave", &[0x2d00f7, 0x8900f2, 0xe500a4, 0xff5400, 0xffbd00], [0x0b0221, 0x1a0533], 0xff2a6d),
-        theme("vaporwave", "Vaporwave", &[0xb967ff, 0xff71ce, 0x01cdfe, 0x05ffa1, 0xfffb96], [0x1a1033, 0x2b1b4d], 0x01cdfe),
-        theme("cyberpunk", "Cyberpunk", &[0x00f0ff, 0x0077ff, 0x7a04eb, 0xff00a0, 0xfcee0a], [0x05010a, 0x0b0213], 0xfcee0a),
-        theme("neon-tokyo", "Neon Tokyo", &[0xff0055, 0xff00cc, 0x8c1eff, 0x00b3ff, 0x00ffc8], [0x07020f, 0x120720], 0xff0055),
-        theme("ocean-deep", "Ocean Deep", &[0x03045e, 0x0077b6, 0x00b4d8, 0x48cae4, 0xcaf0f8], [0x000814, 0x001d3d], 0x00b4d8),
+        theme(
+            "synthwave",
+            "Synthwave",
+            &[0x2d00f7, 0x8900f2, 0xe500a4, 0xff5400, 0xffbd00],
+            [0x0b0221, 0x1a0533],
+            0xff2a6d,
+        ),
+        theme(
+            "vaporwave",
+            "Vaporwave",
+            &[0xb967ff, 0xff71ce, 0x01cdfe, 0x05ffa1, 0xfffb96],
+            [0x1a1033, 0x2b1b4d],
+            0x01cdfe,
+        ),
+        theme(
+            "cyberpunk",
+            "Cyberpunk",
+            &[0x00f0ff, 0x0077ff, 0x7a04eb, 0xff00a0, 0xfcee0a],
+            [0x05010a, 0x0b0213],
+            0xfcee0a,
+        ),
+        theme(
+            "neon-tokyo",
+            "Neon Tokyo",
+            &[0xff0055, 0xff00cc, 0x8c1eff, 0x00b3ff, 0x00ffc8],
+            [0x07020f, 0x120720],
+            0xff0055,
+        ),
+        theme(
+            "ocean-deep",
+            "Ocean Deep",
+            &[0x03045e, 0x0077b6, 0x00b4d8, 0x48cae4, 0xcaf0f8],
+            [0x000814, 0x001d3d],
+            0x00b4d8,
+        ),
         theme("aurora", "Aurora", &[0x00ffa3, 0x03e1ff, 0x6a5cff, 0xdc1fff, 0xff4fd8], [0x020611, 0x071a2b], 0x00ffa3),
         theme("lava", "Lava", &[0x2a0000, 0x8b0000, 0xff2400, 0xff8c00, 0xffe066], [0x0a0000, 0x1a0500], 0xff4500),
         theme("sunset", "Sunset", &[0x355c7d, 0x6c5b7b, 0xc06c84, 0xf67280, 0xf8b195], [0x141026, 0x2a1a35], 0xf67280),
@@ -44,7 +77,13 @@ pub fn builtin_themes() -> Vec<Theme> {
         theme("forest", "Forest", &[0x081c15, 0x1b4332, 0x2d6a4f, 0x52b788, 0xb7e4c7], [0x030b08, 0x0b1a13], 0x52b788),
         theme("candy", "Candy", &[0xff9ff3, 0xfeca57, 0xff6b6b, 0x48dbfb, 0x1dd1a1], [0x1e1029, 0x2d1840], 0xff9ff3),
         theme("gold", "Gold", &[0x3d2c00, 0x8a6d1c, 0xd4af37, 0xf5d97a, 0xfff8e1], [0x0a0700, 0x171002], 0xd4af37),
-        theme("fire-ice", "Fire & Ice", &[0x00e5ff, 0x2962ff, 0x6200ea, 0xd50000, 0xff6d00, 0xffd600], [0x03030a, 0x0a0712], 0xff6d00),
+        theme(
+            "fire-ice",
+            "Fire & Ice",
+            &[0x00e5ff, 0x2962ff, 0x6200ea, 0xd50000, 0xff6d00, 0xffd600],
+            [0x03030a, 0x0a0712],
+            0xff6d00,
+        ),
         theme("matrix", "Matrix", &[0x001a00, 0x003b00, 0x008f11, 0x00ff41, 0xd0ffd0], [0x000000, 0x000a00], 0x00ff41),
         theme("mono", "Mono", &[0x202020, 0x555555, 0x9a9a9a, 0xd0d0d0, 0xffffff], [0x000000, 0x0c0c0c], 0xffffff),
         theme(
@@ -89,7 +128,13 @@ pub fn builtin_themes() -> Vec<Theme> {
             [0x16161e, 0x1a1b26],
             0x7aa2f7,
         ),
-        theme("rose-pine", "Rosé Pine", &[0x31748f, 0x9ccfd8, 0xc4a7e7, 0xebbcba, 0xf6c177, 0xeb6f92], [0x191724, 0x1f1d2e], 0xebbcba),
+        theme(
+            "rose-pine",
+            "Rosé Pine",
+            &[0x31748f, 0x9ccfd8, 0xc4a7e7, 0xebbcba, 0xf6c177, 0xeb6f92],
+            [0x191724, 0x1f1d2e],
+            0xebbcba,
+        ),
         theme(
             "cava-classic",
             "cava Classic",

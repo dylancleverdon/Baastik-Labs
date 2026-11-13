@@ -8,19 +8,46 @@ use crate::scene::{scene_source, Scene, SceneCtx};
 use bytemuck::{Pod, Zeroable};
 
 pub static PARAMS: &[ParamDef] = &[
-    choice("mode", "Drops", "Water", &[("rings", "Rings (bass in the middle)"), ("rain", "Rain"), ("drums", "Drums only"), ("faraday", "Faraday waves")], "rings", "How the music disturbs the water."),
+    choice(
+        "mode",
+        "Drops",
+        "Water",
+        &[
+            ("rings", "Rings (bass in the middle)"),
+            ("rain", "Rain"),
+            ("drums", "Drums only"),
+            ("faraday", "Faraday waves"),
+        ],
+        "rings",
+        "How the music disturbs the water.",
+    ),
     float("drop_rate", "Drop rate", "Water", 0.0, 1.0, 0.45, "How often drops fall."),
     float("drop_size", "Drop size", "Water", 0.0, 1.0, 0.5, "How big drops are."),
     float("waves", "Wave height", "Water", 0.0, 1.0, 0.5, "How tall the waves get."),
     float("damping", "Calmness", "Water", 0.0, 1.0, 0.4, "How quickly waves die out."),
     float("depth", "Depth", "Pool", 0.1, 1.0, 0.45, "Pool depth."),
-    choice("floor", "Floor", "Pool", &[("tiles", "Tiles"), ("sand", "Sand"), ("neon", "Neon grid")], "tiles", "What's at the bottom of the pool."),
+    choice(
+        "floor",
+        "Floor",
+        "Pool",
+        &[("tiles", "Tiles"), ("sand", "Sand"), ("neon", "Neon grid")],
+        "tiles",
+        "What's at the bottom of the pool.",
+    ),
     float("caustics", "Caustics", "Light", 0.0, 2.0, 1.0, "Dancing light on the floor."),
     float("reflections", "Reflections", "Light", 0.0, 1.0, 0.85, "Sky reflections on the surface."),
     float("tint", "Water colour", "Light", 0.0, 1.0, 0.45, "How strongly the water tints what's below."),
     float("tilt", "Camera height", "Camera", 0.0, 1.0, 0.6, "Low angle (0) to straight down (1)."),
     float("spin", "Camera orbit", "Camera", -1.0, 1.0, 0.06, "Slowly circles the pool."),
-    choice("quality", "Simulation detail", "Quality", &[("low", "Low"), ("medium", "Medium"), ("high", "High")], "high", "Water grid resolution.").fixed(),
+    choice(
+        "quality",
+        "Simulation detail",
+        "Quality",
+        &[("low", "Low"), ("medium", "Medium"), ("high", "High")],
+        "high",
+        "Water grid resolution.",
+    )
+    .fixed(),
 ];
 
 #[repr(C)]
@@ -84,10 +111,8 @@ pub struct Ripples {
 
 pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     let module = gpu.shader("ripples", scene_source(include_str!("../shaders/scenes/ripples.wgsl")));
-    let layout = gpu.layout(
-        "ripples",
-        &[Bind::Uniform, Bind::StorageRead, Bind::TextureUnfilterable, Bind::TextureUnfilterable],
-    );
+    let layout = gpu
+        .layout("ripples", &[Bind::Uniform, Bind::StorageRead, Bind::TextureUnfilterable, Bind::TextureUnfilterable]);
     let pl = gpu.pipeline_layout("ripples", &[&globals.layout, &layout]);
     let caust = gpu.render_texture("caustics", (CAUSTIC_SIZE, CAUSTIC_SIZE), wgpu::TextureFormat::R16Float);
     let caust_v = caust.create_view(&Default::default());
@@ -270,7 +295,14 @@ impl Scene for Ripples {
         let steps = ((dt * 120.0).round() as usize).clamp(1, 4);
         // (drops are re-applied on each sub-step, which just makes them slightly taller)
         for _ in 0..steps {
-            gpu::fullscreen(enc, "rip-step", &g.water_v[1 - self.cur], &self.p_step, &[globals, &g.step_bg[self.cur]], None);
+            gpu::fullscreen(
+                enc,
+                "rip-step",
+                &g.water_v[1 - self.cur],
+                &self.p_step,
+                &[globals, &g.step_bg[self.cur]],
+                None,
+            );
             self.cur = 1 - self.cur;
         }
         {

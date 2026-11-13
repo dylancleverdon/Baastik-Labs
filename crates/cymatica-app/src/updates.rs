@@ -24,9 +24,18 @@ pub enum UpdateState {
     Checking,
     UpToDate,
     /// A newer build exists but automatic updates are off.
-    Available { version: String, notes: String },
-    Downloading { version: String },
-    Ready { version: String, notes: String, staged: PathBuf },
+    Available {
+        version: String,
+        notes: String,
+    },
+    Downloading {
+        version: String,
+    },
+    Ready {
+        version: String,
+        notes: String,
+        staged: PathBuf,
+    },
     Failed(String),
 }
 

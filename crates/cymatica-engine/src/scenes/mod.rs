@@ -88,12 +88,40 @@ pub fn shader_sources() -> Vec<(&'static str, String)> {
         ("ripples", include_str!("../shaders/scenes/ripples.wgsl").to_string()),
         ("liquid-sim", include_str!("../shaders/scenes/liquid_sim.wgsl").to_string()),
         ("liquid-draw", include_str!("../shaders/scenes/liquid_draw.wgsl").to_string()),
-        ("chladni-sim", format!("{}\n{}", include_str!("../shaders/scenes/chladni_common.wgsl"), include_str!("../shaders/scenes/chladni_sim.wgsl"))),
-        ("chladni-draw", format!("{}\n{}", include_str!("../shaders/scenes/chladni_common.wgsl"), include_str!("../shaders/scenes/chladni_draw.wgsl"))),
+        (
+            "chladni-sim",
+            format!(
+                "{}\n{}",
+                include_str!("../shaders/scenes/chladni_common.wgsl"),
+                include_str!("../shaders/scenes/chladni_sim.wgsl")
+            ),
+        ),
+        (
+            "chladni-draw",
+            format!(
+                "{}\n{}",
+                include_str!("../shaders/scenes/chladni_common.wgsl"),
+                include_str!("../shaders/scenes/chladni_draw.wgsl")
+            ),
+        ),
         ("phosphor", include_str!("../shaders/scenes/phosphor.wgsl").to_string()),
         ("singularity", include_str!("../shaders/scenes/singularity.wgsl").to_string()),
         ("ferro", include_str!("../shaders/scenes/ferro.wgsl").to_string()),
-        ("stardust-sim", format!("{}\n{}", include_str!("../shaders/scenes/stardust_common.wgsl"), include_str!("../shaders/scenes/stardust_sim.wgsl"))),
-        ("stardust-draw", format!("{}\n{}", include_str!("../shaders/scenes/stardust_common.wgsl"), include_str!("../shaders/scenes/stardust_draw.wgsl"))),
+        (
+            "stardust-sim",
+            format!(
+                "{}\n{}",
+                include_str!("../shaders/scenes/stardust_common.wgsl"),
+                include_str!("../shaders/scenes/stardust_sim.wgsl")
+            ),
+        ),
+        (
+            "stardust-draw",
+            format!(
+                "{}\n{}",
+                include_str!("../shaders/scenes/stardust_common.wgsl"),
+                include_str!("../shaders/scenes/stardust_draw.wgsl")
+            ),
+        ),
     ]
 }

@@ -8,9 +8,30 @@ use crate::scene::{scene_source, Scene, SceneCtx};
 use bytemuck::{Pod, Zeroable};
 
 pub static PARAMS: &[ParamDef] = &[
-    choice("style", "Style", "Bars", &[("classic", "Classic cava"), ("jelly", "Jelly"), ("sparks", "Sparks")], "sparks", "Classic is cava in HD; Jelly adds springy physics; Sparks also throws sparks."),
-    choice("layout", "Layout", "Bars", &[("bottom", "Bottom"), ("mirror", "Mirror"), ("radial", "Radial")], "bottom", "Where the bars grow from."),
-    choice("color_by", "Colour by", "Bars", &[("height", "Height (like cava)"), ("frequency", "Frequency"), ("time", "Flowing")], "height", "How the theme's colours map onto the bars."),
+    choice(
+        "style",
+        "Style",
+        "Bars",
+        &[("classic", "Classic cava"), ("jelly", "Jelly"), ("sparks", "Sparks")],
+        "sparks",
+        "Classic is cava in HD; Jelly adds springy physics; Sparks also throws sparks.",
+    ),
+    choice(
+        "layout",
+        "Layout",
+        "Bars",
+        &[("bottom", "Bottom"), ("mirror", "Mirror"), ("radial", "Radial")],
+        "bottom",
+        "Where the bars grow from.",
+    ),
+    choice(
+        "color_by",
+        "Colour by",
+        "Bars",
+        &[("height", "Height (like cava)"), ("frequency", "Frequency"), ("time", "Flowing")],
+        "height",
+        "How the theme's colours map onto the bars.",
+    ),
     float("gap", "Gap", "Bars", 0.0, 0.85, 0.28, "Space between bars."),
     float("height", "Height", "Bars", 0.2, 1.0, 0.85, "Tallest bar, relative to the window."),
     float("roundness", "Roundness", "Bars", 0.0, 1.0, 0.7, "Rounded corners."),
@@ -86,7 +107,12 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     let sim_bg = gpu.bind_group(
         "bars-sim",
         &sim_layout,
-        &[uniform.as_entire_binding(), state.as_entire_binding(), parts.as_entire_binding(), counter.as_entire_binding()],
+        &[
+            uniform.as_entire_binding(),
+            state.as_entire_binding(),
+            parts.as_entire_binding(),
+            counter.as_entire_binding(),
+        ],
     );
     let draw_bg = gpu.bind_group(
         "bars-draw",
@@ -131,7 +157,7 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
 
 impl Scene for Bars {
     fn reset(&mut self, gpu: &Gpu) {
-        let zeros = vec![0u8; (MAX_BARS * 16) as usize];
+        let zeros = vec![0u8; MAX_BARS * 16];
         gpu.queue.write_buffer(&self.state, 0, &zeros);
         let zp = vec![0u8; (MAX_PARTICLES * 32) as usize];
         gpu.queue.write_buffer(&self.parts, 0, &zp);
@@ -168,7 +194,9 @@ impl Scene for Bars {
         gpu.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&u));
 
         {
-            let mut cp = ctx.encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("bars-sim"), timestamp_writes: None });
+            let mut cp = ctx
+                .encoder
+                .begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("bars-sim"), timestamp_writes: None });
             cp.set_bind_group(0, &ctx.globals.bind_group, &[]);
             cp.set_bind_group(1, &self.sim_bg, &[]);
             cp.set_pipeline(&self.cs_bars);

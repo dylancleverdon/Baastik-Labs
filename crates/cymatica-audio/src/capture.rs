@@ -47,12 +47,7 @@ pub struct LiveInput {
     _stream: cpal::Stream,
 }
 
-fn push_frames<T: Copy>(
-    data: &[T],
-    channels: usize,
-    to_f32: impl Fn(T) -> f32,
-    producer: &mut rtrb::Producer<f32>,
-) {
+fn push_frames<T: Copy>(data: &[T], channels: usize, to_f32: impl Fn(T) -> f32, producer: &mut rtrb::Producer<f32>) {
     if channels == 0 {
         return;
     }
@@ -139,15 +134,7 @@ impl LiveInput {
             other => return Err(anyhow!("unsupported sample format {other:?} on \"{name}\"")),
         };
         stream.play()?;
-        Ok(Self {
-            device_name: name.to_string(),
-            rate,
-            channels,
-            consumer,
-            failed,
-            error,
-            _stream: stream,
-        })
+        Ok(Self { device_name: name.to_string(), rate, channels, consumer, failed, error, _stream: stream })
     }
 
     pub fn has_failed(&self) -> bool {

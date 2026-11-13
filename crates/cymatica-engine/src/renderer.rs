@@ -122,10 +122,7 @@ impl Renderer {
             }
         }
         self.current = Some((info_scene.id.to_string(), req.scene_params.clone()));
-        let fade_t = self
-            .fade
-            .as_ref()
-            .map(|f| ((info.time - f.started) / req.crossfade.max(0.01)).clamp(0.0, 1.0));
+        let fade_t = self.fade.as_ref().map(|f| ((info.time - f.started) / req.crossfade.max(0.01)).clamp(0.0, 1.0));
         if fade_t.map(|t| t >= 1.0).unwrap_or(false) {
             let old = self.fade.take().map(|f| f.scene);
             if let Some(old) = old {
@@ -156,12 +153,8 @@ impl Renderer {
             }
         }
 
-        let look_frame = LookFrame {
-            time: info.time,
-            frame: info.frame,
-            kick: info.audio.onset[0],
-            note_color: info.note_color,
-        };
+        let look_frame =
+            LookFrame { time: info.time, frame: info.frame, kick: info.audio.onset[0], note_color: info.note_color };
         let look = Params::new(LOOK_PARAMS, req.look, &info.audio);
         self.post.run(gpu, encoder, &scene_view, size, req.output, req.output_mode, &look, &look_frame);
     }

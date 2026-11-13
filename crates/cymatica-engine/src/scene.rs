@@ -42,10 +42,5 @@ pub fn scene_info(id: &str) -> Option<&'static SceneInfo> {
 
 /// WGSL for a scene: the common prelude + globals + the scene's own code.
 pub fn scene_source(scene_wgsl: &str) -> String {
-    format!(
-        "{}\n{}\n{}",
-        include_str!("shaders/common.wgsl"),
-        include_str!("shaders/globals.wgsl"),
-        scene_wgsl
-    )
+    format!("{}\n{}\n{}", include_str!("shaders/common.wgsl"), include_str!("shaders/globals.wgsl"), scene_wgsl)
 }

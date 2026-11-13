@@ -159,9 +159,7 @@ pub fn parse(text: &str) -> CavaConfig {
     }
     if num(get("color:horizontal_gradient")).unwrap_or(0.0) != 0.0 {
         for i in 1..=8 {
-            if let Some(c) =
-                get(&format!("color:horizontal_gradient_color_{i}")).and_then(|c| parse_color(&c))
-            {
+            if let Some(c) = get(&format!("color:horizontal_gradient_color_{i}")).and_then(|c| parse_color(&c)) {
                 cfg.colors.horizontal_gradient.push(c);
             }
         }

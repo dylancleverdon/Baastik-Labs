@@ -32,10 +32,7 @@ pub fn read_wav(path: &Path) -> Result<StereoAudio> {
         hound::SampleFormat::Float => reader.samples::<f32>().collect::<Result<_, _>>()?,
         hound::SampleFormat::Int => {
             let scale = 1.0 / (1u64 << (spec.bits_per_sample - 1)) as f32;
-            reader
-                .samples::<i32>()
-                .map(|s| s.map(|v| v as f32 * scale))
-                .collect::<Result<_, _>>()?
+            reader.samples::<i32>().map(|s| s.map(|v| v as f32 * scale)).collect::<Result<_, _>>()?
         }
     };
     let frames = raw.len() / channels;

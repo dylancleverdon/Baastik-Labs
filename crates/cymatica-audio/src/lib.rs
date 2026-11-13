@@ -9,6 +9,6 @@ pub mod engine;
 pub mod synth;
 pub mod wav;
 
-pub use analysis::{AudioFrame, Analyzer};
+pub use analysis::{Analyzer, AudioFrame};
 pub use cava::{CavaSettings, ChannelLayout, Scaling};
 pub use engine::{AudioEngine, AudioStatus, InputChoice, SourceKind};

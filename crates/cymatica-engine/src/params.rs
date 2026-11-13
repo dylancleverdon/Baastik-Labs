@@ -7,13 +7,28 @@ use std::collections::BTreeMap;
 
 #[derive(Clone, Copy, Debug)]
 pub enum ParamKind {
-    Float { min: f32, max: f32, default: f32 },
-    Int { min: i32, max: i32, default: i32 },
-    Toggle { default: bool },
+    Float {
+        min: f32,
+        max: f32,
+        default: f32,
+    },
+    Int {
+        min: i32,
+        max: i32,
+        default: i32,
+    },
+    Toggle {
+        default: bool,
+    },
     /// Options are (id, label); values are stored by id so reordering is safe.
-    Choice { options: &'static [(&'static str, &'static str)], default: &'static str },
+    Choice {
+        options: &'static [(&'static str, &'static str)],
+        default: &'static str,
+    },
     /// sRGB hex colour.
-    Color { default: u32 },
+    Color {
+        default: u32,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -29,15 +44,37 @@ pub struct ParamDef {
     pub no_random: bool,
 }
 
-pub const fn float(id: &'static str, label: &'static str, group: &'static str, min: f32, max: f32, default: f32, help: &'static str) -> ParamDef {
+pub const fn float(
+    id: &'static str,
+    label: &'static str,
+    group: &'static str,
+    min: f32,
+    max: f32,
+    default: f32,
+    help: &'static str,
+) -> ParamDef {
     ParamDef { id, label, group, help, kind: ParamKind::Float { min, max, default }, no_random: false }
 }
 
-pub const fn int(id: &'static str, label: &'static str, group: &'static str, min: i32, max: i32, default: i32, help: &'static str) -> ParamDef {
+pub const fn int(
+    id: &'static str,
+    label: &'static str,
+    group: &'static str,
+    min: i32,
+    max: i32,
+    default: i32,
+    help: &'static str,
+) -> ParamDef {
     ParamDef { id, label, group, help, kind: ParamKind::Int { min, max, default }, no_random: false }
 }
 
-pub const fn toggle(id: &'static str, label: &'static str, group: &'static str, default: bool, help: &'static str) -> ParamDef {
+pub const fn toggle(
+    id: &'static str,
+    label: &'static str,
+    group: &'static str,
+    default: bool,
+    help: &'static str,
+) -> ParamDef {
     ParamDef { id, label, group, help, kind: ParamKind::Toggle { default }, no_random: false }
 }
 
@@ -52,7 +89,13 @@ pub const fn choice(
     ParamDef { id, label, group, help, kind: ParamKind::Choice { options, default }, no_random: false }
 }
 
-pub const fn color(id: &'static str, label: &'static str, group: &'static str, default: u32, help: &'static str) -> ParamDef {
+pub const fn color(
+    id: &'static str,
+    label: &'static str,
+    group: &'static str,
+    default: u32,
+    help: &'static str,
+) -> ParamDef {
     ParamDef { id, label, group, help, kind: ParamKind::Color { default }, no_random: false }
 }
 
@@ -299,6 +342,7 @@ impl Rng {
         Self(seed.max(1))
     }
     /// 0..1
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> f32 {
         let mut x = self.0;
         x ^= x << 13;

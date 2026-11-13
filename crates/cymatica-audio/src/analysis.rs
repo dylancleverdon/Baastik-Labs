@@ -16,8 +16,7 @@ pub const SPECTRUM_HIGH_HZ: f32 = 16000.0;
 pub const WAVE_LEN: usize = 2048;
 pub const NUM_BANDS: usize = 7;
 pub const BAND_EDGES: [f32; NUM_BANDS + 1] = [20.0, 60.0, 250.0, 500.0, 2000.0, 4000.0, 6000.0, 20000.0];
-pub const BAND_NAMES: [&str; NUM_BANDS] =
-    ["Sub", "Bass", "Low mid", "Mid", "High mid", "Presence", "Air"];
+pub const BAND_NAMES: [&str; NUM_BANDS] = ["Sub", "Bass", "Low mid", "Mid", "High mid", "Presence", "Air"];
 /// Onset detectors: kick, snare, hat.
 pub const ONSET_NAMES: [&str; 3] = ["Kick", "Snare", "Hat"];
 pub const NOTE_NAMES: [&str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -314,8 +313,7 @@ impl OnsetDetector {
         let (level, rise) = (self.last_level, self.last_rise);
         let n = self.filled.max(1) as f32;
         let mean = self.history.iter().take(self.filled).sum::<f32>() / n;
-        let var =
-            self.history.iter().take(self.filled).map(|v| (v - mean) * (v - mean)).sum::<f32>() / n;
+        let var = self.history.iter().take(self.filled).map(|v| (v - mean) * (v - mean)).sum::<f32>() / n;
         let threshold = (mean + 2.0 * var.sqrt()).max(self.min_rise_db);
 
         self.since_hit += dt;
@@ -379,8 +377,7 @@ impl TempoTracker {
         }
         // Oldest first.
         let start = if n < Self::HISTORY { 0 } else { self.pos };
-        let series: Vec<f32> =
-            (0..n).map(|i| self.onset_history[(start + i) % Self::HISTORY]).collect();
+        let series: Vec<f32> = (0..n).map(|i| self.onset_history[(start + i) % Self::HISTORY]).collect();
         let mean = series.iter().sum::<f32>() / n as f32;
         let centered: Vec<f32> = series.iter().map(|v| v - mean).collect();
         let energy: f32 = centered.iter().map(|v| v * v).sum::<f32>().max(1e-9);
@@ -518,9 +515,7 @@ impl Analyzer {
         let fft = planner.plan_fft_forward(fft_n);
         let offt = planner.plan_fft_forward(offt_n);
         let hann = |n: usize| -> Vec<f32> {
-            (0..n)
-                .map(|i| 0.5 - 0.5 * (2.0 * std::f32::consts::PI * i as f32 / n as f32).cos())
-                .collect()
+            (0..n).map(|i| 0.5 - 0.5 * (2.0 * std::f32::consts::PI * i as f32 / n as f32).cos()).collect()
         };
         let window = hann(fft_n);
         let owindow = hann(offt_n);
@@ -532,8 +527,7 @@ impl Analyzer {
         let spectrum_map: Vec<(f32, f32)> = (0..SPECTRUM_BINS)
             .map(|i| {
                 let f0 = SPECTRUM_LOW_HZ * (high / SPECTRUM_LOW_HZ).powf(i as f32 / SPECTRUM_BINS as f32);
-                let f1 =
-                    SPECTRUM_LOW_HZ * (high / SPECTRUM_LOW_HZ).powf((i + 1) as f32 / SPECTRUM_BINS as f32);
+                let f1 = SPECTRUM_LOW_HZ * (high / SPECTRUM_LOW_HZ).powf((i + 1) as f32 / SPECTRUM_BINS as f32);
                 (f0 / bin_hz, f1 / bin_hz)
             })
             .collect();
@@ -586,10 +580,12 @@ impl Analyzer {
                 -36.0,
             ),
         ];
-        let mut frame = AudioFrame::default();
-        frame.bars = cava.bars.clone();
-        frame.bars_left = cava.bars_left.clone();
-        frame.bars_right = cava.bars_right.clone();
+        let frame = AudioFrame {
+            bars: cava.bars.clone(),
+            bars_left: cava.bars_left.clone(),
+            bars_right: cava.bars_right.clone(),
+            ..Default::default()
+        };
 
         Ok(Self {
             rate,
@@ -717,11 +713,7 @@ impl Analyzer {
         let r_db = 10.0 * ((sum_r / frames) as f32).max(1e-12).log10();
         f.level_l = level_s.step(f.level_l, to_level(l_db), dt);
         f.level_r = level_s.step(f.level_r, to_level(r_db), dt);
-        let corr = if sum_l > 1e-12 && sum_r > 1e-12 {
-            (sum_lr / (sum_l * sum_r).sqrt()) as f32
-        } else {
-            1.0
-        };
+        let corr = if sum_l > 1e-12 && sum_r > 1e-12 { (sum_lr / (sum_l * sum_r).sqrt()) as f32 } else { 1.0 };
         f.correlation = Smoother::new(0.1, 0.1).step(f.correlation, corr.clamp(-1.0, 1.0), dt);
         if rms_db < -85.0 {
             self.silent_for += dt;
@@ -836,9 +828,9 @@ impl Analyzer {
         }
         let cmax = chroma.iter().cloned().fold(0.0, f32::max);
         let chroma_s = Smoother::new(0.05, 0.35);
-        for i in 0..12 {
-            let target = if cmax > 1e-12 { (chroma[i] / cmax).sqrt() } else { 0.0 };
-            f.chroma[i] = chroma_s.step(f.chroma[i], target, dt);
+        for (out, &c) in f.chroma.iter_mut().zip(chroma.iter()) {
+            let target = if cmax > 1e-12 { (c / cmax).sqrt() } else { 0.0 };
+            *out = chroma_s.step(*out, target, dt);
         }
         let (note, &best) = f
             .chroma
@@ -881,11 +873,8 @@ impl Analyzer {
         let m: [(f32, f32); 3] = std::array::from_fn(|i| self.onsets[i].measure(ref_db, dt));
         // A band only counts as hit when the band below doesn't explain it: a kick's knock and
         // click spill into the snare band, a snare's wires into the hat band.
-        let allowed = [
-            true,
-            m[1].0 > m[0].0 + 1.0 && m[1].0 > m[2].0 - 6.0,
-            m[2].0 > m[1].0 + 2.0 || m[2].1 > m[1].1 + 8.0,
-        ];
+        let allowed =
+            [true, m[1].0 > m[0].0 + 1.0 && m[1].0 > m[2].0 - 6.0, m[2].0 > m[1].0 + 2.0 || m[2].1 > m[1].1 + 8.0];
         let mut kick_hit = false;
         for (i, det) in self.onsets.iter_mut().enumerate() {
             let hit = det.decide(allowed[i], dt);
@@ -955,13 +944,9 @@ mod tests {
         assert_eq!(f.note_name(), "A");
         assert!(f.note_strength > 0.5);
         // spectrum peak near 440 Hz
-        let (peak, _) = f
-            .spectrum
-            .iter()
-            .enumerate()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-            .unwrap();
-        let hz = SPECTRUM_LOW_HZ * (SPECTRUM_HIGH_HZ / SPECTRUM_LOW_HZ).powf((peak as f32 + 0.5) / SPECTRUM_BINS as f32);
+        let (peak, _) = f.spectrum.iter().enumerate().max_by(|a, b| a.1.partial_cmp(b.1).unwrap()).unwrap();
+        let hz =
+            SPECTRUM_LOW_HZ * (SPECTRUM_HIGH_HZ / SPECTRUM_LOW_HZ).powf((peak as f32 + 0.5) / SPECTRUM_BINS as f32);
         assert!((hz / 440.0).log2().abs() < 0.1, "peak at {hz} Hz");
         assert!(f.bands[3] > f.bands[0], "mid band above sub band: {:?}", f.bands);
         assert!(!f.silent);
@@ -984,7 +969,11 @@ mod tests {
         let f = frames.last().unwrap();
         // ~24 kicks in 12 s; allow a couple missed at the start
         assert!((20..=25).contains(&f.hits[0]), "kick hits: {}", f.hits[0]);
-        assert!((f.bpm - 120.0).abs() < 3.0 || (f.bpm - 240.0).abs() < 6.0 || (f.bpm - 60.0).abs() < 2.0, "bpm {}", f.bpm);
+        assert!(
+            (f.bpm - 120.0).abs() < 3.0 || (f.bpm - 240.0).abs() < 6.0 || (f.bpm - 60.0).abs() < 2.0,
+            "bpm {}",
+            f.bpm
+        );
         assert!(f.tempo_confidence > 0.2, "confidence {}", f.tempo_confidence);
         // the hat detector should stay mostly quiet on pure kicks
         assert!(f.hits[2] < 6, "hat hits on kick-only signal: {}", f.hits[2]);
@@ -1046,7 +1035,11 @@ mod tests {
                 let mut buf = Vec::new();
                 for i in 0..512 {
                     let t = ((n + i) % (rate / 2)) as f32 / rate as f32;
-                    let s = match which { 0 => d.kick(t), 1 => d.hat(t), _ => d.snare(t) };
+                    let s = match which {
+                        0 => d.kick(t),
+                        1 => d.hat(t),
+                        _ => d.snare(t),
+                    };
                     buf.push(s);
                     buf.push(s);
                 }

@@ -7,7 +7,7 @@ use crate::post::OutputMode;
 use crate::renderer::{RenderRequest, Renderer};
 use crate::theme::Theme;
 use anyhow::Result;
-use cymatica_audio::analysis::{AudioFrame, Analyzer};
+use cymatica_audio::analysis::{Analyzer, AudioFrame};
 use cymatica_audio::cava::CavaSettings;
 use cymatica_audio::synth::DemoSynth;
 
@@ -22,6 +22,7 @@ pub struct OfflineAudio {
     frame: AudioFrame,
 }
 
+#[allow(clippy::large_enum_variant)] // one per renderer
 enum AudioSource {
     Demo(DemoSynth),
     Samples(Vec<f32>),
@@ -80,6 +81,8 @@ impl OfflineAudio {
 }
 
 pub struct OfflineRenderer {
+    /// Crossfade seconds used when consecutive renders switch scenes.
+    pub crossfade: f32,
     pub gpu: Gpu,
     _instance: wgpu::Instance,
     pub renderer: Renderer,
@@ -105,7 +108,7 @@ impl OfflineRenderer {
             (padded_row * size.1) as u64,
             wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
         );
-        Ok(Self { gpu, _instance: instance, renderer, size, target, readback, padded_row })
+        Ok(Self { crossfade: 0.0, gpu, _instance: instance, renderer, size, target, readback, padded_row })
     }
 
     pub fn size(&self) -> (u32, u32) {
@@ -140,7 +143,7 @@ impl OfflineRenderer {
                 render_size: rs,
                 output: &view,
                 output_mode: OutputMode::SrgbTexture,
-                crossfade: 0.0,
+                crossfade: self.crossfade,
             },
         );
         enc.copy_texture_to_buffer(
@@ -169,8 +172,7 @@ impl OfflineRenderer {
             let data = slice.get_mapped_range()?;
             for y in 0..self.size.1 {
                 let row = &data[(y * self.padded_row) as usize..(y * self.padded_row + self.size.0 * 4) as usize];
-                img.as_mut()[(y * self.size.0 * 4) as usize..((y + 1) * self.size.0 * 4) as usize]
-                    .copy_from_slice(row);
+                img.as_mut()[(y * self.size.0 * 4) as usize..((y + 1) * self.size.0 * 4) as usize].copy_from_slice(row);
             }
         }
         self.readback.unmap();

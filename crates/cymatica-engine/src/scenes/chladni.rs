@@ -9,15 +9,37 @@ use bytemuck::{Pod, Zeroable};
 
 pub static PARAMS: &[ParamDef] = &[
     choice("plate", "Plate", "Plate", &[("square", "Square"), ("circle", "Round")], "square", "Plate shape."),
-    choice("follow", "Mode follows", "Plate", &[("note", "The melody (dominant note)"), ("beat", "The beat"), ("bass", "Bass energy")], "note", "What picks the vibration pattern."),
+    choice(
+        "follow",
+        "Mode follows",
+        "Plate",
+        &[("note", "The melody (dominant note)"), ("beat", "The beat"), ("bass", "Bass energy")],
+        "note",
+        "What picks the vibration pattern.",
+    ),
     float("complexity", "Complexity", "Plate", 0.0, 1.0, 0.45, "How intricate the figures get."),
     float("vibration", "Vibration", "Sand", 0.0, 1.0, 0.55, "How hard the plate shakes the sand."),
     float("drift", "Settling", "Sand", 0.0, 1.0, 0.5, "How quickly sand finds the still lines."),
     float("grain", "Grain size", "Sand", 0.3, 3.0, 0.9, "Size of each grain."),
     float("glow", "Brightness", "Sand", 0.2, 3.0, 1.0, "How bright the sand glows."),
-    choice("color_by", "Colour by", "Sand", &[("speed", "Movement"), ("grain", "Each grain"), ("radius", "Distance from centre")], "speed", "How the theme colours the sand."),
+    choice(
+        "color_by",
+        "Colour by",
+        "Sand",
+        &[("speed", "Movement"), ("grain", "Each grain"), ("radius", "Distance from centre")],
+        "speed",
+        "How the theme colours the sand.",
+    ),
     toggle("show_plate", "Show plate", "Plate", true, "Draw the metal plate."),
-    choice("quality", "Grains", "Quality", &[("low", "250k"), ("medium", "500k"), ("high", "1M"), ("insane", "2M")], "high", "Number of sand grains.").fixed(),
+    choice(
+        "quality",
+        "Grains",
+        "Quality",
+        &[("low", "250k"), ("medium", "500k"), ("high", "1M"), ("insane", "2M")],
+        "high",
+        "Number of sand grains.",
+    )
+    .fixed(),
 ];
 
 #[repr(C)]
@@ -78,8 +100,14 @@ pub struct Chladni {
 
 pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     let common = include_str!("../shaders/scenes/chladni_common.wgsl");
-    let sim = gpu.shader("chladni-sim", scene_source(&format!("{common}\n{}", include_str!("../shaders/scenes/chladni_sim.wgsl"))));
-    let draw = gpu.shader("chladni-draw", scene_source(&format!("{common}\n{}", include_str!("../shaders/scenes/chladni_draw.wgsl"))));
+    let sim = gpu.shader(
+        "chladni-sim",
+        scene_source(&format!("{common}\n{}", include_str!("../shaders/scenes/chladni_sim.wgsl"))),
+    );
+    let draw = gpu.shader(
+        "chladni-draw",
+        scene_source(&format!("{common}\n{}", include_str!("../shaders/scenes/chladni_draw.wgsl"))),
+    );
     let sim_layout = gpu.layout("chladni-sim", &[Bind::Uniform, Bind::StorageRw]);
     let draw_layout = gpu.layout("chladni-draw", &[Bind::Uniform, Bind::StorageRead]);
     let spl = gpu.pipeline_layout("chladni-sim", &[&globals.layout, &sim_layout]);
@@ -87,7 +115,16 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     Box::new(Chladni {
         cs: gpu.compute_pipeline("chladni", &sim, "cs_grains", &spl),
         p_plate: gpu.fullscreen_pipeline("chladni-plate", &draw, "fs_plate", &dpl, HDR_FORMAT, None),
-        p_grain: gpu.render_pipeline("chladni-grain", &draw, "vs_grain", "fs_grain", &dpl, HDR_FORMAT, Some(gpu::ADDITIVE), wgpu::PrimitiveTopology::TriangleList),
+        p_grain: gpu.render_pipeline(
+            "chladni-grain",
+            &draw,
+            "vs_grain",
+            "fs_grain",
+            &dpl,
+            HDR_FORMAT,
+            Some(gpu::ADDITIVE),
+            wgpu::PrimitiveTopology::TriangleList,
+        ),
         uniform: gpu.uniform_buffer("chladni-u", std::mem::size_of::<ChUniform>() as u64),
         sim_layout,
         draw_layout,
@@ -127,8 +164,16 @@ impl Scene for Chladni {
             }
             let buf = gpu.storage_buffer("chladni-grains", n as u64 * 16);
             gpu.queue.write_buffer(&buf, 0, bytemuck::cast_slice(&data));
-            let sbg = gpu.bind_group("chladni-sim", &self.sim_layout, &[self.uniform.as_entire_binding(), buf.as_entire_binding()]);
-            let dbg = gpu.bind_group("chladni-draw", &self.draw_layout, &[self.uniform.as_entire_binding(), buf.as_entire_binding()]);
+            let sbg = gpu.bind_group(
+                "chladni-sim",
+                &self.sim_layout,
+                &[self.uniform.as_entire_binding(), buf.as_entire_binding()],
+            );
+            let dbg = gpu.bind_group(
+                "chladni-draw",
+                &self.draw_layout,
+                &[self.uniform.as_entire_binding(), buf.as_entire_binding()],
+            );
             self.grains = Some((q, n, buf, sbg, dbg));
         }
         let plate = p.choice_index("plate");
@@ -175,7 +220,9 @@ impl Scene for Chladni {
         };
         gpu.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&u));
         {
-            let mut cp = ctx.encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("chladni"), timestamp_writes: None });
+            let mut cp = ctx
+                .encoder
+                .begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("chladni"), timestamp_writes: None });
             cp.set_pipeline(&self.cs);
             cp.set_bind_group(0, &ctx.globals.bind_group, &[]);
             cp.set_bind_group(1, sbg, &[]);

@@ -101,10 +101,21 @@ pub fn self_test(args: Vec<String>) -> Result<()> {
         let mut audio = OfflineAudio::demo(48000);
         let mut last = None;
         let t0 = std::time::Instant::now();
-        r.render_sequence(sc.id, &ParamSet::default(), &ParamSet::default(), theme, &mut audio, at, 30.0, 1, 1.0, |_, img| {
-            last = Some(img.clone());
-            Ok(())
-        })?;
+        r.render_sequence(
+            sc.id,
+            &ParamSet::default(),
+            &ParamSet::default(),
+            theme,
+            &mut audio,
+            at,
+            30.0,
+            1,
+            1.0,
+            |_, img| {
+                last = Some(img.clone());
+                Ok(())
+            },
+        )?;
         let img = last.context("no frame rendered")?;
         let stats = image_stats(&img);
         eprintln!(
@@ -148,11 +159,8 @@ pub fn update(args: Vec<String>) -> Result<()> {
         extra_prefixes: a.values("--allow-url-prefix"),
         manual: true,
     };
-    let installed = a
-        .value("--current-build")
-        .and_then(|b| b.parse().ok())
-        .or_else(|| upd::bundle_build(&target))
-        .unwrap_or(0);
+    let installed =
+        a.value("--current-build").and_then(|b| b.parse().ok()).or_else(|| upd::bundle_build(&target)).unwrap_or(0);
     let (m, decision) = upd::check(&paths, installed, &opts)?;
     println!("manifest: {} (build {}), installed build {installed}: {decision:?}", m.version, m.build);
     if a.flag("--check-now") && decision == upd::Decision::Install {

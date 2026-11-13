@@ -85,7 +85,15 @@ impl GlobalsGpu {
     pub fn new(gpu: &Gpu) -> Self {
         let layout = gpu.layout(
             "globals",
-            &[Bind::Uniform, Bind::StorageRead, Bind::StorageRead, Bind::StorageRead, Bind::Texture, Bind::Sampler, Bind::Sampler],
+            &[
+                Bind::Uniform,
+                Bind::StorageRead,
+                Bind::StorageRead,
+                Bind::StorageRead,
+                Bind::Texture,
+                Bind::Sampler,
+                Bind::Sampler,
+            ],
         );
         let uniform = gpu.uniform_buffer("globals", std::mem::size_of::<GlobalsUniform>() as u64);
         let spectrum = gpu.storage_buffer("spectrum", (SPECTRUM_BINS * 4) as u64);
@@ -155,7 +163,11 @@ impl GlobalsGpu {
                 aspect: wgpu::TextureAspect::All,
             },
             bytemuck::cast_slice(&data),
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(PALETTE_SIZE as u32 * 8), rows_per_image: None },
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(PALETTE_SIZE as u32 * 8),
+                rows_per_image: None,
+            },
             wgpu::Extent3d { width: PALETTE_SIZE as u32, height: 1, depth_or_array_layers: 1 },
         );
         self.bg = theme.background_linear();
@@ -211,7 +223,7 @@ impl GlobalsGpu {
             palette_shift: info.palette_shift,
             energy: a.loudness.max(a.bass * 0.85),
             seed: info.seed,
-            spectrum_len: a.spectrum.len().min(SPECTRUM_BINS).max(1) as u32,
+            spectrum_len: a.spectrum.len().clamp(1, SPECTRUM_BINS) as u32,
         };
         gpu.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&u));
         if !a.spectrum.is_empty() {

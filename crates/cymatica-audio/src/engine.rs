@@ -1,7 +1,7 @@
 //! The audio engine: a background thread that reads the chosen input (BlackHole 2ch by default),
 //! runs the analyzer and keeps a short, time-stamped history of frames for the renderer.
 
-use crate::analysis::{AudioFrame, Analyzer};
+use crate::analysis::{Analyzer, AudioFrame};
 use crate::capture::{self, LiveInput};
 use crate::cava::CavaSettings;
 use crate::synth::DemoSynth;
@@ -82,6 +82,7 @@ pub struct AudioEngine {
     thread: Option<JoinHandle<()>>,
 }
 
+#[allow(clippy::large_enum_variant)] // one per engine
 enum Source {
     Live(LiveInput),
     Generated { synth: Option<DemoSynth>, start: Instant, produced: u64, rate: u32 },
@@ -89,10 +90,8 @@ enum Source {
 
 impl AudioEngine {
     pub fn start(input: InputChoice, cava: CavaSettings) -> Self {
-        let shared = Arc::new(Shared {
-            frames: Mutex::new(VecDeque::new()),
-            status: Mutex::new(AudioStatus::default()),
-        });
+        let shared =
+            Arc::new(Shared { frames: Mutex::new(VecDeque::new()), status: Mutex::new(AudioStatus::default()) });
         let (tx, rx) = mpsc::channel();
         let s2 = shared.clone();
         let thread = std::thread::Builder::new()

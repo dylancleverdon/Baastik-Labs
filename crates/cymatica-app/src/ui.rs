@@ -125,37 +125,35 @@ pub fn draw(ctx: &egui::Context, st: &mut UiState, s: &mut Settings, info: &UiIn
     }
     let screen = ctx.content_rect();
     let width = 372.0f32.min(screen.width() - 24.0);
-    egui::Area::new(egui::Id::unique("cymatica-panel"))
-        .anchor(Align2::RIGHT_TOP, [-12.0, 12.0])
-        .show(ctx, |ui| {
-            egui::Frame::new()
-                .fill(ui.visuals().panel_fill)
-                .corner_radius(CornerRadius::same(16))
-                .stroke(Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 255, 255, 20)))
-                .inner_margin(egui::Margin::same(14))
-                .show(ui, |ui| {
-                    ui.set_width(width);
-                    ui.set_max_height(screen.height() - 52.0);
-                    header(ui, s, info);
-                    ui.add_space(6.0);
-                    tabs(ui, st);
-                    ui.separator();
-                    egui::ScrollArea::vertical().auto_shrink([false, true]).show(ui, |ui| match st.tab {
-                        Tab::Scene => scene_tab(ui, st, s, info, &mut act),
-                        Tab::Look => look_tab(ui, st, s, &mut act),
-                        Tab::Audio => audio_tab(ui, s, info, &mut act),
-                        Tab::Presets => presets_tab(ui, st, s, info, &mut act),
-                        Tab::Display => display_tab(ui, s, info, &mut act),
-                        Tab::About => about_tab(ui, info, &mut act),
-                    });
-                    ui.separator();
-                    ui.label(
-                        RichText::new("H hide · Left/Right scenes · Up/Down presets · T theme · R random · F fullscreen")
-                            .small()
-                            .weak(),
-                    );
+    egui::Area::new(egui::Id::unique("cymatica-panel")).anchor(Align2::RIGHT_TOP, [-12.0, 12.0]).show(ctx, |ui| {
+        egui::Frame::new()
+            .fill(ui.visuals().panel_fill)
+            .corner_radius(CornerRadius::same(16))
+            .stroke(Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 255, 255, 20)))
+            .inner_margin(egui::Margin::same(14))
+            .show(ui, |ui| {
+                ui.set_width(width);
+                ui.set_max_height(screen.height() - 52.0);
+                header(ui, s, info);
+                ui.add_space(6.0);
+                tabs(ui, st);
+                ui.separator();
+                egui::ScrollArea::vertical().auto_shrink([false, true]).show(ui, |ui| match st.tab {
+                    Tab::Scene => scene_tab(ui, st, s, info, &mut act),
+                    Tab::Look => look_tab(ui, st, s, &mut act),
+                    Tab::Audio => audio_tab(ui, s, info, &mut act),
+                    Tab::Presets => presets_tab(ui, st, s, info, &mut act),
+                    Tab::Display => display_tab(ui, s, info, &mut act),
+                    Tab::About => about_tab(ui, info, &mut act),
                 });
-        });
+                ui.separator();
+                ui.label(
+                    RichText::new("H hide · Left/Right scenes · Up/Down presets · T theme · R random · F fullscreen")
+                        .small()
+                        .weak(),
+                );
+            });
+    });
     act
 }
 
@@ -224,8 +222,8 @@ fn scene_tab(ui: &mut egui::Ui, st: &mut UiState, s: &mut Settings, info: &UiInf
                 act.randomize = Some(0.25);
             }
             if ui.button("Reset").on_hover_text("Back to this scene's defaults").clicked() {
-                s.params_for(&info.id.to_string()).values.clear();
-                s.params_for(&info.id.to_string()).mods.clear();
+                s.params_for(info.id).values.clear();
+                s.params_for(info.id).mods.clear();
                 act.changed = true;
             }
             if ui.button("Restart").on_hover_text("Restart the simulation").clicked() {
@@ -242,7 +240,13 @@ fn scene_tab(ui: &mut egui::Ui, st: &mut UiState, s: &mut Settings, info: &UiInf
 }
 
 /// Generic editor for a parameter list, grouped. Returns true when something changed.
-fn param_editor(ui: &mut egui::Ui, st: &mut UiState, defs: &'static [ParamDef], set: &mut ParamSet, salt: &str) -> bool {
+fn param_editor(
+    ui: &mut egui::Ui,
+    st: &mut UiState,
+    defs: &'static [ParamDef],
+    set: &mut ParamSet,
+    salt: &str,
+) -> bool {
     let mut changed = false;
     let mut groups: Vec<&str> = Vec::new();
     for d in defs {
@@ -251,19 +255,26 @@ fn param_editor(ui: &mut egui::Ui, st: &mut UiState, defs: &'static [ParamDef], 
         }
     }
     for g in groups {
-        egui::CollapsingHeader::new(RichText::new(g).strong())
-            .id_salt(format!("{salt}-{g}"))
-            .default_open(true)
-            .show(ui, |ui| {
+        egui::CollapsingHeader::new(RichText::new(g).strong()).id_salt(format!("{salt}-{g}")).default_open(true).show(
+            ui,
+            |ui| {
                 for d in defs.iter().filter(|d| d.group == g) {
                     changed |= param_row(ui, st, defs, d, set, salt);
                 }
-            });
+            },
+        );
     }
     changed
 }
 
-fn param_row(ui: &mut egui::Ui, st: &mut UiState, defs: &'static [ParamDef], d: &ParamDef, set: &mut ParamSet, salt: &str) -> bool {
+fn param_row(
+    ui: &mut egui::Ui,
+    st: &mut UiState,
+    defs: &'static [ParamDef],
+    d: &ParamDef,
+    set: &mut ParamSet,
+    salt: &str,
+) -> bool {
     let mut changed = false;
     let key = format!("{salt}/{}", d.id);
     ui.horizontal(|ui| {
@@ -336,19 +347,22 @@ fn param_row(ui: &mut egui::Ui, st: &mut UiState, defs: &'static [ParamDef], d: 
             ui.horizontal(|ui| {
                 ui.label("Follows");
                 let label = current.map(|m| m.source.label()).unwrap_or("nothing");
-                egui::ComboBox::from_id_salt(format!("{key}-src")).selected_text(label).width(150.0).show_ui(ui, |ui| {
-                    if ui.selectable_label(current.is_none(), "nothing").clicked() {
-                        set.mods.remove(d.id);
-                        changed = true;
-                    }
-                    for src in ModSource::ALL {
-                        if ui.selectable_label(current.map(|m| m.source) == Some(src), src.label()).clicked() {
-                            let amount = current.map(|m| m.amount).unwrap_or(0.3);
-                            set.mods.insert(d.id.to_string(), Modulation { source: src, amount });
+                egui::ComboBox::from_id_salt(format!("{key}-src")).selected_text(label).width(150.0).show_ui(
+                    ui,
+                    |ui| {
+                        if ui.selectable_label(current.is_none(), "nothing").clicked() {
+                            set.mods.remove(d.id);
                             changed = true;
                         }
-                    }
-                });
+                        for src in ModSource::ALL {
+                            if ui.selectable_label(current.map(|m| m.source) == Some(src), src.label()).clicked() {
+                                let amount = current.map(|m| m.amount).unwrap_or(0.3);
+                                set.mods.insert(d.id.to_string(), Modulation { source: src, amount });
+                                changed = true;
+                            }
+                        }
+                    },
+                );
             });
             if let Some(mut m) = set.mods.get(d.id).copied() {
                 ui.horizontal(|ui| {
@@ -378,7 +392,11 @@ fn theme_swatch(ui: &mut egui::Ui, t: &Theme, selected: bool) -> egui::Response 
         let c = pal[i * (pal.len() - 1) / (n - 1)];
         let x0 = inner.left() + inner.width() * i as f32 / n as f32;
         let x1 = inner.left() + inner.width() * (i + 1) as f32 / n as f32 + 0.5;
-        painter.rect_filled(egui::Rect::from_min_max(egui::pos2(x0, inner.top()), egui::pos2(x1, inner.bottom())), 0.0, color32(c));
+        painter.rect_filled(
+            egui::Rect::from_min_max(egui::pos2(x0, inner.top()), egui::pos2(x1, inner.bottom())),
+            0.0,
+            color32(c),
+        );
     }
     painter.text(
         egui::pos2(rect.center().x, rect.bottom() - 7.0),
@@ -434,7 +452,10 @@ fn meter_bars(ui: &mut egui::Ui, values: &[f32], height: f32, color: impl Fn(usi
     for (i, &v) in values.iter().enumerate() {
         let h = v.clamp(0.0, 1.0) * (rect.height() - 2.0);
         let x = rect.left() + i as f32 * w;
-        let r = egui::Rect::from_min_max(egui::pos2(x + w * 0.12, rect.bottom() - h - 1.0), egui::pos2(x + w * 0.88, rect.bottom() - 1.0));
+        let r = egui::Rect::from_min_max(
+            egui::pos2(x + w * 0.12, rect.bottom() - h - 1.0),
+            egui::pos2(x + w * 0.88, rect.bottom() - 1.0),
+        );
         painter.rect_filled(r, 1.0, color(i, v));
     }
 }
@@ -469,9 +490,13 @@ fn audio_tab(ui: &mut egui::Ui, s: &mut Settings, info: &UiInfo, act: &mut UiAct
         }
         SourceKind::Demo => {
             if s.input == InputChoice::Auto && !st.blackhole_found {
-                ui.colored_label(Color32::from_rgb(240, 190, 80), "BlackHole 2ch isn't installed, so the demo track is playing.");
+                ui.colored_label(
+                    Color32::from_rgb(240, 190, 80),
+                    "BlackHole 2ch isn't installed, so the demo track is playing.",
+                );
                 if ui.link("How to set up BlackHole (like cava)").clicked() {
-                    act.open_url = Some("https://github.com/ExistentialAudio/BlackHole/wiki/Multi-Output-Device".into());
+                    act.open_url =
+                        Some("https://github.com/ExistentialAudio/BlackHole/wiki/Multi-Output-Device".into());
                 }
             } else {
                 ui.label("Playing the built-in demo track.");
@@ -504,17 +529,16 @@ fn audio_tab(ui: &mut egui::Ui, s: &mut Settings, info: &UiInfo, act: &mut UiAct
         for (i, name) in ["Kick", "Snare", "Hat"].iter().enumerate() {
             let v = a.onset[i];
             let (r, _) = ui.allocate_exact_size(Vec2::splat(12.0), Sense::hover());
-            ui.painter().circle_filled(r.center(), 5.5, Color32::from_rgb(40, 40, 50).lerp_to_gamma(Color32::from_rgb(255, 120, 200), v));
+            ui.painter().circle_filled(
+                r.center(),
+                5.5,
+                Color32::from_rgb(40, 40, 50).lerp_to_gamma(Color32::from_rgb(255, 120, 200), v),
+            );
             ui.label(RichText::new(*name).small());
         }
         ui.label(
-            RichText::new(format!(
-                "{:.0} BPM · {} · {:.0} dB",
-                a.bpm,
-                NOTE_NAMES[a.note as usize % 12],
-                a.rms_db
-            ))
-            .small(),
+            RichText::new(format!("{:.0} BPM · {} · {:.0} dB", a.bpm, NOTE_NAMES[a.note as usize % 12], a.rms_db))
+                .small(),
         );
     });
     meter_bars(ui, &a.bands, 28.0, |_, v| Color32::from_rgb(90, (140.0 + 100.0 * v) as u8, 255));
@@ -563,7 +587,11 @@ fn audio_tab(ui: &mut egui::Ui, s: &mut Settings, info: &UiInfo, act: &mut UiAct
             act.changed = true;
         }
         ui.horizontal(|ui| {
-            if ui.add_enabled(info.cava_config_found, egui::Button::new("Import my cava config")).on_hover_text("Reads ~/.config/cava/config: source, these settings and your colours").clicked() {
+            if ui
+                .add_enabled(info.cava_config_found, egui::Button::new("Import my cava config"))
+                .on_hover_text("Reads ~/.config/cava/config: source, these settings and your colours")
+                .clicked()
+            {
                 act.import_cava = true;
             }
             if ui.button("cava defaults").clicked() {
@@ -665,11 +693,14 @@ fn display_tab(ui: &mut egui::Ui, s: &mut Settings, info: &UiInfo, act: &mut UiA
         .small()
         .weak(),
     );
-    if info.hdr_available {
-        if ui.checkbox(&mut s.hdr, "HDR (extended dynamic range)").on_hover_text("Highlights brighter than white on XDR / HDR displays").changed() {
-            act.window_changed = true;
-            act.changed = true;
-        }
+    if info.hdr_available
+        && ui
+            .checkbox(&mut s.hdr, "HDR (extended dynamic range)")
+            .on_hover_text("Highlights brighter than white on XDR / HDR displays")
+            .changed()
+    {
+        act.window_changed = true;
+        act.changed = true;
     }
     if ui.checkbox(&mut s.show_hud, "Show info overlay (I)").changed() {
         act.changed = true;
@@ -750,7 +781,13 @@ fn about_tab(ui: &mut egui::Ui, info: &UiInfo, act: &mut UiActions) {
         }
     }
     ui.horizontal(|ui| {
-        if ui.add_enabled(!matches!(info.update, UpdateState::Disabled | UpdateState::Checking | UpdateState::Downloading { .. }), egui::Button::new("Check now")).clicked() {
+        if ui
+            .add_enabled(
+                !matches!(info.update, UpdateState::Disabled | UpdateState::Checking | UpdateState::Downloading { .. }),
+                egui::Button::new("Check now"),
+            )
+            .clicked()
+        {
             act.check_updates = true;
         }
         let mut auto = info.auto_update;
@@ -771,12 +808,16 @@ fn about_tab(ui: &mut egui::Ui, info: &UiInfo, act: &mut UiActions) {
 }
 
 fn notes_box(ui: &mut egui::Ui, notes: &str) {
-    egui::Frame::new().fill(Color32::from_black_alpha(80)).corner_radius(CornerRadius::same(6)).inner_margin(egui::Margin::same(8)).show(ui, |ui| {
-        ui.label(RichText::new("What's new").small().strong());
-        for line in notes.lines().take(12) {
-            ui.label(RichText::new(line).small());
-        }
-    });
+    egui::Frame::new()
+        .fill(Color32::from_black_alpha(80))
+        .corner_radius(CornerRadius::same(6))
+        .inner_margin(egui::Margin::same(8))
+        .show(ui, |ui| {
+            ui.label(RichText::new("What's new").small().strong());
+            for line in notes.lines().take(12) {
+                ui.label(RichText::new(line).small());
+            }
+        });
 }
 
 // ---------------------------------------------------------------- welcome & toasts
@@ -825,20 +866,28 @@ fn draw_toasts(ctx: &egui::Context, st: &mut UiState, s: &Settings, info: &UiInf
     let _ = s;
     egui::Area::new(egui::Id::unique("toasts")).anchor(Align2::CENTER_TOP, [0.0, 16.0]).show(ctx, |ui| {
         for (msg, _) in &st.toasts {
-            egui::Frame::new().fill(Color32::from_rgba_unmultiplied(20, 20, 30, 230)).corner_radius(CornerRadius::same(10)).inner_margin(egui::Margin::symmetric(14, 8)).show(ui, |ui| {
-                ui.label(RichText::new(msg).strong());
-            });
+            egui::Frame::new()
+                .fill(Color32::from_rgba_unmultiplied(20, 20, 30, 230))
+                .corner_radius(CornerRadius::same(10))
+                .inner_margin(egui::Margin::symmetric(14, 8))
+                .show(ui, |ui| {
+                    ui.label(RichText::new(msg).strong());
+                });
             ui.add_space(4.0);
         }
         if let UpdateState::Ready { version, .. } = &info.update {
-            egui::Frame::new().fill(Color32::from_rgba_unmultiplied(20, 20, 30, 230)).corner_radius(CornerRadius::same(10)).inner_margin(egui::Margin::symmetric(14, 8)).show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label(RichText::new(format!("Cymatica {version} is ready")).strong());
-                    if ui.button("Restart now").clicked() {
-                        act.install_update = true;
-                    }
+            egui::Frame::new()
+                .fill(Color32::from_rgba_unmultiplied(20, 20, 30, 230))
+                .corner_radius(CornerRadius::same(10))
+                .inner_margin(egui::Margin::symmetric(14, 8))
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new(format!("Cymatica {version} is ready")).strong());
+                        if ui.button("Restart now").clicked() {
+                            act.install_update = true;
+                        }
+                    });
                 });
-            });
         }
     });
 }
@@ -849,25 +898,36 @@ pub fn draw_hud(ctx: &egui::Context, s: &Settings, info: &UiInfo) {
         return;
     }
     let a = info.audio;
-    egui::Area::new(egui::Id::unique("hud")).anchor(Align2::LEFT_TOP, [12.0, 12.0]).interactable(false).show(ctx, |ui| {
-        egui::Frame::new().fill(Color32::from_black_alpha(140)).corner_radius(CornerRadius::same(8)).inner_margin(egui::Margin::same(8)).show(ui, |ui| {
-            let scene = cymatica_engine::scene::scene_info(&s.scene).map(|i| i.name).unwrap_or("");
-            ui.label(RichText::new(format!("{scene} · {}", s.current_theme().name)).strong());
-            ui.label(RichText::new(format!("{:.0} fps · {}×{}", info.fps, info.render_size.0, info.render_size.1)).monospace().small());
-            ui.label(
-                RichText::new(format!(
-                    "{:.0} BPM · {} · bass {:.2} · loud {:.2}",
-                    a.bpm,
-                    NOTE_NAMES[a.note as usize % 12],
-                    a.bass,
-                    a.loudness
-                ))
-                .monospace()
-                .small(),
-            );
-            if info.frozen {
-                ui.label(RichText::new("frozen (space)").small());
-            }
-        });
-    });
+    egui::Area::new(egui::Id::unique("hud")).anchor(Align2::LEFT_TOP, [12.0, 12.0]).interactable(false).show(
+        ctx,
+        |ui| {
+            egui::Frame::new()
+                .fill(Color32::from_black_alpha(140))
+                .corner_radius(CornerRadius::same(8))
+                .inner_margin(egui::Margin::same(8))
+                .show(ui, |ui| {
+                    let scene = cymatica_engine::scene::scene_info(&s.scene).map(|i| i.name).unwrap_or("");
+                    ui.label(RichText::new(format!("{scene} · {}", s.current_theme().name)).strong());
+                    ui.label(
+                        RichText::new(format!("{:.0} fps · {}×{}", info.fps, info.render_size.0, info.render_size.1))
+                            .monospace()
+                            .small(),
+                    );
+                    ui.label(
+                        RichText::new(format!(
+                            "{:.0} BPM · {} · bass {:.2} · loud {:.2}",
+                            a.bpm,
+                            NOTE_NAMES[a.note as usize % 12],
+                            a.bass,
+                            a.loudness
+                        ))
+                        .monospace()
+                        .small(),
+                    );
+                    if info.frozen {
+                        ui.label(RichText::new("frozen (space)").small());
+                    }
+                });
+        },
+    );
 }

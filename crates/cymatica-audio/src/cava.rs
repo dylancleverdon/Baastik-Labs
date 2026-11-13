@@ -4,6 +4,9 @@
 //! The arithmetic deliberately mirrors C's mixed float/double/int semantics so the bars match cava's
 //! (see `tests/cava_golden.rs`, which compares against the real C code).
 
+// Kept index-for-index with cavacore.c so it can be compared line by line.
+#![allow(clippy::needless_range_loop)]
+
 use realfft::num_complex::Complex;
 use realfft::{RealFftPlanner, RealToComplex};
 use std::f64::consts::PI;
@@ -82,9 +85,7 @@ impl CavaPlan {
         scaling: Scaling,
     ) -> Result<Self, CavaInitError> {
         if !(1..=2).contains(&channels) {
-            return Err(CavaInitError(format!(
-                "illegal number of channels: {channels}, supported are 1 and 2"
-            )));
+            return Err(CavaInitError(format!("illegal number of channels: {channels}, supported are 1 and 2")));
         }
         if rate < 1 {
             return Err(CavaInitError(format!("illegal sample rate: {rate}")));
@@ -121,9 +122,7 @@ impl CavaPlan {
             return Err(CavaInitError("high_cut_off must be a higher than low_cut_off".into()));
         }
         if high_cut_off as u32 > rate / 2 {
-            return Err(CavaInitError(
-                "high_cut_off can't be higher than sample rate / 2 (Nyquist)".into(),
-            ));
+            return Err(CavaInitError("high_cut_off can't be higher than sample rate / 2 (Nyquist)".into()));
         }
 
         let fft_bass_size = fft_buffer_size * 2;
@@ -134,16 +133,13 @@ impl CavaPlan {
         let bass_multiplier = (0..fft_bass_size)
             .map(|i| 0.5 * (1.0 - (2.0 * PI * i as f64 / (fft_bass_size - 1) as f64).cos()))
             .collect();
-        let multiplier = (0..fft_size)
-            .map(|i| 0.5 * (1.0 - (2.0 * PI * i as f64 / (fft_size - 1) as f64).cos()))
-            .collect();
+        let multiplier =
+            (0..fft_size).map(|i| 0.5 * (1.0 - (2.0 * PI * i as f64 / (fft_size - 1) as f64).cos())).collect();
 
         let mut planner = RealFftPlanner::<f64>::new();
         let fft_bass = planner.plan_fft_forward(fft_bass_size);
         let fft = planner.plan_fft_forward(fft_size);
-        let scratch_len = fft_bass
-            .get_scratch_len()
-            .max(fft.get_scratch_len());
+        let scratch_len = fft_bass.get_scratch_len().max(fft.get_scratch_len());
 
         let mut lower = vec![0i32; bars + 1];
         let mut upper = vec![0i32; bars + 1];
@@ -169,9 +165,8 @@ impl CavaPlan {
         let half = (fft_size / 2) as i32;
 
         for n in 0..bars + 1 {
-            let mut bar_distribution_coefficient = frequency_constant * -1.0;
-            bar_distribution_coefficient +=
-                ((n as f32 + 1.0) / (bars as f32 + 1.0)) as f64 * frequency_constant;
+            let mut bar_distribution_coefficient = -frequency_constant;
+            bar_distribution_coefficient += ((n as f32 + 1.0) / (bars as f32 + 1.0)) as f64 * frequency_constant;
             cof[n] = (upper_cut_off as f64 * 10f64.powf(bar_distribution_coefficient)) as f32;
 
             if n > 0 && cof[n - 1] >= cof[n] {
@@ -283,10 +278,7 @@ impl CavaPlan {
                 vec![Complex::new(0.0, 0.0); fft_bass_size / 2 + 1],
                 vec![Complex::new(0.0, 0.0); fft_bass_size / 2 + 1],
             ],
-            out_mid: [
-                vec![Complex::new(0.0, 0.0); fft_size / 2 + 1],
-                vec![Complex::new(0.0, 0.0); fft_size / 2 + 1],
-            ],
+            out_mid: [vec![Complex::new(0.0, 0.0); fft_size / 2 + 1], vec![Complex::new(0.0, 0.0); fft_size / 2 + 1]],
             fft_bass,
             fft,
             scratch: vec![Complex::new(0.0, 0.0); scratch_len],
@@ -348,16 +340,9 @@ impl CavaPlan {
         // process: execute FFT and sort frequency bands
         for ch in 0..self.audio_channels {
             // realfft consumes its input buffer, which is refilled every call above.
-            let _ = self.fft_bass.process_with_scratch(
-                &mut self.in_bass[ch],
-                &mut self.out_bass[ch],
-                &mut self.scratch,
-            );
-            let _ = self.fft.process_with_scratch(
-                &mut self.in_mid[ch],
-                &mut self.out_mid[ch],
-                &mut self.scratch,
-            );
+            let _ =
+                self.fft_bass.process_with_scratch(&mut self.in_bass[ch], &mut self.out_bass[ch], &mut self.scratch);
+            let _ = self.fft.process_with_scratch(&mut self.in_mid[ch], &mut self.out_mid[ch], &mut self.scratch);
         }
 
         let bars = self.number_of_bars;
@@ -419,7 +404,7 @@ impl CavaPlan {
             self.prev_out[n] = out[n];
 
             // integral
-            out[n] = self.mem[n] * self.noise_reduction / integral_mod + out[n];
+            out[n] += self.mem[n] * self.noise_reduction / integral_mod;
             self.mem[n] = out[n];
             if self.autosens != 0 && out[n] > 1.0 {
                 overshoot = true;
@@ -630,7 +615,11 @@ impl CavaBars {
                 let total = n * 2;
                 for k in 0..total {
                     self.bars[k] = if k < n {
-                        if rev { self.bars_left[k] } else { self.bars_left[n - k - 1] }
+                        if rev {
+                            self.bars_left[k]
+                        } else {
+                            self.bars_left[n - k - 1]
+                        }
                     } else if rev {
                         self.bars_right[total - k - 1]
                     } else {
@@ -693,12 +682,7 @@ mod tests {
             t += 400;
             cava.process(&chunk);
         }
-        let (argmax, _) = cava
-            .bars
-            .iter()
-            .enumerate()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-            .unwrap();
+        let (argmax, _) = cava.bars.iter().enumerate().max_by(|a, b| a.1.partial_cmp(b.1).unwrap()).unwrap();
         let cof = &cava.cut_off_frequency;
         assert!(
             cof[argmax] <= 1000.0 * 1.15 && cof[argmax + 1] >= 1000.0 * 0.85,

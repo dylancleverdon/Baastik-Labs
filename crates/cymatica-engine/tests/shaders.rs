@@ -14,15 +14,16 @@ fn every_shader_validates_and_translates_to_metal() {
                 continue;
             }
         };
-        let info = match naga::valid::Validator::new(naga::valid::ValidationFlags::all(), naga::valid::Capabilities::all())
-            .validate(&module)
-        {
-            Ok(i) => i,
-            Err(e) => {
-                failures.push(format!("{name}: validation error\n{}", e.emit_to_string(&src)));
-                continue;
-            }
-        };
+        let info =
+            match naga::valid::Validator::new(naga::valid::ValidationFlags::all(), naga::valid::Capabilities::all())
+                .validate(&module)
+            {
+                Ok(i) => i,
+                Err(e) => {
+                    failures.push(format!("{name}: validation error\n{}", e.emit_to_string(&src)));
+                    continue;
+                }
+            };
         let options = naga::back::msl::Options { lang_version: (2, 1), ..Default::default() };
         let pipeline_options = naga::back::msl::PipelineOptions::default();
         if let Err(e) = naga::back::msl::write_string(&module, &info, &options, &pipeline_options) {

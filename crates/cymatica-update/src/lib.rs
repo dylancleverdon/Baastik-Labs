@@ -454,7 +454,8 @@ mod tests {
         let mk = |dir: &Path, build: u64| {
             let c = dir.join("Cymatica.app/Contents");
             std::fs::create_dir_all(&c).unwrap();
-            std::fs::write(c.join("Info.plist"), format!("<key>CFBundleVersion</key><string>{build}</string>")).unwrap();
+            std::fs::write(c.join("Info.plist"), format!("<key>CFBundleVersion</key><string>{build}</string>"))
+                .unwrap();
             dir.join("Cymatica.app")
         };
         let target = paths.default_app();

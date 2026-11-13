@@ -6,8 +6,8 @@ use winit::window::Window;
 mod imp {
     use super::*;
     use objc2::rc::Retained;
-    use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
     use objc2_app_kit::{NSView, NSWindow, NSWindowCollectionBehavior};
+    use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
     fn ns_view(window: &Window) -> Option<&NSView> {
         let handle = window.window_handle().ok()?;
@@ -28,7 +28,8 @@ mod imp {
     pub fn set_wallpaper(window: &Window, on: bool) {
         let Some(w) = ns_window(window) else { return };
         if on {
-            let level = objc2_core_graphics::CGWindowLevelForKey(objc2_core_graphics::CGWindowLevelKey::DesktopWindowLevelKey);
+            let level =
+                objc2_core_graphics::CGWindowLevelForKey(objc2_core_graphics::CGWindowLevelKey::DesktopWindowLevelKey);
             w.setLevel(level as isize);
             w.setIgnoresMouseEvents(true);
             w.setCollectionBehavior(

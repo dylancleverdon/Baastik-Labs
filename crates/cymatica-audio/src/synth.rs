@@ -181,19 +181,19 @@ impl DemoSynth {
         let drums = section != Section::Breakdown;
         let full = matches!(section, Section::Groove | Section::Drop);
 
-        if drums && s16 % 4 == 0 {
+        if drums && s16.is_multiple_of(4) {
             self.kick = Voice { active: true, vel: 1.0, ..Default::default() };
             self.kick_phase = 0.0;
         }
         if full && (s16 == 4 || s16 == 12) {
             self.snare = Voice { active: true, vel: 0.9, ..Default::default() };
         }
-        if drums && s16 % 2 == 0 {
+        if drums && s16.is_multiple_of(2) {
             self.hat = Voice { active: true, vel: if s16 % 4 == 2 { 0.9 } else { 0.45 }, ..Default::default() };
             self.hat_open = s16 % 4 == 2 && section == Section::Drop;
         }
         // bass: 8ths with octave jumps
-        if section != Section::Breakdown && s16 % 2 == 0 {
+        if section != Section::Breakdown && s16.is_multiple_of(2) {
             let oct = if s16 % 4 == 2 { 12 } else { 0 };
             self.bass = Voice {
                 active: true,
@@ -231,7 +231,8 @@ impl DemoSynth {
         if section == Section::Drop {
             let m = MELODY[(step % 32) as usize];
             if m >= 0 {
-                self.lead = Voice { active: true, note: m as f32, vel: 0.8, phase: self.lead.phase, ..Default::default() };
+                self.lead =
+                    Voice { active: true, note: m as f32, vel: 0.8, phase: self.lead.phase, ..Default::default() };
             }
         }
         let _ = (bar_in_section, section_len);

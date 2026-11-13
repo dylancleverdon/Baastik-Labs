@@ -40,7 +40,7 @@ impl Lcg {
 /// Must match `golden_frame` in tools/cava-golden/harness.c.
 fn golden_frame(rng: &mut Lcg, n: u32, channels: usize, out: &mut Vec<f64>) {
     let saw = ((n % 436) * 16000 / 436) as i32 - 8000;
-    let sq = if (n / 27) % 2 == 0 { 3000 } else { -3000 };
+    let sq = if (n / 27).is_multiple_of(2) { 3000 } else { -3000 };
     let noise = ((rng.next() >> 16) & 0x7fff) as i32 - 16384;
     let k = n % 24000;
     let mut kick = 0i32;
@@ -80,8 +80,7 @@ fn matches_cava_c_implementation() {
         let high = r.i32();
         let scaling = if r.u32() == 0 { Scaling::Linear } else { Scaling::Decibel };
         let frames = r.u32();
-        let mut plan =
-            CavaPlan::new(bars, rate, channels, autosens, nr, low, high, scaling).unwrap();
+        let mut plan = CavaPlan::new(bars, rate, channels, autosens, nr, low, high, scaling).unwrap();
 
         assert_eq!(plan.bass_cut_off_bar as u32, r.u32(), "config {c}: bass_cut_off_bar");
         for i in 0..=bars {
@@ -111,10 +110,7 @@ fn matches_cava_c_implementation() {
                 let want = r.f32() as f64;
                 let err = (got - want).abs() / want.abs().max(1e-3);
                 worst = worst.max(err);
-                assert!(
-                    err < 2e-4,
-                    "config {c} frame {fr} bar {i}: rust {got} vs cava {want} (rel err {err})"
-                );
+                assert!(err < 2e-4, "config {c} frame {fr} bar {i}: rust {got} vs cava {want} (rel err {err})");
             }
         }
     }

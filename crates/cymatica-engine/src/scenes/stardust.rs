@@ -17,11 +17,26 @@ pub static PARAMS: &[ParamDef] = &[
     float("damping", "Drag", "Galaxy", 0.0, 1.0, 0.15, "Slows everything down."),
     float("size", "Star size", "Look", 0.2, 3.0, 1.0, "Size of each star."),
     float("brightness", "Brightness", "Look", 0.1, 3.0, 1.0, "Overall star brightness."),
-    choice("color_by", "Colour by", "Look", &[("speed", "Speed"), ("star", "Each star"), ("radius", "Distance")], "speed", "How stars get their colour."),
+    choice(
+        "color_by",
+        "Colour by",
+        "Look",
+        &[("speed", "Speed"), ("star", "Each star"), ("radius", "Distance")],
+        "speed",
+        "How stars get their colour.",
+    ),
     float("orbit", "Camera orbit", "Camera", -1.0, 1.0, 0.15, "Circles the galaxy."),
     float("height", "Camera height", "Camera", 0.0, 1.0, 0.35, "Edge-on (0) to top-down (1)."),
     float("zoom", "Zoom", "Camera", 0.0, 1.0, 0.45, "Closer or further."),
-    choice("quality", "Stars", "Quality", &[("low", "250k"), ("medium", "1M"), ("high", "2M"), ("insane", "4M")], "medium", "Number of stars.").fixed(),
+    choice(
+        "quality",
+        "Stars",
+        "Quality",
+        &[("low", "250k"), ("medium", "1M"), ("high", "2M"), ("insane", "4M")],
+        "medium",
+        "Number of stars.",
+    )
+    .fixed(),
 ];
 
 #[repr(C)]
@@ -62,8 +77,14 @@ pub struct Stardust {
 
 pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     let common = include_str!("../shaders/scenes/stardust_common.wgsl");
-    let sim = gpu.shader("stardust-sim", scene_source(&format!("{common}\n{}", include_str!("../shaders/scenes/stardust_sim.wgsl"))));
-    let draw = gpu.shader("stardust-draw", scene_source(&format!("{common}\n{}", include_str!("../shaders/scenes/stardust_draw.wgsl"))));
+    let sim = gpu.shader(
+        "stardust-sim",
+        scene_source(&format!("{common}\n{}", include_str!("../shaders/scenes/stardust_sim.wgsl"))),
+    );
+    let draw = gpu.shader(
+        "stardust-draw",
+        scene_source(&format!("{common}\n{}", include_str!("../shaders/scenes/stardust_draw.wgsl"))),
+    );
     let sim_layout = gpu.layout("stardust-sim", &[Bind::Uniform, Bind::StorageRw]);
     let draw_layout = gpu.layout("stardust-draw", &[Bind::Uniform, Bind::StorageRead]);
     let spl = gpu.pipeline_layout("stardust-sim", &[&globals.layout, &sim_layout]);
@@ -71,7 +92,16 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     Box::new(Stardust {
         cs: gpu.compute_pipeline("stardust", &sim, "cs_stars", &spl),
         p_space: gpu.fullscreen_pipeline("stardust-space", &draw, "fs_space", &dpl, HDR_FORMAT, None),
-        p_star: gpu.render_pipeline("stardust-star", &draw, "vs_star", "fs_star", &dpl, HDR_FORMAT, Some(gpu::ADDITIVE), wgpu::PrimitiveTopology::TriangleList),
+        p_star: gpu.render_pipeline(
+            "stardust-star",
+            &draw,
+            "vs_star",
+            "fs_star",
+            &dpl,
+            HDR_FORMAT,
+            Some(gpu::ADDITIVE),
+            wgpu::PrimitiveTopology::TriangleList,
+        ),
         uniform: gpu.uniform_buffer("stardust-u", std::mem::size_of::<StarUniform>() as u64),
         sim_layout,
         draw_layout,
@@ -120,8 +150,16 @@ impl Scene for Stardust {
             let n: u32 = [250_000, 1_000_000, 2_000_000, 4_000_000][q.min(3)];
             let buf = gpu.storage_buffer("stardust-stars", n as u64 * 32);
             gpu.queue.write_buffer(&buf, 0, bytemuck::cast_slice(&initial_stars(n)));
-            let sbg = gpu.bind_group("stardust-sim", &self.sim_layout, &[self.uniform.as_entire_binding(), buf.as_entire_binding()]);
-            let dbg = gpu.bind_group("stardust-draw", &self.draw_layout, &[self.uniform.as_entire_binding(), buf.as_entire_binding()]);
+            let sbg = gpu.bind_group(
+                "stardust-sim",
+                &self.sim_layout,
+                &[self.uniform.as_entire_binding(), buf.as_entire_binding()],
+            );
+            let dbg = gpu.bind_group(
+                "stardust-draw",
+                &self.draw_layout,
+                &[self.uniform.as_entire_binding(), buf.as_entire_binding()],
+            );
             self.stars = Some((q, n, buf, sbg, dbg));
         }
         let dt = ctx.info.dt.clamp(0.0, 0.1);
@@ -174,7 +212,9 @@ impl Scene for Stardust {
         };
         gpu.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&u));
         {
-            let mut cp = ctx.encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("stardust"), timestamp_writes: None });
+            let mut cp = ctx
+                .encoder
+                .begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("stardust"), timestamp_writes: None });
             cp.set_pipeline(&self.cs);
             cp.set_bind_group(0, &ctx.globals.bind_group, &[]);
             cp.set_bind_group(1, sbg, &[]);

@@ -21,7 +21,15 @@ pub static PARAMS: &[ParamDef] = &[
     float("orbit", "Camera orbit", "Camera", -1.0, 1.0, 0.1, "Circles the dish."),
     float("height", "Camera height", "Camera", 0.0, 1.0, 0.4, "Low or high viewpoint."),
     float("zoom", "Zoom", "Camera", 0.0, 1.0, 0.5, "Closer or further."),
-    choice("quality", "Mesh detail", "Quality", &[("low", "Low"), ("medium", "Medium"), ("high", "High"), ("insane", "Insane")], "high", "Surface mesh resolution.").fixed(),
+    choice(
+        "quality",
+        "Mesh detail",
+        "Quality",
+        &[("low", "Low"), ("medium", "Medium"), ("high", "High"), ("insane", "Insane")],
+        "high",
+        "Surface mesh resolution.",
+    )
+    .fixed(),
 ];
 
 #[repr(C)]
@@ -65,7 +73,12 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     let p_mesh = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("ferro-mesh"),
         layout: Some(&pl),
-        vertex: wgpu::VertexState { module: &module, entry_point: Some("vs_mesh"), compilation_options: Default::default(), buffers: &[] },
+        vertex: wgpu::VertexState {
+            module: &module,
+            entry_point: Some("vs_mesh"),
+            compilation_options: Default::default(),
+            buffers: &[],
+        },
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
@@ -79,7 +92,11 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
             module: &module,
             entry_point: Some("fs_mesh"),
             compilation_options: Default::default(),
-            targets: &[Some(wgpu::ColorTargetState { format: HDR_FORMAT, blend: None, write_mask: wgpu::ColorWrites::ALL })],
+            targets: &[Some(wgpu::ColorTargetState {
+                format: HDR_FORMAT,
+                blend: None,
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
         }),
         multiview_mask: None,
         cache: None,
@@ -114,7 +131,12 @@ impl Scene for Ferro {
         let a = &ctx.info.audio;
         let dt = ctx.info.dt.clamp(0.0, 0.05);
         if self.depth.as_ref().map(|d| d.0) != Some(ctx.size) {
-            let t = gpu.texture("ferro-depth", ctx.size, wgpu::TextureFormat::Depth32Float, wgpu::TextureUsages::RENDER_ATTACHMENT);
+            let t = gpu.texture(
+                "ferro-depth",
+                ctx.size,
+                wgpu::TextureFormat::Depth32Float,
+                wgpu::TextureUsages::RENDER_ATTACHMENT,
+            );
             let v = t.create_view(&Default::default());
             self.depth = Some((ctx.size, t, v));
         }
@@ -138,7 +160,7 @@ impl Scene for Ferro {
                 let z = (j as f32 - (rows - 1) as f32 * 0.5) * spacing * 0.866;
                 let r = (x * x + z * z).sqrt() / radius;
                 let band = ((r * 6.0) as usize).min(6);
-                let wobble = 0.75 + 0.25 * (t * 2.0 + self.phase[idx] * 6.283).sin();
+                let wobble = 0.75 + 0.25 * (t * 2.0 + self.phase[idx] * std::f32::consts::TAU).sin();
                 let target = gain * (0.08 + a.bands[band] * wobble) * (1.0 - r * 0.35).max(0.0);
                 let acc = k * (target - self.heights[idx]) - c * self.vels[idx];
                 self.vels[idx] += acc * dt;
@@ -173,7 +195,14 @@ impl Scene for Ferro {
         };
         gpu.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&u));
         let globals = &ctx.globals.bind_group;
-        gpu::fullscreen(ctx.encoder, "ferro-room", ctx.target, &self.p_room, &[globals, &self.bg], Some(wgpu::Color::BLACK));
+        gpu::fullscreen(
+            ctx.encoder,
+            "ferro-room",
+            ctx.target,
+            &self.p_room,
+            &[globals, &self.bg],
+            Some(wgpu::Color::BLACK),
+        );
         let depth = &self.depth.as_ref().unwrap().2;
         let mut rp = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("ferro-mesh"),

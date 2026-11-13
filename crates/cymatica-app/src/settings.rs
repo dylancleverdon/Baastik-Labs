@@ -33,7 +33,14 @@ pub struct Autopilot {
 
 impl Default for Autopilot {
     fn default() -> Self {
-        Self { enabled: false, every_bars: 16, change_scene: true, change_theme: true, change_preset: true, on_song_change: true }
+        Self {
+            enabled: false,
+            every_bars: 16,
+            change_scene: true,
+            change_theme: true,
+            change_preset: true,
+            on_song_change: true,
+        }
     }
 }
 

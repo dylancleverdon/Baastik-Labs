@@ -8,8 +8,28 @@ use crate::scene::{scene_source, Scene, SceneCtx};
 use bytemuck::{Pod, Zeroable};
 
 pub static PARAMS: &[ParamDef] = &[
-    choice("mode", "Display", "Scope", &[("xy", "Lissajous (X/Y)"), ("gonio", "Goniometer"), ("scope", "Waveform"), ("polar", "Polar")], "xy", "How the stereo signal is drawn."),
-    choice("phosphor", "Phosphor", "Scope", &[("green", "P1 green"), ("amber", "P3 amber"), ("blue", "P11 blue"), ("white", "P4 white"), ("theme", "Theme colours")], "green", "The tube's phosphor colour."),
+    choice(
+        "mode",
+        "Display",
+        "Scope",
+        &[("xy", "Lissajous (X/Y)"), ("gonio", "Goniometer"), ("scope", "Waveform"), ("polar", "Polar")],
+        "xy",
+        "How the stereo signal is drawn.",
+    ),
+    choice(
+        "phosphor",
+        "Phosphor",
+        "Scope",
+        &[
+            ("green", "P1 green"),
+            ("amber", "P3 amber"),
+            ("blue", "P11 blue"),
+            ("white", "P4 white"),
+            ("theme", "Theme colours"),
+        ],
+        "green",
+        "The tube's phosphor colour.",
+    ),
     float("gain", "Zoom", "Scope", 0.2, 4.0, 1.2, "Signal size."),
     toggle("auto_gain", "Auto zoom", "Scope", true, "Keep the trace filling the screen."),
     float("persistence", "Persistence", "Tube", 0.0, 0.98, 0.82, "How long the phosphor keeps glowing."),
@@ -38,6 +58,9 @@ struct PhUniform {
 
 type Tex = (wgpu::Texture, wgpu::TextureView);
 
+/// (size, ping-pong persistence textures, their bind groups)
+type Targets = ((u32, u32), [Tex; 2], [wgpu::BindGroup; 2]);
+
 pub struct Phosphor {
     layout: wgpu::BindGroupLayout,
     uniform: wgpu::Buffer,
@@ -45,7 +68,7 @@ pub struct Phosphor {
     p_decay: wgpu::RenderPipeline,
     p_beam: wgpu::RenderPipeline,
     p_screen: wgpu::RenderPipeline,
-    tex: Option<((u32, u32), [Tex; 2], [wgpu::BindGroup; 2])>,
+    tex: Option<Targets>,
     cur: usize,
     auto_gain: f32,
 }
@@ -56,7 +79,16 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     let pl = gpu.pipeline_layout("phosphor", &[&globals.layout, &layout]);
     Box::new(Phosphor {
         p_decay: gpu.fullscreen_pipeline("ph-decay", &module, "fs_decay", &pl, HDR_FORMAT, None),
-        p_beam: gpu.render_pipeline("ph-beam", &module, "vs_beam", "fs_beam", &pl, HDR_FORMAT, Some(gpu::ADDITIVE), wgpu::PrimitiveTopology::TriangleList),
+        p_beam: gpu.render_pipeline(
+            "ph-beam",
+            &module,
+            "vs_beam",
+            "fs_beam",
+            &pl,
+            HDR_FORMAT,
+            Some(gpu::ADDITIVE),
+            wgpu::PrimitiveTopology::TriangleList,
+        ),
         p_screen: gpu.fullscreen_pipeline("ph-screen", &module, "fs_screen", &pl, HDR_FORMAT, None),
         uniform: gpu.uniform_buffer("ph-u", std::mem::size_of::<PhUniform>() as u64),
         sampler: gpu.sampler(wgpu::FilterMode::Linear, wgpu::AddressMode::ClampToEdge),
@@ -83,7 +115,15 @@ impl Scene for Phosphor {
             };
             let t = [mk("ph-a"), mk("ph-b")];
             let bg = |v: &wgpu::TextureView| {
-                gpu.bind_group("phosphor", &self.layout, &[self.uniform.as_entire_binding(), wgpu::BindingResource::TextureView(v), wgpu::BindingResource::Sampler(&self.sampler)])
+                gpu.bind_group(
+                    "phosphor",
+                    &self.layout,
+                    &[
+                        self.uniform.as_entire_binding(),
+                        wgpu::BindingResource::TextureView(v),
+                        wgpu::BindingResource::Sampler(&self.sampler),
+                    ],
+                )
             };
             let groups = [bg(&t[0].1), bg(&t[1].1)];
             for x in &t {
@@ -145,7 +185,14 @@ impl Scene for Phosphor {
                 rp.draw(0..6, 0..(count.saturating_sub(1)) as u32);
             }
         }
-        gpu::fullscreen(ctx.encoder, "ph-screen", ctx.target, &self.p_screen, &[globals, &groups[dst]], Some(wgpu::Color::BLACK));
+        gpu::fullscreen(
+            ctx.encoder,
+            "ph-screen",
+            ctx.target,
+            &self.p_screen,
+            &[globals, &groups[dst]],
+            Some(wgpu::Color::BLACK),
+        );
         self.cur = dst;
     }
 }

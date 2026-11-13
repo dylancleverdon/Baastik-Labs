@@ -28,14 +28,15 @@ impl Gpu {
             .await
             .map_err(|e| anyhow!("no GPU adapter: {e}"))?;
         let adapter_limits = adapter.limits();
-        let mut limits = wgpu::Limits::default();
         // Big particle buffers: take what the adapter offers (Apple GPUs allow GBs).
-        limits.max_storage_buffer_binding_size = adapter_limits.max_storage_buffer_binding_size;
-        limits.max_buffer_size = adapter_limits.max_buffer_size;
-        limits.max_texture_dimension_2d = adapter_limits.max_texture_dimension_2d.min(16384);
-        limits.max_compute_workgroup_storage_size = adapter_limits.max_compute_workgroup_storage_size;
-        limits.max_storage_buffers_per_shader_stage =
-            adapter_limits.max_storage_buffers_per_shader_stage.min(16);
+        let limits = wgpu::Limits {
+            max_storage_buffer_binding_size: adapter_limits.max_storage_buffer_binding_size,
+            max_buffer_size: adapter_limits.max_buffer_size,
+            max_texture_dimension_2d: adapter_limits.max_texture_dimension_2d.min(16384),
+            max_compute_workgroup_storage_size: adapter_limits.max_compute_workgroup_storage_size,
+            max_storage_buffers_per_shader_stage: adapter_limits.max_storage_buffers_per_shader_stage.min(16),
+            ..wgpu::Limits::default()
+        };
         let features = adapter.features() & wgpu::Features::FLOAT32_FILTERABLE;
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
@@ -160,8 +161,7 @@ impl Gpu {
                 count: None,
             })
             .collect();
-        self.device
-            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some(label), entries: &entries })
+        self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some(label), entries: &entries })
     }
 
     pub fn pipeline_layout(&self, label: &str, groups: &[&wgpu::BindGroupLayout]) -> wgpu::PipelineLayout {
@@ -200,7 +200,16 @@ impl Gpu {
         format: wgpu::TextureFormat,
         blend: Option<wgpu::BlendState>,
     ) -> wgpu::RenderPipeline {
-        self.render_pipeline(label, module, "vs_fullscreen", fs_entry, layout, format, blend, wgpu::PrimitiveTopology::TriangleList)
+        self.render_pipeline(
+            label,
+            module,
+            "vs_fullscreen",
+            fs_entry,
+            layout,
+            format,
+            blend,
+            wgpu::PrimitiveTopology::TriangleList,
+        )
     }
 
     #[allow(clippy::too_many_arguments)]

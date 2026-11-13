@@ -74,7 +74,10 @@ pub fn run() -> anyhow::Result<()> {
         dirty_at: None,
         frozen: None,
         last_input: Instant::now(),
-        seed: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos() as u64).unwrap_or(7),
+        seed: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(7),
         preset_cursor: -1,
         autopilot: Autopilot::new(),
         cava_config_path,
@@ -90,11 +93,7 @@ fn pick_format(caps: &wgpu::SurfaceCapabilities, hdr: bool) -> wgpu::TextureForm
     if hdr && caps.formats.contains(&wgpu::TextureFormat::Rgba16Float) {
         return wgpu::TextureFormat::Rgba16Float;
     }
-    caps.formats
-        .iter()
-        .copied()
-        .find(|f| f.is_srgb())
-        .unwrap_or(caps.formats[0])
+    caps.formats.iter().copied().find(|f| f.is_srgb()).unwrap_or(caps.formats[0])
 }
 
 impl App {
@@ -223,7 +222,8 @@ impl App {
     }
 
     fn cycle_preset(&mut self, delta: i64) {
-        let scene_presets: Vec<Preset> = self.presets.iter().filter(|p| p.scene == self.settings.scene).cloned().collect();
+        let scene_presets: Vec<Preset> =
+            self.presets.iter().filter(|p| p.scene == self.settings.scene).cloned().collect();
         if scene_presets.is_empty() {
             return;
         }
@@ -332,11 +332,7 @@ impl App {
                 self.mark_dirty();
             }
             Key::Named(NamedKey::Space) => {
-                self.frozen = if self.frozen.is_some() {
-                    None
-                } else {
-                    Some(self.audio.frame_at(Duration::ZERO))
-                };
+                self.frozen = if self.frozen.is_some() { None } else { Some(self.audio.frame_at(Duration::ZERO)) };
             }
             Key::Named(NamedKey::Escape) => {
                 if self.settings.window_mode != WindowMode::Window {

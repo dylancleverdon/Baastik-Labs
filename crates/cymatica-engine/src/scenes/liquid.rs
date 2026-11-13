@@ -17,7 +17,14 @@ pub static PARAMS: &[ParamDef] = &[
     float("geyser", "Kick geysers", "Music", 0.0, 1.0, 0.7, "Kicks fire jets from the subwoofer in the floor."),
     float("whirlpool", "Mid whirlpool", "Music", 0.0, 1.0, 0.35, "Mids stir the liquid around."),
     float("waves", "Wave machine", "Music", 0.0, 1.0, 0.35, "A paddle pushes waves on the beat."),
-    choice("color_mode", "Colour", "Look", &[("theme", "Theme colour"), ("rainbow", "Rainbow dye"), ("depth", "By depth")], "rainbow", "How the liquid is coloured."),
+    choice(
+        "color_mode",
+        "Colour",
+        "Look",
+        &[("theme", "Theme colour"), ("rainbow", "Rainbow dye"), ("depth", "By depth")],
+        "rainbow",
+        "How the liquid is coloured.",
+    ),
     float("tint", "Tint", "Look", 0.0, 1.0, 0.25, "Which theme colour (for Theme colour)."),
     float("clarity", "Clarity", "Look", 0.0, 1.0, 0.55, "Clear (1) or deeply coloured (0)."),
     float("refraction", "Refraction", "Look", 0.0, 1.0, 0.6, "How much the liquid bends the light."),
@@ -28,7 +35,15 @@ pub static PARAMS: &[ParamDef] = &[
     float("orbit", "Camera orbit", "Camera", -1.0, 1.0, 0.12, "Circles the tank."),
     float("height", "Camera height", "Camera", 0.0, 1.0, 0.45, "Low or high viewpoint."),
     float("zoom", "Zoom", "Camera", 0.0, 1.0, 0.5, "Closer or further."),
-    choice("quality", "Particles", "Quality", &[("low", "30k"), ("medium", "60k"), ("high", "120k"), ("insane", "250k")], "high", "Number of fluid particles.").fixed(),
+    choice(
+        "quality",
+        "Particles",
+        "Quality",
+        &[("low", "30k"), ("medium", "60k"), ("high", "120k"), ("insane", "250k")],
+        "high",
+        "Number of fluid particles.",
+    )
+    .fixed(),
 ];
 
 #[repr(C)]
@@ -156,6 +171,7 @@ pub struct Liquid {
 const R32: wgpu::TextureFormat = wgpu::TextureFormat::R32Float;
 const RGBA16: wgpu::TextureFormat = wgpu::TextureFormat::Rgba16Float;
 
+#[allow(clippy::too_many_arguments)]
 fn sphere_pipeline(
     gpu: &Gpu,
     label: &str,
@@ -170,7 +186,12 @@ fn sphere_pipeline(
     gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some(label),
         layout: Some(layout),
-        vertex: wgpu::VertexState { module, entry_point: Some(vs), compilation_options: Default::default(), buffers: &[] },
+        vertex: wgpu::VertexState {
+            module,
+            entry_point: Some(vs),
+            compilation_options: Default::default(),
+            buffers: &[],
+        },
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: depth.then(|| wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
@@ -197,7 +218,13 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
     let sim_layout = gpu.layout("liquid-sim", &[Bind::Uniform, Bind::StorageRw, Bind::StorageRw, Bind::StorageRw]);
     let draw_layout = gpu.layout(
         "liquid-draw",
-        &[Bind::Uniform, Bind::StorageRead, Bind::TextureUnfilterable, Bind::TextureUnfilterable, Bind::TextureUnfilterable],
+        &[
+            Bind::Uniform,
+            Bind::StorageRead,
+            Bind::TextureUnfilterable,
+            Bind::TextureUnfilterable,
+            Bind::TextureUnfilterable,
+        ],
     );
     let sim_pl = gpu.pipeline_layout("liquid-sim", &[&globals.layout, &sim_layout]);
     let draw_pl = gpu.pipeline_layout("liquid-draw", &[&globals.layout, &draw_layout]);
@@ -212,10 +239,30 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
         cs_g2p: cp("cs_g2p"),
         p_bg: gpu.fullscreen_pipeline("liquid-bg", &draw_mod, "fs_background", &draw_pl, HDR_FORMAT, None),
         p_depth: sphere_pipeline(gpu, "liquid-depth", &draw_mod, "vs_sphere", "fs_depth", &draw_pl, R32, None, true),
-        p_thick: sphere_pipeline(gpu, "liquid-thick", &draw_mod, "vs_sphere", "fs_thickness", &draw_pl, RGBA16, Some(gpu::ADDITIVE), false),
+        p_thick: sphere_pipeline(
+            gpu,
+            "liquid-thick",
+            &draw_mod,
+            "vs_sphere",
+            "fs_thickness",
+            &draw_pl,
+            RGBA16,
+            Some(gpu::ADDITIVE),
+            false,
+        ),
         p_blur: gpu.fullscreen_pipeline("liquid-blur", &draw_mod, "fs_blur", &draw_pl, R32, None),
         p_comp: gpu.fullscreen_pipeline("liquid-comp", &draw_mod, "fs_composite", &draw_pl, HDR_FORMAT, None),
-        p_foam: sphere_pipeline(gpu, "liquid-foam", &draw_mod, "vs_foam", "fs_foam", &draw_pl, HDR_FORMAT, Some(gpu::ADDITIVE), false),
+        p_foam: sphere_pipeline(
+            gpu,
+            "liquid-foam",
+            &draw_mod,
+            "vs_foam",
+            "fs_foam",
+            &draw_pl,
+            HDR_FORMAT,
+            Some(gpu::ADDITIVE),
+            false,
+        ),
         sim_u: gpu.uniform_buffer("liquid-sim-u", std::mem::size_of::<SimUniform>() as u64),
         draw_u: gpu.uniform_buffer("liquid-draw-u", du),
         draw_u_h: gpu.uniform_buffer("liquid-draw-u-h", du),
@@ -259,13 +306,7 @@ impl Liquid {
                 2.0 + (iy as f32 + 0.5 + (rand() - 0.5) * 0.3) * spacing,
                 2.0 + (iz as f32 + 0.5 + (rand() - 0.5) * 0.3) * spacing,
             ];
-            parts.push(Particle {
-                pos,
-                dye: ix as f32 / nx as f32,
-                vel: [0.0; 3],
-                speed: 0.0,
-                c: [[0.0; 4]; 3],
-            });
+            parts.push(Particle { pos, dye: ix as f32 / nx as f32, vel: [0.0; 3], speed: 0.0, c: [[0.0; 4]; 3] });
         }
         let particles = gpu.storage_buffer("liquid-particles", (n as u64) * 80);
         gpu.queue.write_buffer(&particles, 0, bytemuck::cast_slice(&parts));
@@ -275,7 +316,12 @@ impl Liquid {
         let sim_bg = gpu.bind_group(
             "liquid-sim",
             &self.sim_layout,
-            &[self.sim_u.as_entire_binding(), particles.as_entire_binding(), cells.as_entire_binding(), grid_v.as_entire_binding()],
+            &[
+                self.sim_u.as_entire_binding(),
+                particles.as_entire_binding(),
+                cells.as_entire_binding(),
+                grid_v.as_entire_binding(),
+            ],
         );
         let ppc = 1.0 / (spacing * spacing * spacing);
         Sim {
@@ -302,7 +348,8 @@ impl Liquid {
         let depth_a = tex("liquid-depth-a", fluid, R32);
         let depth_b = tex("liquid-depth-b", fluid, R32);
         let thick = tex("liquid-thick", fluid, RGBA16);
-        let zt = gpu.texture("liquid-z", fluid, wgpu::TextureFormat::Depth32Float, wgpu::TextureUsages::RENDER_ATTACHMENT);
+        let zt =
+            gpu.texture("liquid-z", fluid, wgpu::TextureFormat::Depth32Float, wgpu::TextureUsages::RENDER_ATTACHMENT);
         let zv = zt.create_view(&Default::default());
         let group = |u: &wgpu::Buffer, a: &wgpu::TextureView, b: &wgpu::TextureView, c: &wgpu::TextureView| {
             gpu.bind_group(
@@ -387,7 +434,9 @@ impl Scene for Liquid {
         let steps = ((dt * 120.0).round() as u32).clamp(1, 4);
         let ncells = gx * gy * gz;
         {
-            let mut cp = ctx.encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("liquid-sim"), timestamp_writes: None });
+            let mut cp = ctx
+                .encoder
+                .begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("liquid-sim"), timestamp_writes: None });
             cp.set_bind_group(0, &ctx.globals.bind_group, &[]);
             cp.set_bind_group(1, &sim.sim_bg, &[]);
             for _ in 0..steps {
@@ -457,7 +506,10 @@ impl Scene for Liquid {
                     view: &t.depth_a.1,
                     depth_slice: None,
                     resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 10000.0, g: 0.0, b: 0.0, a: 1.0 }), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color { r: 10000.0, g: 0.0, b: 0.0, a: 1.0 }),
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &t.zbuf.1,

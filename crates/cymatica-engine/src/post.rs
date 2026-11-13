@@ -14,7 +14,15 @@ pub static LOOK_PARAMS: &[ParamDef] = &[
     float("contrast", "Contrast", "Color", 0.5, 1.6, 1.0, "Tonal contrast."),
     float("hue_shift", "Hue shift", "Color", 0.0, 1.0, 0.0, "Rotates every colour around the wheel."),
     float("palette_speed", "Palette cycling", "Color", 0.0, 1.0, 0.0, "Slowly cycles the theme's colours."),
-    float("note_tint", "Synesthesia", "Color", 0.0, 1.0, 0.0, "Tints the picture with the colour of the note being played."),
+    float(
+        "note_tint",
+        "Synesthesia",
+        "Color",
+        0.0,
+        1.0,
+        0.0,
+        "Tints the picture with the colour of the note being played.",
+    ),
     choice(
         "note_colors",
         "Note colours",
@@ -146,9 +154,7 @@ impl Post {
         let uniform_bufs = (0..(2 * BLOOM_MIPS + 4))
             .map(|_| gpu.uniform_buffer("post-u", std::mem::size_of::<PostUniform>() as u64))
             .collect();
-        let dummy = gpu
-            .render_texture("dummy", (1, 1), HDR_FORMAT)
-            .create_view(&Default::default());
+        let dummy = gpu.render_texture("dummy", (1, 1), HDR_FORMAT).create_view(&Default::default());
         Self {
             layout,
             uniform_bufs,

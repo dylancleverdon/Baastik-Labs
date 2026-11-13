@@ -3,11 +3,13 @@
 use crate::scene::SceneInfo;
 
 pub mod bars;
+pub mod chladni;
 pub mod ink;
 pub mod liquid;
+pub mod phosphor;
 pub mod ripples;
 
-pub static ALL: [SceneInfo; 4] = [
+pub static ALL: [SceneInfo; 6] = [
     SceneInfo {
         id: "liquid",
         name: "Liquid",
@@ -36,6 +38,20 @@ pub static ALL: [SceneInfo; 4] = [
         params: ripples::PARAMS,
         create: ripples::create,
     },
+    SceneInfo {
+        id: "chladni",
+        name: "Chladni",
+        tagline: "Cymatics: sand on a vibrating plate draws the music's standing waves",
+        params: chladni::PARAMS,
+        create: chladni::create,
+    },
+    SceneInfo {
+        id: "phosphor",
+        name: "Phosphor",
+        tagline: "An oscilloscope drawn by a simulated CRT electron beam",
+        params: phosphor::PARAMS,
+        create: phosphor::create,
+    },
 ];
 
 /// Scene-specific WGSL (without the shared prelude), for validation.
@@ -48,5 +64,8 @@ pub fn shader_sources() -> Vec<(&'static str, String)> {
         ("ripples", include_str!("../shaders/scenes/ripples.wgsl").to_string()),
         ("liquid-sim", include_str!("../shaders/scenes/liquid_sim.wgsl").to_string()),
         ("liquid-draw", include_str!("../shaders/scenes/liquid_draw.wgsl").to_string()),
+        ("chladni-sim", format!("{}\n{}", include_str!("../shaders/scenes/chladni_common.wgsl"), include_str!("../shaders/scenes/chladni_sim.wgsl"))),
+        ("chladni-draw", format!("{}\n{}", include_str!("../shaders/scenes/chladni_common.wgsl"), include_str!("../shaders/scenes/chladni_draw.wgsl"))),
+        ("phosphor", include_str!("../shaders/scenes/phosphor.wgsl").to_string()),
     ]
 }

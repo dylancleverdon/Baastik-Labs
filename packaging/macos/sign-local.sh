@@ -9,9 +9,10 @@
 #   sign-local.sh requirement <app>      print the app's designated requirement
 #
 # Everything lives in CYMATICA_SUPPORT_DIR (default ~/Library/Application Support/Cymatica)/signing:
-# a dedicated keychain with a random password, so the login keychain isn't touched. The key is
-# imported with access for any app (-A) so no permission dialog can ever appear, and every
-# security/codesign call runs under a watchdog: if anything would hang, we fall back to ad-hoc.
+# a dedicated keychain with a random password, so the login keychain isn't touched, and it's only
+# in the keychain search list while codesign runs. The key is imported with access for any app (-A)
+# so no permission dialog can ever appear, and every security/codesign call runs under a watchdog:
+# if anything would hang, we fall back to ad-hoc.
 set -uo pipefail
 
 SUPPORT="${CYMATICA_SUPPORT_DIR:-$HOME/Library/Application Support/Cymatica}"
@@ -44,28 +45,37 @@ have_identity() {
   limited security find-identity -p codesigning "$KC" 2>>"$LOG" | grep -qi "$(cat "$IDFILE")"
 }
 
+# codesign finds the private key through the user's keychain search list, so ours is added just
+# for the codesign call and taken out again right after (also if anything fails, via the EXIT
+# trap): a locked keychain left in the list can make other apps ask for its password, which is
+# random and stored only in $PWFILE. Stale entries from earlier versions are dropped too.
+ORIGINAL_LIST=()
+LIST_CHANGED=""
+
 add_to_search_list() {
-  # codesign looks identities up through the user's keychain search list: append ours (keeping
-  # whatever is already there). The list can be empty (e.g. a fresh HOME), and macOS's bash 3.2
-  # treats "${list[@]}" of an empty array as unbound under `set -u`, hence ${list[@]+...}.
-  local current line
-  local list=()
-  # The search list is saved in ~/Library/Preferences; a brand-new HOME may not have that folder,
-  # and then `list-keychains -s` silently saves nothing and codesign can't find the key.
+  local line
+  # The list is saved in ~/Library/Preferences; a brand-new HOME may not have that folder, and then
+  # `list-keychains -s` silently saves nothing and codesign can't find the key.
   mkdir -p "$HOME/Library/Preferences" "$HOME/Library/Keychains"
-  current=$(security list-keychains -d user 2>>"$LOG" | sed -e 's/^ *"//' -e 's/" *$//')
-  if printf '%s\n' "$current" | grep -qxF "$KC"; then
-    return 0
-  fi
+  ORIGINAL_LIST=()
   while IFS= read -r line; do
-    [ -n "$line" ] && list+=("$line")
-  done <<<"$current"
-  limited security list-keychains -d user -s ${list[@]+"${list[@]}"} "$KC" >>"$LOG" 2>&1 || true
+    [ -n "$line" ] && [ "$line" != "$KC" ] && ORIGINAL_LIST+=("$line")
+  done < <(security list-keychains -d user 2>>"$LOG" | sed -e 's/^ *"//' -e 's/" *$//')
+  LIST_CHANGED=1
+  trap restore_search_list EXIT
+  # (macOS's bash 3.2 treats "${a[@]}" of an empty array as unbound under `set -u`: ${a[@]+...})
+  limited security list-keychains -d user -s ${ORIGINAL_LIST[@]+"${ORIGINAL_LIST[@]}"} "$KC" >>"$LOG" 2>&1 || true
+}
+
+restore_search_list() {
+  [ -n "$LIST_CHANGED" ] || return 0
+  LIST_CHANGED=""
+  limited security list-keychains -d user -s ${ORIGINAL_LIST[@]+"${ORIGINAL_LIST[@]}"} >>"$LOG" 2>&1 || true
+  limited security lock-keychain "$KC" >>"$LOG" 2>&1 || true
 }
 
 ensure() {
   if have_identity; then
-    add_to_search_list
     return 0
   fi
   mkdir -p "$DIR"
@@ -111,7 +121,6 @@ EOF
     || log "set-key-partition-list failed (codesign may still work)"
   "$OPENSSL" x509 -in "$tmp/cert.pem" -noout -fingerprint -sha1 | sed 's/.*=//; s/://g' >"$IDFILE"
   rm -rf "$tmp"
-  add_to_search_list
   security find-identity -p codesigning "$KC" >>"$LOG" 2>&1 || true
   have_identity || { log "the new identity isn't usable for code signing"; return 1; }
 }
@@ -120,12 +129,15 @@ sign() {
   local app="$1"
   if ensure; then
     limited security unlock-keychain -p "$(cat "$PWFILE")" "$KC" >>"$LOG" 2>&1
+    add_to_search_list
     if limited codesign --force --keychain "$KC" --sign "$(cat "$IDFILE")" --identifier "$BUNDLE_ID" \
       "$app" >>"$LOG" 2>&1; then
+      restore_search_list
       log "signed $app with the local identity"
       echo identity
       return 0
     fi
+    restore_search_list
     log "signing with the local identity failed; falling back to ad-hoc"
   else
     log "could not create the local identity; falling back to ad-hoc"

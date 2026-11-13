@@ -37,6 +37,9 @@ jobs:
             A=$(bash packaging/macos/sign-local.sh sign "$T/A.app" || true)
             B=$(bash packaging/macos/sign-local.sh sign "$T/B.app" || true)
             echo "[$1] A: $A  B: $B"
+            if security list-keychains -d user | grep -q cymatica-signing; then
+              echo "::error::[$1] the signing keychain was left in the keychain search list"; exit 1
+            fi
             echo "------- [$1] signing log"; cat "$support/signing/signing.log" || true; echo "-------"
             codesign -dvv "$T/A.app" 2>&1 | grep -E "Authority|Signature" || true
             REQ=$(bash packaging/macos/sign-local.sh requirement "$T/A.app")

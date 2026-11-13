@@ -37,7 +37,9 @@ jobs:
             A=$(bash packaging/macos/sign-local.sh sign "$T/A.app" || true)
             B=$(bash packaging/macos/sign-local.sh sign "$T/B.app" || true)
             echo "[$1] A: $A  B: $B"
-            if security list-keychains -d user | grep -q cymatica-signing; then
+            # (only checkable with a real HOME: `list-keychains -s` can't set an empty list, and a
+            # Mac always has the login keychain in it)
+            if [ "${2:-}" = clean ] && security list-keychains -d user | grep -q cymatica-signing; then
               echo "::error::[$1] the signing keychain was left in the keychain search list"; exit 1
             fi
             echo "------- [$1] signing log"; cat "$support/signing/signing.log" || true; echo "-------"
@@ -51,7 +53,7 @@ jobs:
             codesign --verify -R="$REQ" "$T/B.app"
           }
           # exactly what happens on a Mac: the real HOME and ~/Library/Application Support/Cymatica
-          check "runner HOME"
+          check "runner HOME" clean
           # what the install.sh smoke test does: a brand-new HOME without any keychain
           HOME="$RUNNER_TEMP/fresh-home" check "fresh HOME"
           echo "B satisfies A's designated requirement: the microphone permission will survive updates"
@@ -138,6 +140,19 @@ jobs:
             cat self-test.log
             exit 1
           fi
+
+      - name: Window smoke test (the real app window, every scene)
+        timeout-minutes: 5
+        run: |
+          # a launch crash can't be fixed by an update (the updater runs inside the app), so the
+          # windowed path (AppKit window, Metal surface, egui, mic prompt) is tested here
+          export CYMATICA_SUPPORT_DIR="$RUNNER_TEMP/smoke-support"
+          set +e
+          CYMATICA_SMOKE_TEST=27 dist/Cymatica.app/Contents/MacOS/Cymatica > "$RUNNER_TEMP/smoke.log" 2>&1
+          status=$?
+          set -e
+          tail -n 40 "$RUNNER_TEMP/smoke.log"
+          exit $status
 
       - name: Release notes
         run: |

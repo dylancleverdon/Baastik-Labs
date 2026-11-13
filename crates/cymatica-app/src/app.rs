@@ -56,6 +56,24 @@ pub struct App {
     autopilot: Autopilot,
     cava_config_path: Option<std::path::PathBuf>,
     mic_requested: bool,
+    smoke: Option<Smoke>,
+}
+
+/// `CYMATICA_SMOKE_TEST=<seconds>`: run the real window for that long, visiting every scene, then
+/// quit, failing unless every scene reached the screen. CI runs this on a macOS runner.
+struct Smoke {
+    seconds: f32,
+    start: Option<Instant>,
+    /// frames presented while each scene was current
+    presented: Vec<u64>,
+    scene: usize,
+}
+
+impl Smoke {
+    fn from_env() -> Option<Self> {
+        let seconds: f32 = std::env::var("CYMATICA_SMOKE_TEST").ok()?.parse().ok()?;
+        Some(Self { seconds: seconds.max(1.0), start: None, presented: vec![0; scenes().len()], scene: usize::MAX })
+    }
 }
 
 pub fn run() -> anyhow::Result<()> {
@@ -82,10 +100,24 @@ pub fn run() -> anyhow::Result<()> {
         autopilot: Autopilot::new(),
         cava_config_path,
         mic_requested: false,
+        smoke: Smoke::from_env(),
     };
     let event_loop = EventLoop::new()?;
     event_loop.run_app(&mut app)?;
     app.settings.save();
+    if let Some(s) = &app.smoke {
+        let elapsed = s.start.map(|t| t.elapsed().as_secs_f32()).unwrap_or(0.0);
+        let per_scene: Vec<String> =
+            scenes().iter().zip(&s.presented).map(|(info, n)| format!("{} {n}", info.id)).collect();
+        let msg = format!(
+            "smoke test: {} frames in {elapsed:.1} s ({})",
+            s.presented.iter().sum::<u64>(),
+            per_scene.join(", ")
+        );
+        log::info!("{msg}");
+        println!("{msg}");
+        anyhow::ensure!(s.presented.iter().all(|&n| n > 0), "smoke test failed: a scene never reached the screen");
+    }
     Ok(())
 }
 
@@ -409,7 +441,9 @@ impl App {
         };
         r.sim_time += dt;
         r.frame += 1;
-        self.updates.tick();
+        if self.smoke.is_none() {
+            self.updates.tick();
+        }
 
         // auto-pilot
         if let Some(change) = self.autopilot.tick(&self.settings.autopilot, &audio, dt) {
@@ -521,6 +555,9 @@ impl App {
             r.gpu.queue.submit([enc.finish()]);
             r.window.pre_present_notify();
             r.gpu.queue.present(output);
+            if let Some(n) = self.smoke.as_mut().and_then(|s| s.presented.get_mut(s.scene)) {
+                *n += 1;
+            }
         }
         for id in &to_free {
             r.egui_renderer.free_texture(id);
@@ -545,6 +582,22 @@ impl App {
                 self.settings.save();
                 self.dirty_at = None;
             }
+        }
+
+        self.smoke_step(event_loop);
+    }
+
+    fn smoke_step(&mut self, event_loop: &ActiveEventLoop) {
+        let Some(s) = self.smoke.as_mut() else { return };
+        let start = *s.start.get_or_insert_with(Instant::now);
+        let all = scenes();
+        let want = (start.elapsed().as_secs_f32() / s.seconds * all.len() as f32) as usize;
+        if want >= all.len() {
+            event_loop.exit();
+        } else if want != s.scene {
+            s.scene = want;
+            log::info!("smoke test: {}", all[want].id);
+            self.set_scene(all[want].id);
         }
     }
 

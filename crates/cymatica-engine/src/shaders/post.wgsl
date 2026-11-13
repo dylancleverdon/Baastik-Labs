@@ -223,9 +223,8 @@ fn fs_composite(in: FsIn) -> @location(0) vec4f {
 
     var outc: vec3f;
     if (U.output_mode == 2u) {
-        // EDR: extended linear, Display P3 primaries
-        let p3 = mat3x3f(0.8225, 0.0332, 0.0171, 0.1774, 0.9669, 0.0724, 0.0, 0.0, 0.9108);
-        outc = p3 * tonemap_edr(col);
+        // EDR: extended linear sRGB (scRGB); values above 1.0 light up HDR highlights
+        outc = tonemap_edr(col);
     } else {
         outc = tonemap(col);
     }

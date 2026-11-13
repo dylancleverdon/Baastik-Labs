@@ -1,0 +1,21 @@
+# Every push to the `cymatica` branch that builds and passes its tests becomes a Cymatica update:
+# installed copies pick it up within the hour. Nothing on other branches triggers this.
+name: Cymatica release
+
+on:
+  push:
+    branches: [cymatica]
+  workflow_dispatch:
+
+concurrency:
+  group: cymatica-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: ./.github/workflows/cymatica-build.yml
+    with:
+      publish: true

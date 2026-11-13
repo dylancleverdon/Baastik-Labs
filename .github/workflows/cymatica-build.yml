@@ -1,0 +1,223 @@
+# Builds, tests, packages and (optionally) publishes Cymatica. Called by cymatica-release.yml
+# (publishes) and cymatica-ci.yml (build + test only).
+name: Cymatica build
+
+on:
+  workflow_call:
+    inputs:
+      publish:
+        description: Publish the build as a release and refresh cymatica-channel
+        type: boolean
+        default: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux:
+    name: Linux tests + software-GPU renders
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pkg-config mesa-vulkan-drivers
+      - uses: Swatinem/rust-cache@v2
+      - name: Tests (incl. cava golden test and shader → Metal translation)
+        run: cargo test --workspace
+      - name: Self-test (every scene, lavapipe)
+        run: cargo run --release -p cymatica-app --bin cymatica -- self-test --out self-test-linux.png --size 480x270
+      - uses: actions/upload-artifact@v4
+        with:
+          name: self-test-linux
+          path: self-test-linux.png
+
+  macos:
+    name: macOS build, test, package
+    runs-on: macos-15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version
+        id: version
+        run: |
+          VERSION="$(head -n1 VERSION).${{ github.run_number }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "BUILD=${{ github.run_number }}" >> "$GITHUB_ENV"
+          echo "Building Cymatica $VERSION"
+
+      - name: Rust targets
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Tests
+        run: cargo test --workspace
+
+      - name: Build universal binary
+        env:
+          CYMATICA_VERSION: ${{ env.VERSION }}
+          CYMATICA_BUILD: ${{ env.BUILD }}
+          MACOSX_DEPLOYMENT_TARGET: "12.0"
+        run: |
+          cargo build --release -p cymatica-app --target aarch64-apple-darwin
+          cargo build --release -p cymatica-app --target x86_64-apple-darwin
+          mkdir -p dist
+          lipo -create -output dist/cymatica \
+            target/aarch64-apple-darwin/release/cymatica target/x86_64-apple-darwin/release/cymatica
+          lipo -info dist/cymatica
+
+      - name: Bundle Cymatica.app
+        run: |
+          packaging/macos/build-app.sh "$VERSION" "$BUILD" dist/cymatica dist
+          dist/Cymatica.app/Contents/MacOS/Cymatica --version
+
+      - name: Self-test on Metal
+        run: |
+          mkdir -p out
+          if dist/Cymatica.app/Contents/MacOS/Cymatica self-test --out out/Cymatica-previews.png --size 640x360 2> self-test.log; then
+            cat self-test.log
+          elif grep -q "no GPU adapter" self-test.log; then
+            cat self-test.log
+            echo "::warning::this runner has no Metal GPU; scene renders were checked on Linux instead"
+          else
+            cat self-test.log
+            exit 1
+          fi
+
+      - name: Release notes
+        run: |
+          python3 scripts/ci/release.py notes --out dist/notes.md
+          cat dist/notes.md
+
+      - name: Package (zip + manifest)
+        run: |
+          ditto -c -k --keepParent dist/Cymatica.app "out/Cymatica-${VERSION}-mac.zip"
+          cp "out/Cymatica-${VERSION}-mac.zip" out/Cymatica-mac.zip
+          cp packaging/macos/install.sh packaging/macos/uninstall.sh out/
+          URL="https://github.com/${{ github.repository }}/releases/download/cymatica-v${VERSION}/Cymatica-${VERSION}-mac.zip"
+          python3 scripts/ci/release.py manifest --version "$VERSION" --build "$BUILD" --commit "${{ github.sha }}" \
+            --notes-file dist/notes.md --zip "out/Cymatica-${VERSION}-mac.zip" --zip-url "$URL" --out out/cymatica-update.json
+          cat out/cymatica-update.json
+          ls -la out
+
+      - name: Local feed for the install and update tests
+        run: |
+          FEED="$RUNNER_TEMP/feed"
+          mkdir -p "$FEED"
+          cp "out/Cymatica-${VERSION}-mac.zip" "$FEED/"
+          python3 scripts/ci/release.py manifest --version "$VERSION" --build "$BUILD" --commit test \
+            --notes-file dist/notes.md --zip "$FEED/Cymatica-${VERSION}-mac.zip" \
+            --zip-url "file://$FEED/Cymatica-${VERSION}-mac.zip" --out "$FEED/cymatica-update.json"
+          echo "FEED=$FEED" >> "$GITHUB_ENV"
+
+      - name: install.sh smoke test
+        timeout-minutes: 10
+        run: |
+          IHOME="$RUNNER_TEMP/install-home"
+          mkdir -p "$IHOME"
+          HOME="$IHOME" CYMATICA_FEED="file://$FEED/cymatica-update.json" CYMATICA_NO_LAUNCH=1 bash packaging/macos/install.sh
+          test -x "$IHOME/Applications/Cymatica.app/Contents/MacOS/Cymatica"
+          codesign --verify --strict "$IHOME/Applications/Cymatica.app"
+          codesign -dvv "$IHOME/Applications/Cymatica.app" 2>&1 | grep -E "Authority|Signature|Identifier"
+          codesign -dvv "$IHOME/Applications/Cymatica.app" 2>&1 | grep -q "Authority=Cymatica Local Signing"
+          REQ=$(codesign -d -r- "$IHOME/Applications/Cymatica.app" 2>&1 | sed -n 's/^designated => //p')
+          echo "designated requirement: $REQ"
+          echo "$REQ" | grep -q "certificate"
+          "$IHOME/Applications/Cymatica.app/Contents/MacOS/Cymatica" --version
+          echo "--- signing log"; cat "$IHOME/Library/Application Support/Cymatica/signing/signing.log" || true
+
+      - name: Updater end-to-end test (local feed)
+        timeout-minutes: 10
+        run: |
+          E2E_HOME="$RUNNER_TEMP/e2e-home"
+          APPDIR="$E2E_HOME/Applications"
+          mkdir -p "$APPDIR"
+          # pretend the previous build is installed
+          ditto dist/Cymatica.app "$APPDIR/Cymatica.app"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $((BUILD - 1))" "$APPDIR/Cymatica.app/Contents/Info.plist"
+          BIN=dist/Cymatica.app/Contents/MacOS/Cymatica
+          FEEDARGS=(--home "$E2E_HOME" --manifest-url "file://$FEED/cymatica-update.json" --allow-url-prefix "file://")
+          "$BIN" update "${FEEDARGS[@]}" --check-now
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APPDIR/Cymatica.app/Contents/Info.plist")" = "$BUILD"
+          codesign -dvv "$APPDIR/Cymatica.app" 2>&1 | grep -E "Authority|Signature"
+          "$BIN" update --home "$E2E_HOME" --rollback
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APPDIR/Cymatica.app/Contents/Info.plist")" = "$((BUILD - 1))"
+          grep -q "$BUILD" "$E2E_HOME/Library/Application Support/Cymatica/updater.json"
+          # a tampered zip must be refused
+          echo tampered >> "$FEED/Cymatica-${VERSION}-mac.zip"
+          if "$BIN" update "${FEEDARGS[@]}" --check-now; then
+            echo "::error::the updater accepted a tampered update"; exit 1
+          fi
+          echo "Updater end-to-end test passed"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cymatica-${{ steps.version.outputs.version }}-mac
+          path: |
+            out/
+            dist/notes.md
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    if: inputs.publish
+    needs: [linux, macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ needs.macos.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cymatica-${{ needs.macos.outputs.version }}-mac
+
+      - name: Publish cymatica-v${{ env.VERSION }} and refresh cymatica-channel
+        run: |
+          ls -la out
+          test -f out/cymatica-update.json
+          PREVIEWS=()
+          [ -f out/Cymatica-previews.png ] && PREVIEWS=(out/Cymatica-previews.png)
+
+          # 1. The versioned release (prerelease, never "Latest", so other programs are unaffected)
+          gh release create "cymatica-v${VERSION}" \
+            --target "${{ github.sha }}" --prerelease --latest=false \
+            --title "Cymatica ${VERSION}" --notes-file dist/notes.md \
+            "out/Cymatica-${VERSION}-mac.zip" "${PREVIEWS[@]}"
+
+          # 2. The rolling channel the install command and the updater read from
+          if ! gh release view cymatica-channel >/dev/null 2>&1; then
+            gh release create cymatica-channel --target "${{ github.sha }}" --prerelease --latest=false \
+              --title "Cymatica (latest build)" --notes "Cymatica's install command and update feed."
+          fi
+          {
+            echo "## Cymatica ${VERSION}"
+            echo
+            echo "**Install** (Terminal):"
+            echo
+            echo '```'
+            echo "curl -fsSL https://github.com/${GH_REPO}/releases/download/cymatica-channel/install.sh | bash"
+            echo '```'
+            echo
+            echo "Or download [Cymatica-mac.zip](https://github.com/${GH_REPO}/releases/download/cymatica-channel/Cymatica-mac.zip), unzip it into Applications, and the first time approve it in **System Settings > Privacy & Security > Open Anyway**."
+            echo
+            echo "Cymatica listens to **BlackHole 2ch**, set up exactly like cava (Multi-Output Device), and updates itself."
+            echo
+            echo "### What's new"
+            cat dist/notes.md
+          } > channel-notes.md
+          gh release edit cymatica-channel --notes-file channel-notes.md --prerelease --latest=false
+
+          # scripts and zip first, manifest last, so the feed never points at a missing file
+          gh release upload cymatica-channel out/install.sh out/uninstall.sh out/Cymatica-mac.zip --clobber
+          gh release upload cymatica-channel out/cymatica-update.json --clobber
+          echo "Published Cymatica ${VERSION}"

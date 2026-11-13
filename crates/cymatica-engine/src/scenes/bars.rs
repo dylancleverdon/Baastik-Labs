@@ -65,7 +65,7 @@ pub struct Bars {
     p_particles: wgpu::RenderPipeline,
     state: wgpu::Buffer,
     parts: wgpu::Buffer,
-    counter: wgpu::Buffer,
+    _counter: wgpu::Buffer,
     last_kick_hits: u32,
 }
 
@@ -124,7 +124,7 @@ pub fn create(gpu: &Gpu, globals: &GlobalsGpu) -> Box<dyn Scene> {
         draw_bg,
         state,
         parts,
-        counter,
+        _counter: counter,
         last_kick_hits: 0,
     })
 }

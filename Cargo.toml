@@ -20,7 +20,7 @@ cymatica-update = { path = "crates/cymatica-update" }
 wgpu = "30"
 naga = { version = "30", features = ["wgsl-in", "msl-out", "spv-out"] }
 winit = "0.30.13"
-egui = "0.37"
+egui = { version = "0.37", features = ["default_fonts"] }
 egui-wgpu = "0.37"
 egui-winit = "0.37"
 cpal = "0.18"

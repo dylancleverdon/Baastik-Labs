@@ -61,7 +61,8 @@ ensure() {
   limited security delete-keychain "$KC" >>"$LOG" 2>&1 || true
   rm -f "$KC" "$IDFILE"
   local pw tmp
-  pw="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)"
+  # (not `tr < /dev/urandom | head`: where SIGPIPE is ignored, tr never stops reading)
+  pw="$("$OPENSSL" rand -hex 16)"
   printf '%s' "$pw" >"$PWFILE"
   chmod 600 "$PWFILE"
   tmp="$(mktemp -d)"

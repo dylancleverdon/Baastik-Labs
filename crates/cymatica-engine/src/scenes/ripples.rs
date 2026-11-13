@@ -238,7 +238,7 @@ impl Scene for Ripples {
         self.yaw += dt * p.f("spin") * 0.4;
         let a = &ctx.info.audio;
         let faraday = if p.choice_index("mode") == 3 { (0.3 + a.loudness) * (0.3 + p.f("waves")) } else { 0.0 };
-        let mut u = RipUniform {
+        let u = RipUniform {
             sim_size: [size as f32, size as f32],
             yaw: self.yaw,
             tilt: p.f("tilt"),
@@ -268,12 +268,8 @@ impl Scene for Ripples {
         let globals = &ctx.globals.bind_group;
         // two wave steps per 60 Hz frame (drops only on the first)
         let steps = ((dt * 120.0).round() as usize).clamp(1, 4);
-        for s in 0..steps {
-            if s == 1 {
-                u.drop_count = 0;
-                // (uniform writes land before the submit; drops apply on step 0 via a second buffer
-                // would be overkill: re-applying them on later steps just makes slightly taller drops)
-            }
+        // (drops are re-applied on each sub-step, which just makes them slightly taller)
+        for _ in 0..steps {
             gpu::fullscreen(enc, "rip-step", &g.water_v[1 - self.cur], &self.p_step, &[globals, &g.step_bg[self.cur]], None);
             self.cur = 1 - self.cur;
         }

@@ -82,7 +82,7 @@ pub enum OutputMode {
     SrgbTexture,
     /// Shader encodes sRGB (plain unorm target).
     EncodeSrgb,
-    /// EDR: extended linear Display P3 with `headroom` (macOS HDR).
+    /// EDR: extended linear sRGB (scRGB) with `headroom` (macOS HDR).
     Edr { headroom: f32 },
 }
 

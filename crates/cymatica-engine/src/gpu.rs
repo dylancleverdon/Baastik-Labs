@@ -7,6 +7,7 @@ use std::borrow::Cow;
 pub const HDR_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba16Float;
 
 pub struct Gpu {
+    pub adapter: wgpu::Adapter,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub adapter_info: wgpu::AdapterInfo,
@@ -45,7 +46,7 @@ impl Gpu {
             })
             .await
             .map_err(|e| anyhow!("could not open the GPU: {e}"))?;
-        Ok(Self { device, queue, adapter_info: adapter.get_info(), limits })
+        Ok(Self { adapter_info: adapter.get_info(), adapter, device, queue, limits })
     }
 
     /// A device with no window (offline renders, tests).

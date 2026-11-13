@@ -677,8 +677,7 @@ impl Analyzer {
         let mut sum_r = 0.0f64;
         let mut sum_lr = 0.0f64;
         let mut peak = 0.0f32;
-        for s in chunk.chunks_exact(2) {
-            let (l, r) = (s[0], s[1]);
+        for &[l, r] in chunk.as_chunks::<2>().0 {
             self.ring[self.ring_pos] = [l, r];
             self.ring_pos = (self.ring_pos + 1) % ring_len;
             sum_l += (l * l) as f64;

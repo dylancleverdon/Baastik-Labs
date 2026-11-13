@@ -243,7 +243,7 @@ impl DemoSynth {
         let fs = self.fs;
         let dt = 1.0 / fs;
         let step_len = 60.0 / BPM / 4.0;
-        for frame in out.chunks_exact_mut(2) {
+        for frame in out.as_chunks_mut::<2>().0 {
             let t = self.sample as f32 / fs;
             let step = (t / step_len) as i64;
             if step != self.step {

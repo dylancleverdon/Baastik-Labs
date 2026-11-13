@@ -47,7 +47,8 @@ jobs:
             codesign --verify --strict "$T/B.app"
             codesign --verify -R="$REQ" "$T/B.app"
           }
-          CYMATICA_SUPPORT_DIR="$RUNNER_TEMP/support" check "runner HOME"
+          # exactly what happens on a Mac: the real HOME and ~/Library/Application Support/Cymatica
+          check "runner HOME"
           # what the install.sh smoke test does: a brand-new HOME without any keychain
           HOME="$RUNNER_TEMP/fresh-home" check "fresh HOME"
           echo "B satisfies A's designated requirement: the microphone permission will survive updates"
@@ -63,10 +64,11 @@ jobs:
           sudo apt-get install -y libasound2-dev pkg-config mesa-vulkan-drivers
       - uses: Swatinem/rust-cache@v2
       - name: Format and lint
+        # pinned, so lints added by newer toolchains can't block a release
         run: |
-          rustup component add rustfmt clippy
-          cargo fmt --all -- --check
-          cargo clippy --workspace --all-targets -- -D warnings
+          rustup toolchain install 1.97.0 --profile minimal --component rustfmt,clippy
+          cargo +1.97.0 fmt --all -- --check
+          cargo +1.97.0 clippy --workspace --all-targets -- -D warnings
       - name: Tests (incl. cava golden test and shader → Metal translation)
         run: cargo test --workspace
       - name: Self-test (every scene, lavapipe)

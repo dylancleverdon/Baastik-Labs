@@ -50,6 +50,9 @@ add_to_search_list() {
   # treats "${list[@]}" of an empty array as unbound under `set -u`, hence ${list[@]+...}.
   local current line
   local list=()
+  # The search list is saved in ~/Library/Preferences; a brand-new HOME may not have that folder,
+  # and then `list-keychains -s` silently saves nothing and codesign can't find the key.
+  mkdir -p "$HOME/Library/Preferences" "$HOME/Library/Keychains"
   current=$(security list-keychains -d user 2>>"$LOG" | sed -e 's/^ *"//' -e 's/" *$//')
   if printf '%s\n' "$current" | grep -qxF "$KC"; then
     return 0

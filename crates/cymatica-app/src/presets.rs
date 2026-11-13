@@ -63,6 +63,13 @@ fn to_value(v: &V) -> ParamValue {
 pub fn builtin_presets() -> Vec<Preset> {
     use V::*;
     let mut v = vec![
+        // Liquid
+        preset("liquid", "Rainbow soda", Some("candy"), &[], &[]),
+        preset("liquid", "Ocean water", Some("ocean-deep"), &[("color_mode", T("theme")), ("tint", N(0.55)), ("clarity", N(0.7)), ("viscosity", N(0.02))], &[]),
+        preset("liquid", "Honey", Some("gold"), &[("color_mode", T("theme")), ("tint", N(0.6)), ("viscosity", N(0.8)), ("clarity", N(0.3)), ("foam", N(0.0)), ("whirlpool", N(0.2))], &[("bloom", N(1.2))]),
+        preset("liquid", "Slime", Some("matrix"), &[("color_mode", T("theme")), ("tint", N(0.75)), ("viscosity", N(0.55)), ("stiffness", N(0.2)), ("clarity", N(0.2)), ("gloss", N(1.0))], &[]),
+        preset("liquid", "Mercury", Some("mono"), &[("color_mode", T("theme")), ("tint", N(0.85)), ("clarity", N(0.0)), ("refraction", N(0.0)), ("gloss", N(1.0)), ("stiffness", N(0.9)), ("foam", N(0.0))], &[("saturation", N(0.4))]),
+        preset("liquid", "Lava", Some("lava"), &[("color_mode", T("depth")), ("viscosity", N(0.65)), ("tank", T("dark")), ("clarity", N(0.15))], &[("bloom", N(1.6))]),
         // Bars
         preset("bars", "Sparks", Some("synthwave"), &[("style", T("sparks"))], &[]),
         preset("bars", "Classic cava", Some("cava-classic"), &[("style", T("classic")), ("reflection", N(0.0)), ("gap", N(0.2))], &[("bloom", N(0.3)), ("vignette", N(0.0)), ("grain", N(0.0))]),

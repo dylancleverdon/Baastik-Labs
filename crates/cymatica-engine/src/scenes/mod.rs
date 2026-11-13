@@ -4,9 +4,17 @@ use crate::scene::SceneInfo;
 
 pub mod bars;
 pub mod ink;
+pub mod liquid;
 pub mod ripples;
 
-pub static ALL: [SceneInfo; 3] = [
+pub static ALL: [SceneInfo; 4] = [
+    SceneInfo {
+        id: "liquid",
+        name: "Liquid",
+        tagline: "A real 3D liquid in a glass tank: bass sloshes it, kicks fire geysers",
+        params: liquid::PARAMS,
+        create: liquid::create,
+    },
     SceneInfo {
         id: "bars",
         name: "Bars",
@@ -38,5 +46,7 @@ pub fn shader_sources() -> Vec<(&'static str, String)> {
         ("bars-draw", format!("{bars_common}\n{}", include_str!("../shaders/scenes/bars_draw.wgsl"))),
         ("ink", include_str!("../shaders/scenes/ink.wgsl").to_string()),
         ("ripples", include_str!("../shaders/scenes/ripples.wgsl").to_string()),
+        ("liquid-sim", include_str!("../shaders/scenes/liquid_sim.wgsl").to_string()),
+        ("liquid-draw", include_str!("../shaders/scenes/liquid_draw.wgsl").to_string()),
     ]
 }

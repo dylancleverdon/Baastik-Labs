@@ -1,6 +1,7 @@
 //! Cymatica rendering engine: GPU physics scenes, themes, the post-processing "look", and
 //! headless rendering.
 
+pub mod camera;
 pub mod globals;
 pub mod gpu;
 pub mod offline;

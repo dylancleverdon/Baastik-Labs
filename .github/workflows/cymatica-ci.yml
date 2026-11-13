@@ -1,0 +1,82 @@
+# Build + test only (never publishes): Claude session branches carrying Cymatica.
+name: Cymatica CI
+
+on:
+  push:
+    branches: ['claude/**']
+  pull_request:
+    branches: [cymatica]
+  workflow_dispatch:
+
+concurrency:
+  group: cymatica-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux:
+    name: Linux tests (software GPU)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pkg-config mesa-vulkan-drivers
+      - uses: Swatinem/rust-cache@v2
+      - name: Tests
+        run: cargo test --workspace
+      - name: GPU probe (lavapipe)
+        run: cargo run -p cymatica-engine --example gpu_probe
+
+  macos:
+    name: macOS probe (universal build, Metal, signing)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust targets
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - name: Tests
+        run: cargo test --workspace
+      - name: Intel cross-build
+        run: cargo build --release --workspace --target x86_64-apple-darwin
+      - name: GPU probe (Metal)
+        run: cargo run -p cymatica-engine --example gpu_probe | tee gpu.txt
+      - name: Local signing identity survives rebuilds
+        run: |
+          export CYMATICA_SUPPORT_DIR="$RUNNER_TEMP/support"
+          T="$RUNNER_TEMP/sign"
+          for v in A B; do
+            mkdir -p "$T/$v.app/Contents/MacOS"
+            printf 'int main(void){return %d;}\n' "$([ $v = A ] && echo 0 || echo 1)" > "$T/$v.c"
+            cc -o "$T/$v.app/Contents/MacOS/Cymatica" "$T/$v.c"
+            cat > "$T/$v.app/Contents/Info.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>CFBundleIdentifier</key><string>com.baastiklabs.cymatica</string>
+          <key>CFBundleExecutable</key><string>Cymatica</string>
+          <key>CFBundlePackageType</key><string>APPL</string>
+          </dict></plist>
+          EOF
+          done
+          RESULT_A=$(bash packaging/macos/sign-local.sh sign "$T/A.app")
+          RESULT_B=$(bash packaging/macos/sign-local.sh sign "$T/B.app")
+          echo "A: $RESULT_A  B: $RESULT_B"
+          codesign -dvvv "$T/A.app" 2>&1 | head -20
+          REQ=$(bash packaging/macos/sign-local.sh requirement "$T/A.app")
+          echo "designated requirement: $REQ"
+          test "$RESULT_A" = identity
+          echo "$REQ" | grep -q "certificate"
+          codesign --verify --strict "$T/B.app"
+          codesign --verify -R="$REQ" "$T/B.app"
+          SHA_BEFORE=$(cat "$CYMATICA_SUPPORT_DIR/signing/identity-sha1")
+          bash packaging/macos/sign-local.sh ensure
+          test "$SHA_BEFORE" = "$(cat "$CYMATICA_SUPPORT_DIR/signing/identity-sha1")"
+          echo "Signing identity is stable across builds"

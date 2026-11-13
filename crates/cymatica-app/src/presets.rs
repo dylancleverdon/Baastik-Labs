@@ -70,6 +70,32 @@ pub fn builtin_presets() -> Vec<Preset> {
         preset("liquid", "Slime", Some("matrix"), &[("color_mode", T("theme")), ("tint", N(0.75)), ("viscosity", N(0.55)), ("stiffness", N(0.2)), ("clarity", N(0.2)), ("gloss", N(1.0))], &[]),
         preset("liquid", "Mercury", Some("mono"), &[("color_mode", T("theme")), ("tint", N(0.85)), ("clarity", N(0.0)), ("refraction", N(0.0)), ("gloss", N(1.0)), ("stiffness", N(0.9)), ("foam", N(0.0))], &[("saturation", N(0.4))]),
         preset("liquid", "Lava", Some("lava"), &[("color_mode", T("depth")), ("viscosity", N(0.65)), ("tank", T("dark")), ("clarity", N(0.15))], &[("bloom", N(1.6))]),
+        // Chladni
+        preset("chladni", "Golden sand", Some("gold"), &[], &[]),
+        preset("chladni", "Round plate", Some("ice"), &[("plate", T("circle")), ("complexity", N(0.6))], &[]),
+        preset("chladni", "Beat figures", Some("cyberpunk"), &[("follow", T("beat")), ("color_by", T("radius"))], &[("chromatic", N(0.4))]),
+        preset("chladni", "Intricate", Some("mono"), &[("complexity", N(0.95)), ("grain", N(0.6)), ("vibration", N(0.4))], &[]),
+        // Phosphor
+        preset("phosphor", "Green CRT", None, &[], &[]),
+        preset("phosphor", "Amber goniometer", None, &[("mode", T("gonio")), ("phosphor", T("amber"))], &[]),
+        preset("phosphor", "Rainbow Lissajous", Some("spectrum"), &[("phosphor", T("theme")), ("persistence", N(0.92))], &[("trails", N(0.7))]),
+        preset("phosphor", "Polar halo", Some("aurora"), &[("mode", T("polar")), ("phosphor", T("theme")), ("graticule", B(false)), ("curvature", N(0.0))], &[("kaleido", N(6.0))]),
+        preset("phosphor", "Scope", None, &[("mode", T("scope")), ("phosphor", T("blue"))], &[]),
+        // Stardust
+        preset("stardust", "Spiral galaxy", Some("aurora"), &[], &[]),
+        preset("stardust", "Binary stars", Some("fire-ice"), &[("wells", N(2.0)), ("spin", N(0.2)), ("turbulence", N(0.2))], &[]),
+        preset("stardust", "Nebula storm", Some("vaporwave"), &[("wells", N(5.0)), ("turbulence", N(0.9)), ("gravity", N(0.3))], &[("trails", N(0.6))]),
+        preset("stardust", "Edge-on", Some("gold"), &[("height", N(0.02)), ("zoom", N(0.7))], &[]),
+        // Singularity
+        preset("singularity", "Gargantua", None, &[], &[]),
+        preset("singularity", "Top-down", Some("lava"), &[("tilt", N(0.85)), ("color_mode", T("theme"))], &[]),
+        preset("singularity", "Neon accretion", Some("synthwave"), &[("color_mode", T("theme")), ("brightness", N(1.4))], &[("bloom", N(1.4))]),
+        preset("singularity", "Quasar", Some("ice"), &[("jets", N(1.0)), ("shock", N(1.0)), ("disk_size", N(0.8))], &[]),
+        // Ferrofluid
+        preset("ferrofluid", "Neon studio", Some("neon-tokyo"), &[], &[]),
+        preset("ferrofluid", "Chrome", Some("mono"), &[("lights", N(0.4)), ("sharpness", N(0.9))], &[]),
+        preset("ferrofluid", "Hedgehog", Some("candy"), &[("density", N(0.95)), ("spike_height", N(0.8))], &[]),
+        preset("ferrofluid", "Soft blob", Some("ocean-deep"), &[("sharpness", N(0.1)), ("swell", N(1.0)), ("rim", N(0.6))], &[]),
         // Bars
         preset("bars", "Sparks", Some("synthwave"), &[("style", T("sparks"))], &[]),
         preset("bars", "Classic cava", Some("cava-classic"), &[("style", T("classic")), ("reflection", N(0.0)), ("gap", N(0.2))], &[("bloom", N(0.3)), ("vignette", N(0.0)), ("grain", N(0.0))]),

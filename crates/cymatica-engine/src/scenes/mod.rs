@@ -4,6 +4,7 @@ use crate::scene::SceneInfo;
 
 pub mod bars;
 pub mod chladni;
+pub mod ferro;
 pub mod ink;
 pub mod liquid;
 pub mod phosphor;
@@ -11,7 +12,7 @@ pub mod ripples;
 pub mod singularity;
 pub mod stardust;
 
-pub static ALL: [SceneInfo; 8] = [
+pub static ALL: [SceneInfo; 9] = [
     SceneInfo {
         id: "liquid",
         name: "Liquid",
@@ -46,6 +47,13 @@ pub static ALL: [SceneInfo; 8] = [
         tagline: "Cymatics: sand on a vibrating plate draws the music's standing waves",
         params: chladni::PARAMS,
         create: chladni::create,
+    },
+    SceneInfo {
+        id: "ferrofluid",
+        name: "Ferrofluid",
+        tagline: "Glossy magnetic fluid: every spike rides its own frequency band",
+        params: ferro::PARAMS,
+        create: ferro::create,
     },
     SceneInfo {
         id: "singularity",
@@ -84,6 +92,7 @@ pub fn shader_sources() -> Vec<(&'static str, String)> {
         ("chladni-draw", format!("{}\n{}", include_str!("../shaders/scenes/chladni_common.wgsl"), include_str!("../shaders/scenes/chladni_draw.wgsl"))),
         ("phosphor", include_str!("../shaders/scenes/phosphor.wgsl").to_string()),
         ("singularity", include_str!("../shaders/scenes/singularity.wgsl").to_string()),
+        ("ferro", include_str!("../shaders/scenes/ferro.wgsl").to_string()),
         ("stardust-sim", format!("{}\n{}", include_str!("../shaders/scenes/stardust_common.wgsl"), include_str!("../shaders/scenes/stardust_sim.wgsl"))),
         ("stardust-draw", format!("{}\n{}", include_str!("../shaders/scenes/stardust_common.wgsl"), include_str!("../shaders/scenes/stardust_draw.wgsl"))),
     ]

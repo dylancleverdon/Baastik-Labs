@@ -49,6 +49,7 @@ jobs:
       - name: GPU probe (Metal)
         run: cargo run -p cymatica-engine --example gpu_probe | tee gpu.txt
       - name: Local signing identity survives rebuilds
+        timeout-minutes: 10
         run: |
           export CYMATICA_SUPPORT_DIR="$RUNNER_TEMP/support"
           T="$RUNNER_TEMP/sign"
@@ -80,3 +81,6 @@ jobs:
           bash packaging/macos/sign-local.sh ensure
           test "$SHA_BEFORE" = "$(cat "$CYMATICA_SUPPORT_DIR/signing/identity-sha1")"
           echo "Signing identity is stable across builds"
+      - name: Signing log
+        if: always()
+        run: cat "$RUNNER_TEMP/support/signing/signing.log" 2>/dev/null || true

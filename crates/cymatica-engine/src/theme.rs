@@ -188,7 +188,9 @@ impl Theme {
                 let f = t - k as f32;
                 let a = labs[k];
                 let b = labs[k + 1];
-                oklab_to_linear([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f])
+                let c = oklab_to_linear([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]);
+                // vivid stops can interpolate slightly outside sRGB: clip back into gamut
+                [c[0].min(1.0), c[1].min(1.0), c[2].min(1.0)]
             })
             .collect()
     }

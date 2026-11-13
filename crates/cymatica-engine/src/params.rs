@@ -418,9 +418,10 @@ mod tests {
     fn randomize_stays_in_range_and_skips_fixed() {
         let mut s = ParamSet::default();
         let mut rng = Rng::new(42);
+        let silence = AudioFrame::default();
         for _ in 0..50 {
             s.randomize(DEFS, &mut rng, 1.0);
-            let p = Params::new(DEFS, &s, &AudioFrame::default());
+            let p = Params::new(DEFS, &s, &silence);
             assert!((0.0..=2.0).contains(&p.f("speed")));
             assert!((1..=10).contains(&p.i("count")));
             assert_eq!(p.color("tint"), [1.0, 0.0, 0.0]);

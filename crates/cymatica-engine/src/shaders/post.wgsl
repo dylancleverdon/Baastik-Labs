@@ -38,7 +38,7 @@ struct PostU {
 // ---------- feedback trails: scene + warped previous frame ----------
 @fragment
 fn fs_trails(in: FsIn) -> @location(0) vec4f {
-    let scene = textureSampleLevel(src, samp, in.uv, 0.0);
+    let scene = vec4f(safe(textureSampleLevel(src, samp, in.uv, 0.0).rgb), 1.0);
     var p = in.uv - 0.5;
     p.x = p.x * U.resolution.x / U.resolution.y;
     p = rot2(U.trail_rotate) * p * (1.0 - U.trail_zoom);
@@ -47,6 +47,9 @@ fn fs_trails(in: FsIn) -> @location(0) vec4f {
     // persistence (like phosphor): never brighter than the scene or the decayed past
     return vec4f(max(scene.rgb, prev.rgb * U.trails), 1.0);
 }
+
+// Non-finite or negative pixels never reach the glow or the screen (GPUs clamp NaN to a bound).
+fn safe(c: vec3f) -> vec3f { return clamp(c, vec3f(0.0), vec3f(64000.0)); }
 
 // ---------- bloom ----------
 fn karis(c: vec3f) -> f32 { return 1.0 / (1.0 + luma(c)); }
@@ -76,6 +79,9 @@ fn down13(uv: vec2f, first: bool) -> vec3f {
     let l = textureSampleLevel(src, samp, uv + t * vec2f(-1.0, 1.0), 0.0).rgb;
     let m = textureSampleLevel(src, samp, uv + t * vec2f(1.0, 1.0), 0.0).rgb;
     if (first) {
+        let a = safe(a); let b = safe(b); let c = safe(c); let d = safe(d); let e = safe(e);
+        let f = safe(f); let g = safe(g); let h = safe(h); let i = safe(i); let j = safe(j);
+        let k = safe(k); let l = safe(l); let m = safe(m);
         // Karis average per 2x2 group to kill fireflies, then threshold.
         var g0 = (j + k + l + m) * 0.25; var g1 = (a + b + d + e) * 0.25; var g2 = (b + c + e + f) * 0.25;
         var g3 = (d + e + g + h) * 0.25; var g4 = (e + f + h + i) * 0.25;
@@ -200,7 +206,8 @@ fn fs_composite(in: FsIn) -> @location(0) vec4f {
     col.r = textureSampleLevel(src, samp, uv + dir * ca, 0.0).r;
     col.g = textureSampleLevel(src, samp, uv, 0.0).g;
     col.b = textureSampleLevel(src, samp, uv - dir * ca, 0.0).b;
-    let bloom = textureSampleLevel(aux, samp, uv, 0.0).rgb;
+    col = safe(col);
+    let bloom = safe(textureSampleLevel(aux, samp, uv, 0.0).rgb);
     col = col + bloom * U.bloom;
 
     // synesthesia tint

@@ -5,6 +5,26 @@ more, rendered at your display's full Retina resolution (with HDR on XDR display
 **BlackHole 2ch**, set up exactly like [cava](https://github.com/karlstav/cava), and its bars use a
 port of cava's own algorithm.
 
+## Scenes
+
+| Scene | What's simulated | What the music does |
+|---|---|---|
+| **Liquid** | 3D fluid (MLS-MPM, up to 250k particles) in a glass tank, rendered as a refracting surface | Bass sloshes the tank, kicks fire geysers, mids stir a whirlpool |
+| **Ripples** | Wave-equation water in a pool with real-time caustics | Bands drop ripples from the centre (bass) to the rim (highs), Faraday waves |
+| **Ink** | 2D Navier–Stokes fluid with vorticity confinement | Each band is a jet of ink, kicks splash, bass swirls |
+| **Singularity** | Ray-traced Schwarzschild black hole, lensed starfield, accretion disk with Doppler beaming | Bass heats the disk, kicks send shockwaves and fire jets |
+| **Ferrofluid** | Magnetic fluid with Rosensweig spikes (spring physics) | Every spike rides its own frequency band; kicks make them jump |
+| **Chladni** | Cymatics: up to 2M sand grains on a vibrating plate | The dominant note picks the standing-wave mode |
+| **Stardust** | A galaxy of up to 4M stars around moving gravity wells | Bass is gravity, treble is turbulence, kicks are supernovas |
+| **Bars** | cava's bars (Classic), plus springy Jelly bars, caps and sparks | cava's own algorithm, 1:1 |
+| **Phosphor** | An oscilloscope drawn by a simulated CRT beam | Lissajous / goniometer / waveform / polar |
+
+Everything is customizable: 23 themes (Synthwave, Vaporwave, Catppuccin, Dracula, Nord, Gruvbox,
+Tokyo Night, your cava colours...), every scene setting can follow the music (bass, kicks, beat...),
+a look panel (glow, trails, kaleidoscope, chromatic aberration, CRT scanlines, Synesthesia colours
+by musical key), presets you can save and share, auto-pilot that changes scenes on the beat, HDR on
+XDR displays, render scale up to 2x supersampling, live-wallpaper mode and 8K screenshots.
+
 ## Install (macOS)
 
 ```

@@ -5,6 +5,8 @@ more, rendered at your display's full Retina resolution (with HDR on XDR display
 **BlackHole 2ch**, set up exactly like [cava](https://github.com/karlstav/cava), and its bars use a
 port of cava's own algorithm.
 
+![All nine scenes](docs/scenes.jpg)
+
 ## Scenes
 
 | Scene | What's simulated | What the music does |

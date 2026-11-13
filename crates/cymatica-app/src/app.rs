@@ -130,7 +130,8 @@ impl App {
             desired_maximum_frame_latency: 2,
             alpha_mode: caps.alpha_modes[0],
             view_formats: vec![],
-            color_space: if hdr_active { wgpu::SurfaceColorSpace::ExtendedSrgbLinear } else { wgpu::SurfaceColorSpace::Auto },
+            // Auto = extended linear sRGB (EDR) for Rgba16Float where supported, sRGB otherwise
+            color_space: wgpu::SurfaceColorSpace::Auto,
         };
         surface.configure(&gpu.device, &config);
         let renderer = Renderer::new(&gpu, format);

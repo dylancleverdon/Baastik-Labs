@@ -33,10 +33,24 @@ enum V {
     B(bool),
 }
 
+/// (debug builds, i.e. the tests: a misspelt parameter or choice would otherwise be dropped
+/// without a word)
+fn check(defs: &[cymatica_engine::params::ParamDef], name: &str, k: &str, v: &V) {
+    use cymatica_engine::params::ParamKind;
+    let def = defs.iter().find(|d| d.id == k);
+    debug_assert!(def.is_some(), "preset {name}: no parameter {k}");
+    if let (Some(def), V::T(t)) = (def, v) {
+        if let ParamKind::Choice { options, .. } = def.kind {
+            debug_assert!(options.iter().any(|(id, _)| id == t), "preset {name}: {k} has no option {t}");
+        }
+    }
+}
+
 fn preset(scene: &str, name: &str, theme: Option<&str>, values: &[(&str, V)], look: &[(&str, V)]) -> Preset {
     let info = scene_info(scene).expect("preset for unknown scene");
     let mut params = ParamSet::default();
     for (k, v) in values {
+        check(info.params, name, k, v);
         params.set(info.params, k, to_value(v));
     }
     let look = if look.is_empty() {
@@ -44,6 +58,7 @@ fn preset(scene: &str, name: &str, theme: Option<&str>, values: &[(&str, V)], lo
     } else {
         let mut l = ParamSet::default();
         for (k, v) in look {
+            check(cymatica_engine::post::LOOK_PARAMS, name, k, v);
             l.set(cymatica_engine::post::LOOK_PARAMS, k, to_value(v));
         }
         Some(l)
@@ -278,6 +293,74 @@ pub fn builtin_presets() -> Vec<Preset> {
             "Lagoon",
             Some("forest"),
             &[("floor", T("sand")), ("tint", N(0.7)), ("caustics", N(1.6))],
+            &[],
+        ),
+        // Kaleidoscope
+        preset(
+            "kaleidoscope",
+            "Rose window",
+            Some("candy"),
+            &[("style", T("glass")), ("segments", N(12.0)), ("detail", N(0.7))],
+            &[],
+        ),
+        preset("kaleidoscope", "Neon mandala", Some("neon-tokyo"), &[("style", T("lace")), ("segments", N(8.0))], &[]),
+        preset(
+            "kaleidoscope",
+            "Flower of life",
+            Some("sunset"),
+            &[("style", T("petals")), ("segments", N(6.0)), ("spin", N(0.3))],
+            &[],
+        ),
+        preset(
+            "kaleidoscope",
+            "Hyperspace",
+            Some("cyberpunk"),
+            &[("style", T("mix")), ("segments", N(16.0)), ("flow", N(0.8)), ("spin", N(0.4)), ("punch", N(0.9))],
+            &[],
+        ),
+        // Acid
+        preset("acid", "Melt", Some("vaporwave"), &[], &[]),
+        preset(
+            "acid",
+            "Tunnel vision",
+            Some("synthwave"),
+            &[("mode", T("tunnel")), ("twist", N(0.5)), ("zoom", N(0.6))],
+            &[],
+        ),
+        preset("acid", "Fractal bloom", Some("aurora"), &[("mode", T("fractal")), ("trails", N(0.85))], &[]),
+        preset(
+            "acid",
+            "Mandala trip",
+            Some("candy"),
+            &[("mode", T("melt")), ("symmetry", N(6.0)), ("hue_speed", N(0.75)), ("twist", N(0.6))],
+            &[],
+        ),
+        // Dancers
+        preset("dancers", "Disco night", Some("synthwave"), &[], &[]),
+        preset(
+            "dancers",
+            "Rave",
+            Some("cyberpunk"),
+            &[("crowd", N(24.0)), ("sync", T("solo")), ("floppy", N(0.6)), ("change_bars", N(2.0))],
+            &[],
+        ),
+        preset(
+            "dancers",
+            "Robot crew",
+            Some("matrix"),
+            &[("crowd", N(7.0)), ("dance", T("robot")), ("sync", T("together")), ("floppy", N(0.1))],
+            &[],
+        ),
+        preset("dancers", "Noodles", Some("candy"), &[("crowd", N(5.0)), ("floppy", N(1.0)), ("width", N(1.6))], &[]),
+        // Mandelbrot
+        preset("mandelbrot", "Deep dive", Some("synthwave"), &[], &[]),
+        preset("mandelbrot", "Seahorses", Some("ocean-deep"), &[("region", T("seahorse"))], &[]),
+        preset("mandelbrot", "Elephants", Some("gold"), &[("region", T("elephant")), ("relief", N(0.8))], &[]),
+        preset(
+            "mandelbrot",
+            "Psychedelic",
+            Some("spectrum"),
+            &[("region", T("spirals")), ("bands", N(0.9)), ("cycle", N(0.9)), ("relief", N(0.3))],
             &[],
         ),
     ];

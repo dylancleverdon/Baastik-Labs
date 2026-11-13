@@ -2,17 +2,21 @@
 
 use crate::scene::SceneInfo;
 
+pub mod acid;
 pub mod bars;
 pub mod chladni;
+pub mod dancers;
 pub mod ferro;
 pub mod ink;
+pub mod kaleido;
 pub mod liquid;
+pub mod mandelbrot;
 pub mod phosphor;
 pub mod ripples;
 pub mod singularity;
 pub mod stardust;
 
-pub static ALL: [SceneInfo; 9] = [
+pub static ALL: [SceneInfo; 13] = [
     SceneInfo {
         id: "liquid",
         name: "Liquid",
@@ -76,6 +80,34 @@ pub static ALL: [SceneInfo; 9] = [
         params: phosphor::PARAMS,
         create: phosphor::create,
     },
+    SceneInfo {
+        id: "kaleidoscope",
+        name: "Kaleidoscope",
+        tagline: "Stained glass, petals and spectrum lace in mirrors that stream outward forever",
+        params: kaleido::PARAMS,
+        create: kaleido::create,
+    },
+    SceneInfo {
+        id: "acid",
+        name: "Acid",
+        tagline: "Psychedelic feedback: rainbow trails pour outward, melt and loop forever",
+        params: acid::PARAMS,
+        create: acid::create,
+    },
+    SceneInfo {
+        id: "dancers",
+        name: "Dancers",
+        tagline: "A crowd of neon stick figures dancing to the beat on a disco floor",
+        params: dancers::PARAMS,
+        create: dancers::create,
+    },
+    SceneInfo {
+        id: "mandelbrot",
+        name: "Mandelbrot",
+        tagline: "An endless dive into the Mandelbrot set that follows the detail down",
+        params: mandelbrot::PARAMS,
+        create: mandelbrot::create,
+    },
 ];
 
 /// Scene-specific WGSL (without the shared prelude), for validation.
@@ -107,6 +139,10 @@ pub fn shader_sources() -> Vec<(&'static str, String)> {
         ("phosphor", include_str!("../shaders/scenes/phosphor.wgsl").to_string()),
         ("singularity", include_str!("../shaders/scenes/singularity.wgsl").to_string()),
         ("ferro", include_str!("../shaders/scenes/ferro.wgsl").to_string()),
+        ("kaleido", include_str!("../shaders/scenes/kaleido.wgsl").to_string()),
+        ("acid", include_str!("../shaders/scenes/acid.wgsl").to_string()),
+        ("dancers", include_str!("../shaders/scenes/dancers.wgsl").to_string()),
+        ("mandelbrot", include_str!("../shaders/scenes/mandelbrot.wgsl").to_string()),
         (
             "stardust-sim",
             format!(

@@ -162,7 +162,7 @@ jobs:
           # wallpaper windows) is tested here
           export CYMATICA_SUPPORT_DIR="$RUNNER_TEMP/smoke-support"
           set +e
-          CYMATICA_SMOKE_TEST=36 dist/Cymatica.app/Contents/MacOS/Cymatica > "$RUNNER_TEMP/smoke.log" 2>&1
+          CYMATICA_SMOKE_TEST=48 dist/Cymatica.app/Contents/MacOS/Cymatica > "$RUNNER_TEMP/smoke.log" 2>&1
           status=$?
           set -e
           tail -n 40 "$RUNNER_TEMP/smoke.log"

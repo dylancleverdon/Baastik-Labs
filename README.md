@@ -5,7 +5,7 @@ more, rendered at your display's full Retina resolution (with HDR on XDR display
 **BlackHole 2ch**, set up exactly like [cava](https://github.com/karlstav/cava), and its bars use a
 port of cava's own algorithm.
 
-![All nine scenes](docs/scenes.jpg)
+![The scenes](docs/scenes.jpg)
 
 ## Scenes
 
@@ -20,6 +20,10 @@ port of cava's own algorithm.
 | **Stardust** | A galaxy of up to 4M stars around moving gravity wells | Bass is gravity, treble is turbulence, kicks are supernovas |
 | **Bars** | cava's bars (Classic), springy Jelly bars, or Sparks that fly off the peaks; bottom, mirrored or radial | cava's own algorithm, 1:1 |
 | **Phosphor** | An oscilloscope drawn by a simulated CRT beam | Lissajous / goniometer / waveform / polar |
+| **Kaleidoscope** | Stained glass, petals and spectrum lace folded into mirrors, streaming outward forever | Every band lights its own shards, kicks punch the flow, the mids turn the mirrors |
+| **Acid** | Psychedelic feedback: melting, twisting rainbow trails, an endless tunnel, or a picture that grows copies of itself | The waveform draws a ring, kicks send shockwaves, hi-hats sparkle, the bass pumps the zoom |
+| **Dancers** | A crowd of neon stick figures with spring-physics limbs on a disco floor | Eight dance moves synced to the beat, kicks make them hop, snares make them clap |
+| **Mandelbrot** | An endless dive into the Mandelbrot set (double-double reference orbits, GPU perturbation, ~10^20x zoom) that steers itself toward the detail | The bass drives the dive, beats and highs make the colours flow |
 
 Everything is customizable: 23 themes (Synthwave, Vaporwave, Catppuccin, Dracula, Nord, Gruvbox,
 Tokyo Night, your cava colours...), every scene setting can follow the music (bass, kicks, beat...),

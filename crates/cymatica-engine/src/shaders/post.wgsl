@@ -51,6 +51,16 @@ fn fs_trails(in: FsIn) -> @location(0) vec4f {
 // Non-finite or negative pixels never reach the glow or the screen (GPUs clamp NaN to a bound).
 fn safe(c: vec3f) -> vec3f { return clamp(c, vec3f(0.0), vec3f(64000.0)); }
 
+// ---------- scene crossfade: src = new scene, aux = old scene, U.trails = progress ----------
+@fragment
+fn fs_crossfade(in: FsIn) -> @location(0) vec4f {
+    let a = safe(textureSampleLevel(aux, samp, in.uv, 0.0).rgb);
+    let b = safe(textureSampleLevel(src, samp, in.uv, 0.0).rgb);
+    let t = U.trails;
+    // a little bloom-ish lift in the middle of the fade
+    return vec4f(mix(a, b, t) * (1.0 + 0.15 * sin(t * PI)), 1.0);
+}
+
 // ---------- bloom ----------
 fn karis(c: vec3f) -> f32 { return 1.0 / (1.0 + luma(c)); }
 

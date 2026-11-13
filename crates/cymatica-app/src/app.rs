@@ -507,6 +507,7 @@ impl App {
                     render_size,
                     output: &view,
                     output_mode: r.output_mode,
+                    crossfade: self.settings.crossfade_seconds,
                 },
             );
             // UI on top

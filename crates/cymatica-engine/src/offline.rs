@@ -140,6 +140,7 @@ impl OfflineRenderer {
                 render_size: rs,
                 output: &view,
                 output_mode: OutputMode::SrgbTexture,
+                crossfade: 0.0,
             },
         );
         enc.copy_texture_to_buffer(

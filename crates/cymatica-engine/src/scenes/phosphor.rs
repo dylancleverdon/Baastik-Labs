@@ -14,7 +14,7 @@ pub static PARAMS: &[ParamDef] = &[
     toggle("auto_gain", "Auto zoom", "Scope", true, "Keep the trace filling the screen."),
     float("persistence", "Persistence", "Tube", 0.0, 0.98, 0.82, "How long the phosphor keeps glowing."),
     float("beam", "Beam width", "Tube", 0.5, 4.0, 1.5, "Electron beam thickness (px)."),
-    float("intensity", "Intensity", "Tube", 0.2, 3.0, 1.0, "Beam brightness."),
+    float("intensity", "Intensity", "Tube", 0.1, 3.0, 0.6, "Beam brightness."),
     float("curvature", "Glass curve", "Tube", 0.0, 1.0, 0.35, "CRT screen bulge."),
     toggle("graticule", "Graticule", "Tube", true, "Measurement grid."),
 ];

@@ -166,7 +166,8 @@ impl Scene for Chladni {
             vibration: p.f("vibration"),
             drift: p.f("drift"),
             grain: p.f("grain"),
-            glow: p.f("glow"),
+            // brightness per grain falls with the grain count so dense plates don't blow out
+            glow: p.f("glow") * (250_000.0 / *n as f32).powf(0.75),
             color_by: p.choice_index("color_by") as u32,
             seed: self.frame.wrapping_mul(2654435761),
             show_plate: p.b("show_plate") as u32,

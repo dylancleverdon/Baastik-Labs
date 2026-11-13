@@ -123,6 +123,7 @@ pub struct Post {
     p_down: wgpu::RenderPipeline,
     p_up: wgpu::RenderPipeline,
     p_composite: wgpu::RenderPipeline,
+    p_crossfade: wgpu::RenderPipeline,
     output_format: wgpu::TextureFormat,
     sized: Option<Sized>,
     trail_flip: usize,
@@ -140,8 +141,9 @@ impl Post {
         let p_down = gpu.fullscreen_pipeline("bloom-down", &module, "fs_down", &pl, HDR_FORMAT, None);
         let p_up = gpu.fullscreen_pipeline("bloom-up", &module, "fs_up", &pl, HDR_FORMAT, Some(gpu::ADDITIVE));
         let p_composite = gpu.fullscreen_pipeline("composite", &module, "fs_composite", &pl, output_format, None);
+        let p_crossfade = gpu.fullscreen_pipeline("crossfade", &module, "fs_crossfade", &pl, HDR_FORMAT, None);
         // one small uniform buffer per pass (each pass needs its own texel size)
-        let uniform_bufs = (0..(2 * BLOOM_MIPS + 3))
+        let uniform_bufs = (0..(2 * BLOOM_MIPS + 4))
             .map(|_| gpu.uniform_buffer("post-u", std::mem::size_of::<PostUniform>() as u64))
             .collect();
         let dummy = gpu
@@ -156,6 +158,7 @@ impl Post {
             p_down,
             p_up,
             p_composite,
+            p_crossfade,
             output_format,
             sized: None,
             trail_flip: 0,
@@ -198,6 +201,23 @@ impl Post {
                 wgpu::BindingResource::TextureView(aux),
             ],
         )
+    }
+
+    /// Blends two HDR scene images (`t` = 0 old, 1 new) into `out`.
+    pub fn crossfade(
+        &mut self,
+        gpu: &Gpu,
+        encoder: &mut wgpu::CommandEncoder,
+        new: &wgpu::TextureView,
+        old: &wgpu::TextureView,
+        out: &wgpu::TextureView,
+        t: f32,
+    ) {
+        let u = PostUniform { trails: t.clamp(0.0, 1.0), ..bytemuck::Zeroable::zeroed() };
+        let b = &self.uniform_bufs[self.uniform_bufs.len() - 1];
+        gpu.queue.write_buffer(b, 0, bytemuck::bytes_of(&u));
+        let bg = self.bind(gpu, b, new, old);
+        gpu::fullscreen(encoder, "crossfade", out, &self.p_crossfade, &[&bg], None);
     }
 
     /// Applies the look to `scene` (HDR) and writes the result to `output`.

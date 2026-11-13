@@ -168,7 +168,7 @@ impl Scene for Stardust {
             damping: p.f("damping") * 0.8,
             nova: self.nova,
             size: p.f("size"),
-            brightness: p.f("brightness") * (0.7 + a.loudness * 0.6),
+            brightness: p.f("brightness") * (0.7 + a.loudness * 0.6) * (250_000.0 / *n as f32).powf(0.6),
             noise_scale: 0.12,
             time: t,
         };

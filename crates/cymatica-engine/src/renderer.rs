@@ -19,6 +19,14 @@ pub struct RenderRequest<'a> {
     pub render_size: (u32, u32),
     pub output: &'a wgpu::TextureView,
     pub output_mode: OutputMode,
+    /// Seconds to crossfade when the scene changes (0 = cut).
+    pub crossfade: f32,
+}
+
+struct Fade {
+    scene: String,
+    params: ParamSet,
+    started: f32,
 }
 
 pub struct Renderer {
@@ -26,7 +34,11 @@ pub struct Renderer {
     post: Post,
     scenes: HashMap<String, Box<dyn Scene>>,
     hdr: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
+    hdr_old: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
+    hdr_mix: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
     palette_phase: f32,
+    current: Option<(String, ParamSet)>,
+    fade: Option<Fade>,
 }
 
 impl Renderer {
@@ -36,7 +48,11 @@ impl Renderer {
             post: Post::new(gpu, output_format),
             scenes: HashMap::new(),
             hdr: None,
+            hdr_old: None,
+            hdr_mix: None,
             palette_phase: 0.0,
+            current: None,
+            fade: None,
         }
     }
 
@@ -67,11 +83,16 @@ impl Renderer {
     }
 
     fn ensure_hdr(&mut self, gpu: &Gpu, size: (u32, u32)) {
-        if self.hdr.as_ref().map(|h| h.2) != Some(size) {
-            let t = gpu.render_texture("hdr", size, HDR_FORMAT);
-            let v = t.create_view(&Default::default());
-            self.hdr = Some((t, v, size));
-        }
+        let make = |slot: &mut Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>, label: &str| {
+            if slot.as_ref().map(|h| h.2) != Some(size) {
+                let t = gpu.render_texture(label, size, HDR_FORMAT);
+                let v = t.create_view(&Default::default());
+                *slot = Some((t, v, size));
+            }
+        };
+        make(&mut self.hdr, "hdr");
+        make(&mut self.hdr_old, "hdr-old");
+        make(&mut self.hdr_mix, "hdr-mix");
     }
 
     /// Records one frame into `encoder`.
@@ -94,13 +115,46 @@ impl Renderer {
         self.globals.update(gpu, &info, size);
 
         let hdr_view = self.hdr.as_ref().unwrap().1.clone();
+        // start a crossfade when the scene changes
+        if let Some((prev_id, prev_params)) = &self.current {
+            if prev_id != info_scene.id && req.crossfade > 0.01 {
+                self.fade = Some(Fade { scene: prev_id.clone(), params: prev_params.clone(), started: info.time });
+            }
+        }
+        self.current = Some((info_scene.id.to_string(), req.scene_params.clone()));
+        let fade_t = self
+            .fade
+            .as_ref()
+            .map(|f| ((info.time - f.started) / req.crossfade.max(0.01)).clamp(0.0, 1.0));
+        if fade_t.map(|t| t >= 1.0).unwrap_or(false) {
+            let old = self.fade.take().map(|f| f.scene);
+            if let Some(old) = old {
+                // free the faded-out scene's GPU memory (it restarts fresh if picked again)
+                self.scenes.remove(&old);
+            }
+        }
+
+        if self.fade.is_none() {
+            // only the visible scene keeps its GPU memory
+            let keep = info_scene.id;
+            self.scenes.retain(|id, _| id == keep);
+        }
         let params = Params::new(info_scene.params, req.scene_params, &info.audio);
-        let globals = &self.globals as *const GlobalsGpu;
-        let scene = self.scene(gpu, info_scene.id);
-        // SAFETY: `scene()` only touches `self.scenes`; globals is not mutated while borrowed here.
-        let globals = unsafe { &*globals };
-        let mut ctx = SceneCtx { encoder, target: &hdr_view, size, globals, info: &info, params: &params };
-        scene.render(gpu, &mut ctx);
+        self.render_scene(gpu, encoder, info_scene.id, &params, &hdr_view, size, &info);
+        let mut scene_view = hdr_view.clone();
+        if let (Some(fade), Some(t)) = (self.fade.as_ref().map(|f| (f.scene.clone(), f.params.clone())), fade_t) {
+            if t < 1.0 {
+                if let Some(old_info) = scene_info(&fade.0) {
+                    let old_view = self.hdr_old.as_ref().unwrap().1.clone();
+                    let old_params = Params::new(old_info.params, &fade.1, &info.audio);
+                    self.render_scene(gpu, encoder, old_info.id, &old_params, &old_view, size, &info);
+                    let mix_view = self.hdr_mix.as_ref().unwrap().1.clone();
+                    let s = t * t * (3.0 - 2.0 * t);
+                    self.post.crossfade(gpu, encoder, &hdr_view, &old_view, &mix_view, s);
+                    scene_view = mix_view;
+                }
+            }
+        }
 
         let look_frame = LookFrame {
             time: info.time,
@@ -109,6 +163,25 @@ impl Renderer {
             note_color: info.note_color,
         };
         let look = Params::new(LOOK_PARAMS, req.look, &info.audio);
-        self.post.run(gpu, encoder, &hdr_view, size, req.output, req.output_mode, &look, &look_frame);
+        self.post.run(gpu, encoder, &scene_view, size, req.output, req.output_mode, &look, &look_frame);
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn render_scene(
+        &mut self,
+        gpu: &Gpu,
+        encoder: &mut wgpu::CommandEncoder,
+        id: &str,
+        params: &Params,
+        target: &wgpu::TextureView,
+        size: (u32, u32),
+        info: &FrameInfo,
+    ) {
+        let globals = &self.globals as *const GlobalsGpu;
+        let scene = self.scene(gpu, id);
+        // SAFETY: `scene()` only touches `self.scenes`; globals is not mutated while borrowed here.
+        let globals = unsafe { &*globals };
+        let mut ctx = SceneCtx { encoder, target, size, globals, info, params };
+        scene.render(gpu, &mut ctx);
     }
 }

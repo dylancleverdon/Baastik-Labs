@@ -18,7 +18,7 @@ port of cava's own algorithm.
 | **Ferrofluid** | Magnetic fluid with Rosensweig spikes (spring physics) | Every spike rides its own frequency band; kicks make them jump |
 | **Chladni** | Cymatics: up to 2M sand grains on a vibrating plate | The dominant note picks the standing-wave mode |
 | **Stardust** | A galaxy of up to 4M stars around moving gravity wells | Bass is gravity, treble is turbulence, kicks are supernovas |
-| **Bars** | cava's bars (Classic), plus springy Jelly bars, caps and sparks | cava's own algorithm, 1:1 |
+| **Bars** | cava's bars (Classic), springy Jelly bars, or Sparks that fly off the peaks; bottom, mirrored or radial | cava's own algorithm, 1:1 |
 | **Phosphor** | An oscilloscope drawn by a simulated CRT beam | Lissajous / goniometer / waveform / polar |
 
 Everything is customizable: 23 themes (Synthwave, Vaporwave, Catppuccin, Dracula, Nord, Gruvbox,
@@ -57,7 +57,7 @@ curl -fsSL https://github.com/dylancleverdon/Baastik-Labs/releases/download/cyma
 ```
 
 ## Building from source
-Rust 1.85+. `cargo run -p cymatica-app --bin cymatica`. See `CLAUDE.md` for the architecture and
+Rust 1.88+. `cargo run -p cymatica-app --bin cymatica`. See `CLAUDE.md` for the architecture and
 release flow.
 
 ## Credits

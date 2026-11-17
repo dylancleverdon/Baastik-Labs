@@ -41,10 +41,19 @@ namespace tutti
             Ops ops;
         };
 
-        explicit Replica (std::string selfPeerId);
+        // Batch numbers start from the clock so they keep increasing across app restarts (Player 1
+        // drops a resent batch whose number it has already sequenced).
+        explicit Replica (std::string selfPeerId, uint64_t firstCseq = 1);
 
         // Start from a snapshot (joining, an update, a restore). Clears pending edits and the log.
         void reset (Doc confirmedDoc, uint64_t seq);
+
+        // Adopt Player 1's state after a gap or a split, keeping our pending edits (they are sent
+        // again). Clears the log.
+        void rebase (Doc confirmedDoc, uint64_t seq);
+
+        // Our accepted batches after `seq` (used when a split lost them: they become pending again).
+        Ops ownOpsSince (uint64_t seq) const;
 
         // Our own edit, already visible in our Live. Returns the batch to send to Player 1.
         Batch local (Ops ops);

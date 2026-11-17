@@ -18,7 +18,10 @@ namespace tutti
         return LogEntry { seq, str (j, "by"), uinteger (j, "cseq"), std::move (*ops) };
     }
 
-    Replica::Replica (std::string selfPeerId) : selfId (std::move (selfPeerId)) {}
+    Replica::Replica (std::string selfPeerId, uint64_t firstCseq)
+        : selfId (std::move (selfPeerId)), nextCseq (firstCseq == 0 ? 1 : firstCseq)
+    {
+    }
 
     void Replica::reset (Doc doc, uint64_t seq)
     {
@@ -26,6 +29,22 @@ namespace tutti
         lastSeq = seq;
         pendingList.clear();
         logList.clear();
+    }
+
+    void Replica::rebase (Doc doc, uint64_t seq)
+    {
+        confirmedDoc = std::move (doc);
+        lastSeq = seq;
+        logList.clear();
+    }
+
+    Ops Replica::ownOpsSince (uint64_t seq) const
+    {
+        Ops out;
+        for (const auto& e : logList)
+            if (e.seq > seq && e.author == selfId)
+                out.insert (out.end(), e.ops.begin(), e.ops.end());
+        return out;
     }
 
     Replica::Batch Replica::local (Ops ops)

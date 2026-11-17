@@ -109,6 +109,7 @@ class Engine(object):
     # ------------------------------------------------------------------ tick
 
     def tick(self):
+        self._check_document()
         for event in self.bridge.poll():
             if event[0] == "connected":
                 self._on_connected()
@@ -142,6 +143,33 @@ class Engine(object):
     def shutdown(self):
         self._unwatch_all()
         self.bridge.close()
+
+    _last_doc_check = 0.0
+    _last_fingerprint = None
+
+    def _check_document(self):
+        """Live may load another Set without restarting the script: notice it and start over."""
+        now = self.clock()
+        if now - self._last_doc_check < 1.0:
+            return
+        self._last_doc_check = now
+        try:
+            current = self.app.get_document()
+        except Exception:
+            current = None
+        if current is not None and current != self.song:
+            self.log("a different Set was opened")
+            self.unbind()
+            self.song = current
+            self.caps = self._probe_caps()
+            if self.bridge.connected:
+                self._on_connected()
+            return
+        if not self.bound and self.bridge.connected:
+            fp = self.fingerprint()
+            if self._last_fingerprint is not None and fp != self._last_fingerprint:
+                self._on_connected()  # tell the app what's open now
+            self._last_fingerprint = fp
 
     def _on_connected(self):
         self.bridge.send({
@@ -1555,6 +1583,7 @@ class Engine(object):
         self._pending_idea = (eid, copy)
         self._sync_song_structure(None)
         self._pending_idea = None
+        self._flush_ops()  # the copy's creates must reach the app before we name it
         self.bridge.send({"type": "idea_created", "orig": track_id, "track": eid if self.mirror.has(eid) else None})
 
     # ------------------------------------------------------------------ preview -> full quality

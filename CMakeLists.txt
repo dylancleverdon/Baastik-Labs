@@ -27,6 +27,7 @@ set(TUTTI_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 configure_file(core/TuttiVersion.h.in "${TUTTI_GENERATED_DIR}/TuttiVersion.h" @ONLY)
 
 add_subdirectory(core)
+add_subdirectory(engine)
 
 if(TUTTI_BUILD_APP)
     add_subdirectory(app)

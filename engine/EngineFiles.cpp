@@ -1,0 +1,597 @@
+// Engine: file transfers, presence, Play together, suggestion-mode ideas, settings and the view.
+#include "Engine.h"
+
+#include "Platform.h"
+#include "tutti/Ids.h"
+
+namespace tutti
+{
+    namespace
+    {
+        constexpr int64_t kChunk = 256 * 1024;
+        constexpr size_t kMaxQueued = 4u * 1024u * 1024u;
+        constexpr int kMaxActive = 3;
+
+        // Live's track colour indices for Tutti's eight member colours.
+        constexpr int kLiveColours[] = { 13, 26, 16, 1, 24, 4, 9, 21 };
+    }
+
+    // ================================================================== files
+
+    void Engine::wantFile (const std::string& hash, bool previewFirst)
+    {
+        if (hash.size() != 64 || contentStore.has (hash))
+            return;
+        if (previewFirst && ! contentStore.hasPreviewWav (hash) && transfers.count (hash + ":preview") == 0)
+            transfers[hash + ":preview"] = Transfer { hash, "preview" };
+        if (transfers.count (hash + ":full") == 0)
+            transfers[hash + ":full"] = Transfer { hash, "full" };
+    }
+
+    void Engine::pumpTransfers()
+    {
+        if (transfers.empty())
+            return;
+        const double t = now();
+        int active = 0;
+        for (auto& [key, tr] : transfers)
+        {
+            if (tr.active && t - tr.started > 60.0 && tr.received == 0)
+            {
+                tr.active = false; // nothing in a minute: try someone else
+                tr.tried.push_back (tr.from);
+            }
+            if (tr.active)
+                ++active;
+        }
+
+        // Previews first, then full files.
+        for (const char* kind : { "preview", "full" })
+            for (auto& [key, tr] : transfers)
+            {
+                if (active >= kMaxActive)
+                    return;
+                if (tr.kind != kind || tr.active || tr.retryAt > t)
+                    continue;
+                if (tr.kind == "preview" && contentStore.has (tr.hash))
+                    continue;
+
+                // Player 1 first (it has everything), then the others.
+                std::vector<std::string> candidates;
+                const auto& info = sessionPtr->info();
+                if (! info.p1.empty() && info.p1 != self.peer)
+                    candidates.push_back (info.p1);
+                for (const auto& m : info.members)
+                    if (m.peer != self.peer && m.peer != info.p1)
+                        candidates.push_back (m.peer);
+                std::string pick;
+                for (const auto& c : candidates)
+                    if (peerLinks.count (c) != 0 && std::find (tr.tried.begin(), tr.tried.end(), c) == tr.tried.end())
+                    {
+                        pick = c;
+                        break;
+                    }
+                if (pick.empty())
+                {
+                    tr.tried.clear();
+                    tr.retryAt = t + 10.0;
+                    continue;
+                }
+                tr.active = true;
+                tr.from = pick;
+                tr.started = t;
+                tr.received = 0;
+                tr.total = -1;
+                contentStore.partialFor (tr.hash, tr.kind).deleteFile();
+                send (pick, Json { { "type", "get" }, { "hash", tr.hash }, { "kind", tr.kind } });
+                ++active;
+            }
+    }
+
+    void Engine::prepareLocalFile (const std::string& hash)
+    {
+        if (preparing.count (hash) != 0 || ! contentStore.has (hash))
+            return;
+        preparing.insert (hash);
+        juce::Thread::launch ([this, hash] {
+            juce::String error;
+            audio::ensurePreview (contentStore, hash, error);
+            post ([this, hash] { preparing.erase (hash); });
+        });
+    }
+
+    void Engine::handleFileMessage (const std::string& peer, const Json& m, const protocol::Frame* binary)
+    {
+        const auto type = str (m, "type");
+        const auto hash = str (m, "hash");
+        const auto kind = str (m, "kind");
+
+        if (type == "get")
+        {
+            juce::File file;
+            if (kind == "preview")
+            {
+                if (contentStore.hasPreview (hash))
+                    file = contentStore.previewOggFor (hash);
+                else if (contentStore.has (hash))
+                {
+                    auto meta = contentStore.meta (hash);
+                    if (meta && ! meta->isAudio())
+                    {
+                        send (peer, Json { { "type", "missing" }, { "hash", hash }, { "kind", kind }, { "no_preview", true } });
+                        return;
+                    }
+                    prepareLocalFile (hash);
+                    send (peer, Json { { "type", "missing" }, { "hash", hash }, { "kind", kind }, { "retry", true } });
+                    return;
+                }
+            }
+            else if (contentStore.has (hash))
+                file = contentStore.fileFor (hash);
+
+            if (file == juce::File())
+            {
+                send (peer, Json { { "type", "missing" }, { "hash", hash }, { "kind", kind } });
+                return;
+            }
+            auto it = peerLinks.find (peer);
+            if (it == peerLinks.end())
+                return;
+            Outgoing out;
+            out.link = it->second;
+            out.hash = hash;
+            out.kind = kind;
+            out.file = file;
+            out.total = file.getSize();
+            if (auto meta = contentStore.meta (hash))
+                out.meta = meta->toJson();
+            serving.push_back (out);
+            return;
+        }
+
+        if (type == "missing")
+        {
+            auto it = transfers.find (hash + ":" + kind);
+            if (it == transfers.end() || it->second.from != peer)
+                return;
+            auto& tr = it->second;
+            tr.active = false;
+            if (boolean (m, "no_preview"))
+            {
+                transfers.erase (it); // not audio: just get the file
+                return;
+            }
+            if (boolean (m, "retry") && tr.retries < 8)
+            {
+                ++tr.retries;
+                tr.retryAt = now() + 1.5;
+            }
+            else
+                tr.tried.push_back (peer);
+            return;
+        }
+
+        if (binary == nullptr)
+            return;
+
+        // A chunk of a file we asked for.
+        auto it = transfers.find (hash + ":" + kind);
+        if (it == transfers.end() || ! it->second.active || it->second.from != peer)
+            return;
+        auto& tr = it->second;
+        const auto offset = integer (m, "off");
+        const auto total = integer (m, "total");
+        if (offset != tr.received)
+        {
+            tr.active = false; // out of step: start over
+            return;
+        }
+        if (offset == 0)
+        {
+            tr.total = total;
+            if (const auto& meta = field (m, "meta"); meta.is_object())
+                if (auto parsed = AudioMeta::fromJson (meta); parsed && ! contentStore.meta (hash))
+                    contentStore.writeMeta (*parsed);
+        }
+        auto part = contentStore.partialFor (hash, kind);
+        part.getParentDirectory().createDirectory();
+        {
+            juce::FileOutputStream out (part);
+            if (! out.openedOk())
+            {
+                tr.active = false;
+                return;
+            }
+            out.write (binary->data.data(), binary->data.size());
+        }
+        tr.received += static_cast<int64_t> (binary->data.size());
+        if (tr.received < tr.total)
+            return;
+
+        juce::String error;
+        const bool ok = contentStore.commit (part, hash, kind, error);
+        if (! ok)
+        {
+            log ("download of " + hash + " failed: " + error.toStdString());
+            tr.active = false;
+            tr.tried.push_back (peer);
+            return;
+        }
+        transfers.erase (it);
+        fileArrived (hash, kind);
+    }
+
+    void Engine::serveChunks()
+    {
+        int budget = 16; // chunks per pump
+        while (! serving.empty() && budget-- > 0)
+        {
+            auto out = serving.front();
+            serving.pop_front();
+            auto it = links.find (out.link);
+            if (it == links.end())
+                continue;
+            if (it->second.link->queuedBytes() > kMaxQueued)
+            {
+                serving.push_back (out); // that link is busy; come back to it
+                continue;
+            }
+            juce::FileInputStream in (out.file);
+            if (! in.openedOk())
+                continue;
+            in.setPosition (out.offset);
+            juce::HeapBlock<char> data (static_cast<size_t> (kChunk));
+            const auto n = in.read (data.getData(), static_cast<int> (std::min<int64_t> (kChunk, out.total - out.offset)));
+            if (n < 0)
+                continue;
+            Json header { { "type", "chunk" }, { "hash", out.hash }, { "kind", out.kind }, { "off", out.offset },
+                          { "total", out.total } };
+            if (out.offset == 0 && ! out.meta.is_null())
+                header["meta"] = out.meta;
+            it->second.link->send (protocol::encodeBinary (header, data.getData(), static_cast<size_t> (n)));
+            out.offset += n;
+            if (out.offset < out.total && n > 0)
+                serving.push_back (out);
+        }
+    }
+
+    void Engine::fileArrived (const std::string& hash, const std::string& kind)
+    {
+        auto tellLive = [this] (const std::string& h) {
+            if (liveBound)
+            {
+                Ops ops;
+                const auto doc = sessionPtr->replica().optimistic();
+                const auto local = contentStore.bestFor (h);
+                for (const auto& id : doc.subtree (Doc::rootId))
+                    if (auto* e = doc.find (id); e != nullptr && e->type == "clip" && str (e->props, "file") == h)
+                        ops.push_back (Op::set (id, { { "path", local.getFullPathName().toStdString() } }));
+                if (! ops.empty())
+                    sendToLive (Json { { "type", "apply" }, { "ops", toJson (ops) } });
+            }
+            maybeOpenJoinedSong();
+            if (onChange)
+                onChange();
+        };
+
+        if (kind == "full")
+        {
+            transfers.erase (hash + ":preview");
+            tellLive (hash);
+            return;
+        }
+        // A preview: decode it to a WAV of exactly the original length, off this thread.
+        auto meta = contentStore.meta (hash);
+        if (! meta || ! meta->isAudio())
+        {
+            maybeOpenJoinedSong();
+            return;
+        }
+        const auto info = audio::Info { meta->rate, meta->channels, meta->frames, meta->bits };
+        juce::Thread::launch ([this, hash, info, tellLive] {
+            juce::String error;
+            const bool ok = audio::decodePreview (contentStore.previewOggFor (hash), info, contentStore.previewWavFor (hash), error);
+            post ([this, hash, ok, error, tellLive] {
+                if (! ok)
+                {
+                    log ("couldn't decode preview " + hash + ": " + error.toStdString());
+                    return;
+                }
+                if (! contentStore.has (hash))
+                    tellLive (hash);
+            });
+        });
+    }
+
+    // ================================================================== presence
+
+    void Engine::handlePresence (const std::string& peer, const Json& m)
+    {
+        Presence p;
+        p.track = str (m, "track");
+        p.clip = str (m, "clip");
+        p.time = number (m, "time");
+        p.playing = boolean (m, "playing");
+        p.recording = boolean (m, "rec");
+        presence[peer] = p;
+    }
+
+    std::string Engine::trackName (const std::string& trackId) const
+    {
+        if (trackId.empty())
+            return {};
+        const auto& doc = sessionPtr->replica().confirmed();
+        if (auto* e = doc.find (trackId))
+            return str (e->props, "name");
+        return {};
+    }
+
+    double Engine::barOf (double beats) const
+    {
+        const auto& song = sessionPtr->replica().confirmed().find (Doc::rootId)->props;
+        const double n = number (song, "sig_n", 4.0);
+        const double d = number (song, "sig_d", 4.0);
+        const double beatsPerBar = n * 4.0 / (d > 0 ? d : 4.0);
+        return 1.0 + beats / (beatsPerBar > 0 ? beatsPerBar : 4.0);
+    }
+
+    // ================================================================== Play together
+
+    void Engine::playTogether()
+    {
+        if (! sessionPtr->inSession())
+            return;
+        const double pos = presence.count (self.peer) != 0 ? presence[self.peer].time : 0.0;
+        if (sessionPtr->isPlayer1())
+        {
+            Json play { { "type", "play" }, { "pos", pos }, { "at", now() + 0.6 }, { "by", self.peer } };
+            sessionPtr->broadcast (play);
+            handlePlay (play);
+        }
+        else
+            send (sessionPtr->info().p1, Json { { "type", "play_req" }, { "pos", pos } });
+    }
+
+    void Engine::handlePlay (const Json& m)
+    {
+        const auto by = str (m, "by");
+        if (by != self.peer)
+        {
+            if (playMode == "never")
+                return;
+            if (playMode == "ask")
+            {
+                playRequest = m;
+                playRequestAt = now();
+                const auto* who = sessionPtr->info().member (by);
+                notice ((who != nullptr ? who->name : std::string ("Someone")) + " wants to play together.");
+                return;
+            }
+        }
+        playRequest = m;
+        answerPlayTogether (true);
+    }
+
+    void Engine::answerPlayTogether (bool join)
+    {
+        if (playRequest.is_null())
+            return;
+        const auto request = playRequest;
+        playRequest = nullptr;
+        if (! join)
+            return;
+        // `at` is on Player 1's clock: convert it to ours, then to wall-clock time for the script.
+        const double localAt = number (request, "at") - sessionPtr->player1ClockOffset();
+        double pos = number (request, "pos");
+        double delay = localAt - now();
+        if (delay < 0.05)
+        {
+            // Joining late: start where everyone else is by now.
+            const auto& song = sessionPtr->replica().confirmed().find (Doc::rootId)->props;
+            pos += (-delay + 0.15) * number (song, "tempo", 120.0) / 60.0;
+            delay = 0.15;
+        }
+        const double atWallMs = static_cast<double> (juce::Time::currentTimeMillis()) + delay * 1000.0;
+        sendToLive (Json { { "type", "play_at" }, { "pos", pos }, { "at", atWallMs } });
+        joinedPlay = true;
+    }
+
+    void Engine::stopTogether()
+    {
+        sessionPtr->broadcast (Json { { "type", "stop_play" }, { "by", self.peer } });
+        sendToLive (Json { { "type", "stop_play" } });
+        joinedPlay = false;
+    }
+
+    void Engine::setPlayTogetherMode (const std::string& mode)
+    {
+        if (mode == "ask" || mode == "auto" || mode == "never")
+        {
+            playMode = mode;
+            saveSettings();
+        }
+    }
+
+    // ================================================================== suggestion mode
+
+    void Engine::makeIdea (const std::string& trackId)
+    {
+        if (! liveBound || trackName (trackId).empty())
+            return;
+        const auto name = trackName (trackId) + " (" + self.name + "'s idea)";
+        sendToLive (Json { { "type", "idea" }, { "track", trackId }, { "name", name },
+                           { "color", kLiveColours[static_cast<size_t> (std::abs (self.color)) % 8] } });
+    }
+
+    void Engine::acceptIdea (const std::string& ideaTrack)
+    {
+        if (! sessionPtr->isPlayer1())
+            return;
+        const auto& doc = sessionPtr->replica().confirmed();
+        auto* idea = doc.find (ideaTrack);
+        if (idea == nullptr)
+            return;
+        const auto orig = str (idea->props, "idea_of");
+        auto* original = doc.find (orig);
+        Json props { { "idea_of", nullptr }, { "idea_by", nullptr }, { "mute", false } };
+        if (original != nullptr)
+        {
+            props["name"] = str (original->props, "name");
+            props["color"] = integer (original->props, "color");
+            props["mute"] = boolean (original->props, "mute");
+        }
+        Ops ops;
+        if (original != nullptr)
+            ops.push_back (Op::remove (orig));
+        ops.push_back (Op::set (ideaTrack, props));
+        applyLocalAndSubmit (ops);
+        notice ("Idea accepted.");
+    }
+
+    void Engine::rejectIdea (const std::string& ideaTrack)
+    {
+        const auto& doc = sessionPtr->replica().confirmed();
+        auto* idea = doc.find (ideaTrack);
+        if (idea == nullptr)
+            return;
+        if (! sessionPtr->isPlayer1() && str (idea->props, "idea_by") != self.peer)
+            return;
+        applyLocalAndSubmit ({ Op::remove (ideaTrack) });
+    }
+
+    // ================================================================== identity and settings
+
+    void Engine::setIdentity (const std::string& name, int color)
+    {
+        if (! name.empty())
+            self.name = name;
+        self.color = ((color % 8) + 8) % 8;
+        saveSettings();
+        sessionPtr->updateSelf (self);
+        broadcastStatus();
+    }
+
+    void Engine::loadSettings()
+    {
+        auto file = options.dataDir.getChildFile ("settings.json");
+        auto j = parseJson (file.loadFileAsString().toStdString()).value_or (Json::object());
+        self.peer = str (j, "peer");
+        if (self.peer.empty())
+            self.peer = newPeerId();
+        self.name = str (j, "name", options.name.toStdString());
+        if (self.name.empty())
+            self.name = juce::SystemStats::getFullUserName().upToFirstOccurrenceOf (" ", false, false).toStdString();
+        if (self.name.empty())
+            self.name = juce::SystemStats::getComputerName().toStdString();
+        self.color = static_cast<int> (integer (j, "color", static_cast<int64_t> (std::hash<std::string> {} (self.peer) % 8)));
+        playMode = str (j, "play", "ask");
+        saveSettings();
+    }
+
+    void Engine::saveSettings() const
+    {
+        auto file = options.dataDir.getChildFile ("settings.json");
+        auto j = parseJson (file.loadFileAsString().toStdString()).value_or (Json::object());
+        j["peer"] = self.peer;
+        j["name"] = self.name;
+        j["color"] = self.color;
+        j["play"] = playMode;
+        file.replaceWithText (juce::String (j.dump (2)));
+    }
+
+    // ================================================================== view
+
+    EngineView Engine::view() const
+    {
+        EngineView v;
+        const auto& s = *sessionPtr;
+        const double t = now();
+        v.tailscaleInstalled = tailscaleInstalled;
+        v.tailscaleRunning = tailscaleStatus && tailscaleStatus->running();
+        v.selfAddress = self.addr;
+        v.liveConnected = liveLink != 0;
+        v.liveBound = liveBound;
+        v.liveVersion = self.live;
+        v.liveStatus = liveStatus;
+        v.role = s.role();
+        v.session = s.info();
+        v.canTakeOver = s.canTakeOver (t);
+        v.askedForP1 = s.player1Requested();
+        v.myName = self.name;
+        v.myColor = self.color;
+        v.playTogetherMode = playMode;
+        v.startStatus = startStatus;
+        v.staleCount = static_cast<int> (stale.size());
+        v.notices.assign (notices.begin(), notices.end());
+        if (! playRequest.is_null())
+        {
+            const auto by = str (playRequest, "by");
+            const auto* who = s.info().member (by);
+            v.playRequestBy = who != nullptr ? who->name : by;
+            v.playRequestPos = barOf (number (playRequest, "pos"));
+        }
+        for (const auto& p : s.pendingJoinRequests())
+            v.joinRequests.push_back (p);
+        for (const auto& p : s.pendingPlayer1Requests())
+            v.p1Requests.push_back (p);
+
+        for (const auto& [peer, hello] : peerHellos)
+        {
+            EngineView::Peer p;
+            p.peer = peer;
+            p.name = str (hello, "name");
+            p.addr = str (hello, "addr");
+            p.os = str (hello, "os");
+            p.app = str (hello, "app");
+            p.color = static_cast<int> (integer (hello, "color"));
+            const auto& summary = field (hello, "session");
+            if (summary.is_object())
+            {
+                p.sessionId = str (summary, "id");
+                p.song = str (summary, "song");
+                p.members = static_cast<int> (integer (summary, "members"));
+                p.hosting = str (summary, "p1") == peer;
+            }
+            v.peers.push_back (p);
+        }
+
+        for (const auto& m : s.info().members)
+        {
+            EngineView::Member mv;
+            mv.info = m;
+            mv.isMe = m.peer == self.peer;
+            mv.isPlayer1 = m.peer == s.info().p1;
+            mv.info.online = mv.isMe || s.isOnline (m.peer, t);
+            if (auto it = presence.find (m.peer); it != presence.end())
+            {
+                mv.trackName = trackName (it->second.track);
+                mv.bar = barOf (it->second.time);
+                mv.playing = it->second.playing;
+                mv.recording = it->second.recording;
+            }
+            v.members.push_back (mv);
+        }
+
+        if (s.inSession())
+        {
+            const auto& doc = s.replica().confirmed();
+            for (const auto& id : doc.children (Doc::rootId))
+                if (auto* e = doc.find (id); e != nullptr && e->type == "track" && e->props.contains ("idea_of"))
+                {
+                    EngineView::Idea idea;
+                    idea.track = id;
+                    idea.orig = str (e->props, "idea_of");
+                    idea.by = str (e->props, "idea_by");
+                    const auto* who = s.info().member (idea.by);
+                    idea.byName = who != nullptr ? who->name : std::string ("Someone");
+                    idea.name = str (e->props, "name");
+                    idea.origName = trackName (idea.orig);
+                    v.ideas.push_back (idea);
+                }
+        }
+
+        for (const auto& [key, tr] : transfers)
+            (tr.kind == "preview" ? v.previewsWaiting : v.filesWaiting)++;
+        return v;
+    }
+}

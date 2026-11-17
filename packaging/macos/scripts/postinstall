@@ -1,0 +1,34 @@
+#!/bin/bash
+# Runs after Tutti's files are in place: opens Tutti for the person who installed it. On its first
+# run Tutti installs its Remote Script into Live's User Library and sets itself to start at login.
+set -u
+
+TARGET_USER="${USER:-}"
+if [ -z "$TARGET_USER" ] || [ "$TARGET_USER" = "root" ]; then
+    TARGET_USER=$(/usr/bin/stat -f%Su /dev/console)
+fi
+USER_HOME=$(/usr/bin/dscl . -read "/Users/$TARGET_USER" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}')
+[ -n "$USER_HOME" ] || USER_HOME="$HOME"
+APP="$USER_HOME/Applications/Tutti.app"
+
+run_as_user() {
+    if [ "$(/usr/bin/id -u)" = "0" ]; then
+        /bin/launchctl asuser "$(/usr/bin/id -u "$TARGET_USER")" /usr/bin/sudo -u "$TARGET_USER" "$@"
+    else
+        "$@"
+    fi
+}
+
+if [ "$(/usr/bin/id -u)" = "0" ]; then
+    for p in "$APP" "$USER_HOME/Library/Audio/Plug-Ins/VST3/Tutti Stand-in.vst3" \
+             "$USER_HOME/Library/Audio/Plug-Ins/Components/Tutti Stand-in.component"; do
+        [ -e "$p" ] && /usr/sbin/chown -R "$TARGET_USER" "$p"
+    done
+fi
+
+# A CI smoke test installs without a logged-in session: don't try to open anything there.
+if [ -z "${TUTTI_NO_LAUNCH:-}" ] && [ -d "$APP" ]; then
+    run_as_user /usr/bin/open "$APP" || echo "Tutti: couldn't open the app after installing"
+fi
+/usr/bin/killall -9 AudioComponentRegistrar 2>/dev/null || true
+exit 0

@@ -33,7 +33,7 @@ if(TUTTI_BUILD_APP)
     add_subdirectory(app)
 endif()
 
-if(TUTTI_BUILD_PLUGIN)
+if(TUTTI_BUILD_PLUGIN AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/plugin/CMakeLists.txt)
     add_subdirectory(plugin)
 endif()
 

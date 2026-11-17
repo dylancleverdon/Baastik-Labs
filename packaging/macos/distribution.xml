@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tutti installer. Installs into the current user's home folder only, so no admin password is
+     needed and Tutti can replace its own files when it updates. -->
+<installer-gui-script minSpecVersion="2">
+    <title>Tutti</title>
+    <organization>com.baastiklabs</organization>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <conclusion file="conclusion.html" mime-type="text/html"/>
+    <allowed-os-versions>
+        <os-version min="11.0"/>
+    </allowed-os-versions>
+    <domains enable_anywhere="false" enable_currentUserHome="true" enable_localSystem="false"/>
+    <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+    <choices-outline>
+        <line choice="tutti"/>
+    </choices-outline>
+    <choice id="tutti" title="Tutti" visible="false">
+        <pkg-ref id="com.baastiklabs.tutti"/>
+    </choice>
+    <pkg-ref id="com.baastiklabs.tutti" version="@VERSION@" onConclusion="none">Tutti-component.pkg</pkg-ref>
+</installer-gui-script>

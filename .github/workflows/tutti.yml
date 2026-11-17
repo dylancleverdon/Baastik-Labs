@@ -1,0 +1,338 @@
+name: Tutti
+
+# Builds and tests Tutti on Linux, macOS and Windows for every push. Pushes to the `tutti` branch
+# also publish: tutti-v<version> (prerelease, never "Latest") and the rolling tutti-channel release
+# that the install links and every installed Tutti's updater read. Nothing is published unless
+# every job passes, and no secrets are needed.
+
+on:
+  push:
+    branches: ["tutti", "claude/**"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish a release from this run
+        type: boolean
+        default: false
+
+concurrency:
+  group: tutti-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PLUGINVAL_VERSION: v1.0.4
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      build: ${{ steps.plan.outputs.build }}
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        run: |
+          BUILD="${{ github.run_number }}"
+          VERSION="$(head -n1 VERSION | tr -d '[:space:]').$BUILD"
+          PUBLISH=false
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/tutti" ]]; then PUBLISH=true; fi
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.publish }}" == "true" ]]; then PUBLISH=true; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "Tutti $VERSION (publish: $PUBLISH)"
+
+  linux:
+    name: Linux build, tests, end-to-end
+    needs: plan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build xvfb libasound2-dev libjack-jackd2-dev libfreetype-dev \
+            libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
+            libxrandr-dev libxrender-dev libxi-dev libglu1-mesa-dev libegl-dev mesa-common-dev
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11" # the Python inside Live 12
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DTUTTI_BUILD_NUMBER=${{ needs.plan.outputs.build }} -DTUTTI_COMMIT=${{ github.sha }}
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Core tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Remote Script tests (fake Live)
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest remote_script/tests -q
+
+      - name: End-to-end (three Tuttis, real Remote Script, fake Lives)
+        run: python tools/e2e/run_e2e.py build
+
+      - name: pluginval (Stand-in VST3, strictness 8)
+        run: |
+          VST3="build/plugin/TuttiStandIn_artefacts/Release/VST3/Tutti Stand-in.vst3"
+          if [ ! -d "$VST3" ]; then echo "no plugin in this build"; exit 0; fi
+          curl -fsSL -o pluginval.zip "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Linux.zip"
+          unzip -q pluginval.zip
+          chmod +x pluginval
+          xvfb-run -a ./pluginval --strictness-level 8 --validate-in-process --validate "$VST3"
+
+      - name: Screenshots of every screen
+        run: |
+          mkdir -p shots
+          (cd shots && xvfb-run -a ../build/app/Tutti_artefacts/Release/Tutti --screenshot .)
+          ls -la shots
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tutti-screens-linux
+          path: shots/
+
+  macos:
+    name: macOS build and package
+    needs: plan
+    runs-on: macos-15
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+      BUILD: ${{ needs.plan.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        run: command -v ninja || brew install ninja
+
+      - name: Configure (universal)
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DTUTTI_BUILD_TOOLS=OFF
+          -DTUTTI_BUILD_NUMBER=${BUILD} -DTUTTI_COMMIT=${{ github.sha }}
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Core tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Stage and sign the payload
+        run: |
+          PAYLOAD="dist/payload"
+          mkdir -p "$PAYLOAD"
+          ditto build/app/Tutti_artefacts/Release/Tutti.app "$PAYLOAD/Tutti.app"
+          test -f "$PAYLOAD/Tutti.app/Contents/Resources/RemoteScript/Tutti/__init__.py"
+          PLUGINS=build/plugin/TuttiStandIn_artefacts/Release
+          [ -d "$PLUGINS/VST3/Tutti Stand-in.vst3" ] && ditto "$PLUGINS/VST3/Tutti Stand-in.vst3" "$PAYLOAD/Tutti Stand-in.vst3"
+          [ -d "$PLUGINS/AU/Tutti Stand-in.component" ] && ditto "$PLUGINS/AU/Tutti Stand-in.component" "$PAYLOAD/Tutti Stand-in.component"
+          for item in "$PAYLOAD"/*; do
+            codesign --force --deep --sign - "$item"
+            codesign --verify --deep --strict "$item"
+          done
+          ls -la "$PAYLOAD"
+
+      - name: Package (installer + update zip)
+        run: |
+          mkdir -p out
+          packaging/macos/build_pkg.sh dist/payload "$VERSION" out
+          (cd dist/payload && ditto -c -k --sequesterRsrc . "../../out/Tutti-${VERSION}-mac.zip")
+          ls -la out
+
+      - name: Installer smoke test
+        run: |
+          export TUTTI_NO_LAUNCH=1
+          installer -pkg out/Tutti-Installer.pkg -target CurrentUserHomeDirectory
+          test -d "$HOME/Applications/Tutti.app"
+          pkill -x Tutti 2>/dev/null || true
+
+      - name: Screenshots from the installed app
+        continue-on-error: true
+        run: |
+          mkdir -p shots
+          "$HOME/Applications/Tutti.app/Contents/MacOS/Tutti" --screenshot "$PWD/shots" &
+          pid=$!
+          for i in $(seq 1 60); do kill -0 $pid 2>/dev/null || break; sleep 1; done
+          kill $pid 2>/dev/null || true
+          ls -la shots
+
+      - name: auval and pluginval (Stand-in)
+        run: |
+          if [ ! -d "$HOME/Library/Audio/Plug-Ins/Components/Tutti Stand-in.component" ]; then echo "no plugin in this build"; exit 0; fi
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          sleep 2
+          auval -v aufx TtSi Bstk
+          curl -fsSL -o pluginval.zip "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_macOS.zip"
+          ditto -x -k pluginval.zip pluginval
+          pluginval/pluginval.app/Contents/MacOS/pluginval --strictness-level 8 --validate-in-process \
+            --validate "$HOME/Library/Audio/Plug-Ins/VST3/Tutti Stand-in.vst3"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tutti-mac
+          path: out/
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tutti-screens-mac
+          path: shots/
+          if-no-files-found: ignore
+
+  windows:
+    name: Windows build and package
+    needs: plan
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+      BUILD: ${{ needs.plan.outputs.build }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -A x64 -DTUTTI_BUILD_TOOLS=OFF
+          -DTUTTI_BUILD_NUMBER=${BUILD} -DTUTTI_COMMIT=${{ github.sha }}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Core tests
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Stage the payload
+        run: |
+          PAYLOAD=dist/payload
+          mkdir -p "$PAYLOAD"
+          ART=build/app/Tutti_artefacts/Release
+          cp "$ART/Tutti.exe" "$PAYLOAD/"
+          cp -R "$ART/RemoteScript" "$PAYLOAD/RemoteScript"
+          test -f "$PAYLOAD/RemoteScript/Tutti/__init__.py"
+          VST3="build/plugin/TuttiStandIn_artefacts/Release/VST3/Tutti Stand-in.vst3"
+          [ -d "$VST3" ] && cp -R "$VST3" "$PAYLOAD/"
+          ls -la "$PAYLOAD"
+
+      - name: Package (installer + update zip)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          Compress-Archive -Path dist\payload\* -DestinationPath "out\Tutti-$env:VERSION-windows.zip"
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          & $iscc "/DAppVersion=$env:VERSION" "/DPayload=$env:GITHUB_WORKSPACE\dist\payload" `
+            "/DOutputDir=$env:GITHUB_WORKSPACE\out" "/DOutputName=Tutti-Installer" packaging\windows\installer.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-ChildItem out
+
+      - name: Screenshots
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          New-Item -ItemType Directory -Force -Path shots | Out-Null
+          $p = Start-Process -FilePath "dist\payload\Tutti.exe" -ArgumentList "--screenshot", "$env:GITHUB_WORKSPACE\shots" -PassThru
+          if (-not $p.WaitForExit(60000)) { $p.Kill() }
+          Get-ChildItem shots
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tutti-windows
+          path: out/
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tutti-screens-windows
+          path: shots/
+          if-no-files-found: ignore
+
+  publish:
+    name: Publish release
+    needs: [plan, linux, macos, windows]
+    if: needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ needs.plan.outputs.version }}
+      BUILD: ${{ needs.plan.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tutti-mac
+          path: out
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tutti-windows
+          path: out
+
+      - name: Release notes
+        run: |
+          git fetch --tags --force --quiet
+          PREV="$(git tag --list 'tutti-v*' --sort=-creatordate | head -n1)"
+          if [ -n "$PREV" ]; then RANGE="$PREV..HEAD"; else RANGE="HEAD~10..HEAD"; fi
+          git log --no-merges --pretty='- %s' $RANGE | head -n 15 > notes.md || true
+          [ -s notes.md ] || echo "- Improvements" > notes.md
+          cat notes.md
+
+      - name: Publish tutti-v${{ env.VERSION }} and refresh tutti-channel
+        run: |
+          set -euo pipefail
+          MAC="out/Tutti-${VERSION}-mac.zip"
+          WIN="out/Tutti-${VERSION}-windows.zip"
+          BASE="https://github.com/${GH_REPO}/releases/download/tutti-v${VERSION}"
+          python3 tools/release/make_manifest.py --version "$VERSION" --build "$BUILD" --commit "${{ github.sha }}" \
+            --notes-file notes.md \
+            --asset "mac=$MAC=$BASE/Tutti-${VERSION}-mac.zip" \
+            --asset "windows=$WIN=$BASE/Tutti-${VERSION}-windows.zip" \
+            --suggestions suggestions/endpoint.txt > out/tutti-update.json
+          cat out/tutti-update.json
+
+          gh release create "tutti-v${VERSION}" --target "${{ github.sha }}" --prerelease --latest=false \
+            --title "Tutti ${VERSION}" --notes-file notes.md \
+            "$MAC" "$WIN" out/Tutti-Installer.pkg out/Tutti-Installer.exe
+
+          if ! gh release view tutti-channel >/dev/null 2>&1; then
+            gh release create tutti-channel --target "${{ github.sha }}" --prerelease --latest=false \
+              --title "Tutti (latest build)" --notes "Tutti's install links and update feed."
+          fi
+          {
+            echo "## Tutti ${VERSION}"
+            echo
+            echo "Edit one Ableton Live song together, live."
+            echo
+            echo "**Install on a Mac:** [Tutti-Installer.pkg](https://github.com/${GH_REPO}/releases/download/tutti-channel/Tutti-Installer.pkg). The first time only, macOS asks you to approve it: open **System Settings > Privacy & Security** and click **Open Anyway**."
+            echo
+            echo "**Install on Windows:** [Tutti-Installer.exe](https://github.com/${GH_REPO}/releases/download/tutti-channel/Tutti-Installer.exe). If Windows says it protected your PC, click **More info > Run anyway**."
+            echo
+            echo "Then follow the three setup steps in the app. Tutti keeps itself up to date."
+            echo
+            echo "### What's new"
+            cat notes.md
+          } > channel-notes.md
+          gh release edit tutti-channel --notes-file channel-notes.md --prerelease --latest=false
+          gh release upload tutti-channel out/Tutti-Installer.pkg out/Tutti-Installer.exe out/tutti-update.json --clobber
+          echo "Published Tutti ${VERSION}"

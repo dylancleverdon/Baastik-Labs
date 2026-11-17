@@ -318,6 +318,13 @@ void AppUpdater::runCheck (bool manual)
         return;
     }
     zip.deleteFile();
+    // A zip made with its folder kept: use that folder.
+    if (! dir.getChildFile ("Tutti.app").exists() && ! dir.getChildFile ("Tutti.exe").exists())
+    {
+        auto children = dir.findChildFiles (juce::File::findDirectories, false);
+        if (children.size() == 1)
+            dir = children[0];
+    }
     {
         std::lock_guard<std::mutex> g (lock);
         staged = dir;

@@ -1,0 +1,8 @@
+#pragma once
+
+namespace tutti::version
+{
+    inline constexpr const char* string = "@TUTTI_VERSION@";
+    inline constexpr long long build = @TUTTI_BUILD_NUMBER@;
+    inline constexpr const char* commit = "@TUTTI_COMMIT@";
+}

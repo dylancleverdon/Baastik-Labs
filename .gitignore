@@ -1,0 +1,9 @@
+/build*/
+/dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+*.swp
+/.vscode/
+/.idea/

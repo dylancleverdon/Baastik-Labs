@@ -104,6 +104,7 @@ namespace tutti
         void stopTogether();
         void setPlayTogetherMode (const std::string& mode);
         void makeIdea (const std::string& trackId);
+        void makeIdeaOnSelectedTrack(); // the track selected in our Live
         void acceptIdea (const std::string& ideaTrack);
         void rejectIdea (const std::string& ideaTrack);
         void setIdentity (const std::string& name, int color);

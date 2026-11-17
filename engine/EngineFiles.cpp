@@ -423,6 +423,17 @@ namespace tutti
                            { "color", kLiveColours[static_cast<size_t> (std::abs (self.color)) % 8] } });
     }
 
+    void Engine::makeIdeaOnSelectedTrack()
+    {
+        auto it = presence.find (self.peer);
+        if (it == presence.end() || it->second.track.empty() || trackName (it->second.track).empty())
+        {
+            notice ("Select the track you want to try an idea on in Live first.");
+            return;
+        }
+        makeIdea (it->second.track);
+    }
+
     void Engine::acceptIdea (const std::string& ideaTrack)
     {
         if (! sessionPtr->isPlayer1())

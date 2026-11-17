@@ -1,0 +1,39 @@
+#pragma once
+
+#include "AppState.h"
+#include "Rows.h"
+
+class SettingsPage;
+class SuggestionPage;
+
+// The Tutti window: header with status, the current page, and a footer with the latest notice.
+class MainComponent : public juce::Component
+{
+public:
+    explicit MainComponent (AppActions&);
+    ~MainComponent() override;
+
+    void update (const AppState&);
+
+    enum class Page { main, settings, suggest };
+    void showPage (Page);
+    Page page() const { return currentPage; }
+
+    void paint (juce::Graphics&) override;
+    void resized() override;
+
+private:
+    std::vector<Row> buildRows (const AppState&);
+    void chooseSong();
+
+    AppActions& actions;
+    AppState state;
+    Page currentPage = Page::main;
+
+    juce::Viewport viewport;
+    RowList rows;
+    std::unique_ptr<SettingsPage> settings;
+    std::unique_ptr<SuggestionPage> suggestions;
+    juce::TextButton suggestButton { "Suggestion box" }, settingsButton { "Settings" };
+    std::unique_ptr<juce::FileChooser> chooser;
+};

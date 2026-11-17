@@ -94,6 +94,12 @@ namespace tutti
             discover();
         pumpTransfers();
         serveChunks();
+        pollSave();
+        if (sessionPtr->isPlayer1())
+            processSaves();
+        if (reloadWhenMerged && ! reloading)
+            if (auto meta = loadSnapshot (latestSnapshot); meta && contentStore.has (str (*meta, "als")))
+                reloadInto (*meta);
 
         if (! pendingPresence.is_null() && t - lastPresenceSent > 0.25)
         {
@@ -446,6 +452,10 @@ namespace tutti
 
     void Engine::sessionChanged()
     {
+        const auto& info = sessionPtr->info();
+        if (sessionPtr->inSession() && ! info.snapshot.empty() && info.snapshot != latestSnapshot
+            && ! currentSnapshot.empty() && ! sessionPtr->isPlayer1() && ! loadSnapshot (info.snapshot))
+            send (info.p1, Json { { "type", "snap_req" }, { "id", info.snapshot }, { "session", info.id }, { "notice", true } });
         broadcastStatus();
         if (onChange)
             onChange();
@@ -486,6 +496,13 @@ namespace tutti
         joinedWaitingForSong = false;
         stale.clear();
         presence.clear();
+        pendingSave = nullptr;
+        saveQueue.clear();
+        latestSnapshot.clear();
+        currentSnapshot.clear();
+        reloadWhenMerged = false;
+        reloading = false;
+        updateBy.clear();
     }
 
     void Engine::appMessage (const std::string& peer, const Json& message)
@@ -499,6 +516,18 @@ namespace tutti
             handleFileMessage (peer, message, nullptr);
         else if (type == "presence")
             handlePresence (peer, message);
+        else if (type == "save")
+            handleSave (peer, message);
+        else if (type == "snapshot")
+            handleSnapshotNotice (peer, message);
+        else if (type == "label")
+        {
+            if (auto meta = loadSnapshot (str (message, "id")))
+            {
+                (*meta)["label"] = str (message, "label");
+                storeSnapshot (*meta);
+            }
+        }
         else if (type == "play_req" && sessionPtr->isPlayer1())
         {
             Json play { { "type", "play" }, { "pos", number (message, "pos") }, { "at", now() + 0.6 }, { "by", peer } };
@@ -598,8 +627,28 @@ namespace tutti
             if (waitingForCapture)
                 finishStart (m);
         }
+        else if (type == "structure")
+        {
+            if (! pendingSave.is_null() && integer (m, "req") == structureRequest)
+            {
+                pendingSave["map"] = field (m, "map");
+                pendingSave["notes"] = field (m, "notes");
+                if (pendingSave.contains ("als"))
+                    sendSave (std::exchange (pendingSave, nullptr));
+            }
+        }
         else if (type == "bound")
         {
+            if (reloading)
+            {
+                // Updated: the other copy of the song file is now stale.
+                reloading = false;
+                const auto base = currentSong.getFileNameWithoutExtension().upToLastOccurrenceOf (" (Tutti)", false, false);
+                for (const auto& name : { base + ".als", base + " (Tutti).als" })
+                    if (auto f = currentSong.getSiblingFile (name); f != currentSong)
+                        f.deleteFile();
+                notice ("Your Live is up to date.");
+            }
             liveBound = true;
             liveStatus = "In sync";
             stale.clear();
@@ -910,7 +959,8 @@ namespace tutti
         currentSong = pendingStartCopy;
         currentMap = field (captured, "map");
         currentNotes = field (captured, "notes");
-        currentSnapshot = snapshotId;
+        currentSnapshot = latestSnapshot = snapshotId;
+        songStamp = ignoreStamp = currentSong.getSize() ^ (currentSong.getLastModificationTime().toMilliseconds() << 8);
         sessionPtr->start (sessionId, currentSongName, std::move (*doc), 0, snapshotId, now());
         liveBound = true;
         liveStatus = "In sync";
@@ -965,7 +1015,7 @@ namespace tutti
             if (auto m = contentStore.meta (h))
                 metas.push_back (m->toJson());
         Json reply = *snap;
-        reply["type"] = "snap";
+        reply["type"] = boolean (message, "notice") ? "snapshot" : "snap";
         reply["metas"] = std::move (metas);
         send (peer, reply);
     }
@@ -1055,7 +1105,8 @@ namespace tutti
         currentSongName = song;
         currentMap = field (joinSnapshot, "map");
         currentNotes = field (joinSnapshot, "notes");
-        currentSnapshot = str (joinSnapshot, "id");
+        currentSnapshot = latestSnapshot = str (joinSnapshot, "id");
+        songStamp = ignoreStamp = currentSong.getSize() ^ (currentSong.getLastModificationTime().toMilliseconds() << 8);
         joinSnapshot = nullptr;
         joinedWaitingForSong = true;
         startStatus.clear();

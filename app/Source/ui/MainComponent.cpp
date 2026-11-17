@@ -39,7 +39,7 @@ MainComponent::~MainComponent() = default;
 void MainComponent::showPage (Page p)
 {
     currentPage = p;
-    viewport.setVisible (p == Page::main);
+    viewport.setVisible (p == Page::main || p == Page::versions);
     settings->setVisible (p == Page::settings);
     suggestions->setVisible (p == Page::suggest);
     update (state);
@@ -48,9 +48,9 @@ void MainComponent::showPage (Page p)
 void MainComponent::update (const AppState& s)
 {
     state = s;
-    if (currentPage == Page::main)
+    if (currentPage == Page::main || currentPage == Page::versions)
     {
-        rows.setRows (buildRows (s));
+        rows.setRows (currentPage == Page::main ? buildRows (s) : buildVersionRows (s));
         rows.layout (viewport.getMaximumVisibleWidth());
     }
     settings->update (s);
@@ -185,6 +185,12 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
         add ({ "takeover", Row::Style::warning, "Player 1 isn't responding",
                "If they're not coming back, you can take over so everyone keeps working.", {}, false, false,
                { { "Take over", [&act] { act.takeOver(); }, true } } });
+    if (e.updateAvailable)
+        add ({ "update", Row::Style::warning,
+               juce::String (e.updateBy.empty() ? "Someone" : e.updateBy) + " shared changes that need an update",
+               "Save in Live (Cmd+S / Ctrl+S) to get them: your own changes are merged in. Updating without saving drops "
+               "your unsaved automation and plugin changes.", {}, false, false,
+               { { "Update without saving", [&act] { act.updateNow(); } } } });
     if (e.staleCount > 0)
         add ({ "stale", Row::Style::warning,
                juce::String (e.staleCount) + (e.staleCount == 1 ? " change needs an update" : " changes need an update"),
@@ -240,8 +246,54 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
     }
     add ({ "make-idea", Row::Style::quiet, {}, {}, {}, false, false,
            { { "Try an idea on the selected track", [&act] { act.makeIdea(); } } } });
+    add ({ "versions", Row::Style::quiet, {}, {}, {}, false, false,
+           { { "Versions (" + juce::String ((int) e.versions.size()) + ")", [this] { showPage (Page::versions); } } } });
     add ({ "leave", Row::Style::quiet, {}, {}, {}, false, false, { { "Leave session", [&act] { act.leave(); } } } });
     return out;
+}
+
+std::vector<Row> MainComponent::buildVersionRows (const AppState& s)
+{
+    std::vector<Row> out;
+    auto& act = actions;
+    const auto& e = s.engine;
+    const bool iAmP1 = e.role == Session::Role::player1;
+    out.push_back ({ "h-versions", Row::Style::heading, "Versions of " + juce::String (e.session.song) });
+    out.push_back ({ "about", Row::Style::text,
+                     "Every save is kept, so nothing is ever lost. Open a copy to listen to an old version; "
+                     "Player 1 can bring one back for everyone." });
+    for (const auto& v : e.versions)
+    {
+        const auto id = v.id;
+        Row r { "v-" + v.id, Row::Style::card,
+                juce::String (v.when) + (v.label.empty() ? juce::String() : "  " + theme::middot() + "  " + juce::String (v.label)),
+                juce::String (v.summary) + (v.current ? "  " + theme::middot() + "  in your Live now" : juce::String()) };
+        r.actions.push_back ({ "Open a copy", [&act, id] { act.openVersionCopy (id); } });
+        if (iAmP1 && ! v.current)
+            r.actions.push_back ({ "Restore", [&act, id] { act.restoreVersion (id); } });
+        out.push_back (r);
+    }
+    out.push_back ({ "label", Row::Style::quiet, {}, {}, {}, false, false,
+                     { { "Name the latest version...", [this] { askForLabel(); } } } });
+    out.push_back ({ "back", Row::Style::quiet, {}, {}, {}, false, false, { { "Back", [this] { showPage (Page::main); } } } });
+    return out;
+}
+
+void MainComponent::askForLabel()
+{
+    labelPrompt = std::make_unique<juce::AlertWindow> ("Name this version", "For example \"Before the new chorus\".",
+                                                       juce::MessageBoxIconType::NoIcon);
+    labelPrompt->addTextEditor ("label", {}, {});
+    labelPrompt->addButton ("Save name", 1, juce::KeyPress (juce::KeyPress::returnKey));
+    labelPrompt->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    labelPrompt->enterModalState (true, juce::ModalCallbackFunction::create ([this] (int result) {
+        if (result == 1 && labelPrompt != nullptr)
+        {
+            const auto text = labelPrompt->getTextEditorContents ("label").trim();
+            if (text.isNotEmpty())
+                actions.labelVersion (text.toStdString());
+        }
+    }), false);
 }
 
 void MainComponent::paint (juce::Graphics& g)

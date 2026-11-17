@@ -15,7 +15,7 @@ public:
 
     void update (const AppState&);
 
-    enum class Page { main, settings, suggest };
+    enum class Page { main, settings, suggest, versions };
     void showPage (Page);
     Page page() const { return currentPage; }
 
@@ -24,7 +24,9 @@ public:
 
 private:
     std::vector<Row> buildRows (const AppState&);
+    std::vector<Row> buildVersionRows (const AppState&);
     void chooseSong();
+    void askForLabel();
 
     AppActions& actions;
     AppState state;
@@ -36,4 +38,5 @@ private:
     std::unique_ptr<SuggestionPage> suggestions;
     juce::TextButton suggestButton { "Suggestion box" }, settingsButton { "Settings" };
     std::unique_ptr<juce::FileChooser> chooser;
+    std::unique_ptr<juce::AlertWindow> labelPrompt;
 };

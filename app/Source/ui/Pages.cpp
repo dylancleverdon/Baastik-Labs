@@ -36,8 +36,16 @@ SettingsPage::SettingsPage (AppActions& a, std::function<void()> onDone) : actio
     ask.onClick = [this] { actions.setPlayMode ("ask"); };
     automatic.onClick = [this] { actions.setPlayMode ("auto"); };
     never.onClick = [this] { actions.setPlayMode ("never"); };
-    for (auto* b : { &ask, &automatic, &never, &checkNow, &rollBack, &logs, &back })
+    for (auto* b : { &ask, &automatic, &never, &checkNow, &rollBack, &logs, &back, &chooseBackup })
         addAndMakeVisible (b);
+    chooseBackup.onClick = [this] {
+        chooser = std::make_unique<juce::FileChooser> ("Where should Tutti keep a copy of every version?");
+        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
+                              [this] (const juce::FileChooser& fc) {
+                                  if (fc.getResult().isDirectory())
+                                      actions.setBackupFolder (fc.getResult());
+                              });
+    };
 
     autoUpdate.onClick = [this] { actions.setAutoUpdate (autoUpdate.getToggleState()); };
     startAtLogin.onClick = [this] { actions.setStartAtLogin (startAtLogin.getToggleState()); };
@@ -57,6 +65,8 @@ SettingsPage::SettingsPage (AppActions& a, std::function<void()> onDone) : actio
     styleLabel (updateStatus, 14.0f, theme::text);
     styleLabel (notes, 13.0f, theme::dim);
     styleLabel (scriptInfo, 13.0f, theme::dim);
+    styleLabel (backupInfo, 13.0f, theme::dim);
+    addAndMakeVisible (backupInfo);
     addAndMakeVisible (updateStatus);
     addAndMakeVisible (notes);
     addAndMakeVisible (scriptInfo);
@@ -89,6 +99,10 @@ void SettingsPage::update (const AppState& s)
     scriptInfo.setText (s.setup.scriptInstalledIn.isEmpty()
                             ? juce::String ("The Tutti Remote Script couldn't be installed into Live's User Library. Check that Live has been opened once on this computer.")
                             : "Remote Script installed in " + s.setup.scriptInstalledIn.joinIntoString (", "),
+                        juce::dontSendNotification);
+    backupInfo.setText (s.engine.backupFolder.empty()
+                            ? juce::String ("Player 1 can keep a copy of every version (with its audio) in a folder, such as your shared Google Drive. None chosen yet.")
+                            : "Copies go to " + juce::String (s.engine.backupFolder) + " (when you're Player 1).",
                         juce::dontSendNotification);
     repaint();
 }
@@ -125,6 +139,7 @@ void SettingsPage::paint (juce::Graphics& g)
     }
     heading (g, "When someone presses Play together", playTop, getWidth());
     heading (g, "Updates", updatesTop, getWidth());
+    heading (g, "Backups", backupTop, getWidth());
     heading (g, "This computer", setupTop, getWidth());
 }
 
@@ -146,18 +161,23 @@ void SettingsPage::resized()
 
     updatesTop = y;
     updateStatus.setBounds (0, y + 22, w, 22);
-    notes.setBounds (0, y + 44, w, 54);
-    autoUpdate.setBounds (0, y + 100, w, 26);
-    auto buttons = juce::Rectangle<int> (0, y + 130, w, 30);
+    notes.setBounds (0, y + 44, w, 36);
+    autoUpdate.setBounds (0, y + 82, w, 26);
+    auto buttons = juce::Rectangle<int> (0, y + 112, w, 30);
     checkNow.setBounds (buttons.removeFromLeft (120));
     buttons.removeFromLeft (8);
     rollBack.setBounds (buttons.removeFromLeft (110));
-    y += 130 + 30 + 18;
+    y += 112 + 30 + 18;
+
+    backupTop = y;
+    backupInfo.setBounds (0, y + 22, w, 36);
+    chooseBackup.setBounds (0, y + 60, 150, 30);
+    y += 60 + 30 + 18;
 
     setupTop = y;
     startAtLogin.setBounds (0, y + 22, w, 26);
-    scriptInfo.setBounds (0, y + 52, w, 52);
-    logs.setBounds (0, y + 108, 120, 30);
+    scriptInfo.setBounds (0, y + 52, w, 36);
+    logs.setBounds (0, y + 92, 120, 30);
 
     back.setBounds (w - 100, getHeight() - 34, 100, 32);
 }

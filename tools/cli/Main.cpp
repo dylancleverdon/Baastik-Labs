@@ -39,7 +39,8 @@ namespace
                       { "stale", v.staleCount }, { "files_waiting", v.filesWaiting }, { "previews_waiting", v.previewsWaiting },
                       { "notices", v.notices }, { "ideas", ideas }, { "can_take_over", v.canTakeOver },
                       { "doc", engine.session().replica().confirmed().toJson() }, { "seq", engine.session().replica().seq() },
-                      { "song_file", engine.songFile().getFullPathName().toStdString() } };
+                      { "song_file", engine.songFile().getFullPathName().toStdString() },
+                      { "update_available", v.updateAvailable }, { "versions", v.versions.size() } };
     }
 
     void emit (const Json& j)
@@ -144,6 +145,8 @@ int main (int argc, char* argv[])
                 engine.acceptIdea (str (*cmd, "track"));
             else if (c == "reject_idea")
                 engine.rejectIdea (str (*cmd, "track"));
+            else if (c == "update")
+                engine.updateNow();
         }
         engine.pump();
         if (eof && work.empty())

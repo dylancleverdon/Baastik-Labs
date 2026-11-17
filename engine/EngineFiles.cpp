@@ -496,6 +496,8 @@ namespace tutti
             self.name = juce::SystemStats::getComputerName().toStdString();
         self.color = static_cast<int> (integer (j, "color", static_cast<int64_t> (std::hash<std::string> {} (self.peer) % 8)));
         playMode = str (j, "play", "ask");
+        if (const auto b = str (j, "backup"); ! b.empty())
+            backupFolder = juce::File (juce::String (b));
         saveSettings();
     }
 
@@ -507,6 +509,7 @@ namespace tutti
         j["name"] = self.name;
         j["color"] = self.color;
         j["play"] = playMode;
+        j["backup"] = backupFolder.getFullPathName().toStdString();
         file.replaceWithText (juce::String (j.dump (2)));
     }
 
@@ -603,6 +606,30 @@ namespace tutti
 
         for (const auto& [key, tr] : transfers)
             (tr.kind == "preview" ? v.previewsWaiting : v.filesWaiting)++;
+
+        v.updateAvailable = s.inSession() && ! latestSnapshot.empty() && latestSnapshot != currentSnapshot && ! reloading;
+        v.updateBy = updateBy;
+        v.backupFolder = backupFolder.getFullPathName().toStdString();
+        if (s.inSession())
+        {
+            std::vector<Json> metas;
+            for (const auto& f : snapshotsDir().findChildFiles (juce::File::findFiles, false, "*.json"))
+                if (auto j = parseJson (f.loadFileAsString().toStdString()); j && j->is_object())
+                    metas.push_back (*j);
+            std::sort (metas.begin(), metas.end(), [] (const Json& a, const Json& b) { return str (a, "at") > str (b, "at"); });
+            for (const auto& m : metas)
+            {
+                EngineView::Version ver;
+                ver.id = str (m, "id");
+                const auto t = juce::Time::fromISO8601 (juce::String (str (m, "at")));
+                ver.when = t.formatted ("%a %d %b, %H:%M").toStdString();
+                ver.byName = str (m, "byName");
+                ver.label = str (m, "label");
+                ver.summary = str (m, "summary", str (m, "prev").empty() ? "Session started" : "Saved");
+                ver.current = ver.id == currentSnapshot;
+                v.versions.push_back (ver);
+            }
+        }
         return v;
     }
 }

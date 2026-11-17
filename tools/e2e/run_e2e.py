@@ -53,10 +53,19 @@ def write_wav(path, seconds=1.5, rate=44100):
     return path
 
 
+def automation(marker):
+    """A stand-in for something only a save carries (an automation lane), tagged so we can find it."""
+    return ('<AutomationEnvelopes><Envelopes><AutomationEnvelope Id="0"><EnvelopeTarget><PointeeId Value="7"/>'
+            '</EnvelopeTarget><Automation><Events><FloatEvent Time="1" Value="0.5" Marker="%s"/></Events></Automation>'
+            '</AutomationEnvelope></Envelopes></AutomationEnvelopes>' % marker)
+
+
 def write_als(path, tracks, audio_files):
     """A minimal Live Set whose track names match the fake Live song."""
     parts = []
-    for kind, name in tracks:
+    for track in tracks:
+        kind, name = track[0], track[1]
+        extra = track[2] if len(track) > 2 else ""
         tag = "MidiTrack" if kind == "midi" else "AudioTrack"
         refs = ""
         if kind == "audio":
@@ -64,8 +73,8 @@ def write_als(path, tracks, audio_files):
                 refs += ('<AudioClip><SampleRef><FileRef><RelativePathType Value="0"/><RelativePath Value=""/>'
                          '<Path Value="%s"/><Type Value="1"/><OriginalFileSize Value="%d"/></FileRef></SampleRef></AudioClip>'
                          % (f, os.path.getsize(f)))
-        parts.append('<%s Id="1"><Name><EffectiveName Value="%s"/><UserName Value="%s"/></Name>'
-                     '<DeviceChain><MainSequencer>%s</MainSequencer></DeviceChain></%s>' % (tag, name, name, refs, tag))
+        parts.append('<%s Id="1"><Name><EffectiveName Value="%s"/><UserName Value="%s"/></Name>%s'
+                     '<DeviceChain><MainSequencer>%s</MainSequencer></DeviceChain></%s>' % (tag, name, name, extra, refs, tag))
     xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<Ableton MajorVersion="5" MinorVersion="12.0_12117" '
            'Creator="Ableton Live 12.3.2"><LiveSet><Tracks>%s</Tracks><MasterTrack><Name>'
            '<EffectiveName Value="Main"/></Name></MasterTrack></LiveSet></Ableton>' % "".join(parts))
@@ -315,6 +324,45 @@ def main():
             return (not full) or ("(preview)" not in path and path.endswith("bob take.wav"))
         check(h.run(20, lambda: has_take(alice, False) and has_take(cara, False)), "the take appears for Alice and Cara")
         check(h.run(30, lambda: has_take(alice, True) and has_take(cara, True)), "and is swapped to full quality")
+
+        print("4b. Saving shares what Live can't sync live; saves are merged by track")
+
+        def save(peer, track_index, marker):
+            """What pressing Cmd+S does: Live rewrites the song file."""
+            path = peer.state()["song_file"]
+            tracks = []
+            for i, t in enumerate(peer.song.tracks):
+                tracks.append(("midi" if t.has_midi_input else "audio", t.name,
+                               automation(marker) if i == track_index else ""))
+            write_als(path, tracks, [])
+
+        save(bob, 0, "bob-drums")
+        check(h.run(20, lambda: alice.state()["update_available"] and cara.state()["update_available"]),
+              "Alice and Cara are told an update is available")
+        check(not bob.state()["update_available"], "Bob's own save needs no update")
+
+        opened_before = len(cara.opened)
+        save(cara, 1, "cara-bass")
+        check(h.run(20, lambda: len(cara.opened) > opened_before), "Cara's save is merged and her Live reloads")
+        cara.open_live(clone(cara.song))
+        check(h.run(15, lambda: cara.state()["live_bound"] and not cara.state()["update_available"]),
+              "Cara is in sync with the merged song")
+
+        snaps_dir = os.path.join(alice.data, "sessions")
+        newest = None
+        for root, _, files in os.walk(snaps_dir):
+            for f in files:
+                if f.endswith(".json"):
+                    meta = json.load(open(os.path.join(root, f)))
+                    if newest is None or meta.get("at", "") > newest.get("at", ""):
+                        newest = meta
+        check(newest is not None and newest.get("merged"), "the newest version is a merge")
+        als_hash = newest["als"]
+        store = os.path.join(alice.data, "Store", "files", als_hash[:2], als_hash)
+        merged_xml = gzip.open(os.path.join(store, os.listdir(store)[0] if os.listdir(store)[0] != "meta.json"
+                                            else os.listdir(store)[1])).read().decode("utf-8")
+        check("bob-drums" in merged_xml and "cara-bass" in merged_xml, "the merge kept Bob's and Cara's changes")
+        check(len(cara.state()["notices"]) > 0, "Cara was told what happened")
 
         print("5. Cara asks to be Player 1; Alice says yes")
         cara.cmd(cmd="request_p1")

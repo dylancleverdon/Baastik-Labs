@@ -47,6 +47,11 @@ namespace
         void setStartAtLogin (bool) override {}
         void showLogs() override {}
         void openUrl (const juce::String&) override {}
+        void updateNow() override {}
+        void labelVersion (const std::string&) override {}
+        void restoreVersion (const std::string&) override {}
+        void openVersionCopy (const std::string&) override {}
+        void setBackupFolder (const juce::File&) override {}
     };
 
     tutti::MemberInfo member (const std::string& peer, const std::string& name, int colour, bool online = true)
@@ -138,7 +143,13 @@ namespace
         s.engine.staleCount = 2;
         s.engine.ideas = { { "t9", "t2", "p1", "Dylan", "Bass (Dylan's idea)", "Bass" } };
         s.engine.notices = { "Sam wants to play together." };
+        s.engine.updateAvailable = true;
+        s.engine.updateBy = "Sam";
+        s.engine.versions = { { "v3", "Tue 17 Nov, 21:40", "Sam", "", "Sam saved (merged with earlier saves)", false },
+                              { "v2", "Tue 17 Nov, 21:12", "Dylan", "Before the new chorus", "Dylan saved", true },
+                              { "v1", "Tue 17 Nov, 20:30", "Sam", "", "Session started", false } };
         shoot ("4-session-guest", s);
+        shoot ("7-versions", s, MainComponent::Page::versions);
 
         // 5. Settings and the suggestion box.
         s.updates.availableVersion = "0.1.60";
@@ -383,6 +394,11 @@ private:
         dir.startAsProcess();
     }
     void openUrl (const juce::String& url) override { juce::URL (url).launchInDefaultBrowser(); }
+    void updateNow() override { engine->updateNow(); }
+    void labelVersion (const std::string& label) override { engine->labelVersion (label); }
+    void restoreVersion (const std::string& id) override { engine->restoreVersion (id); }
+    void openVersionCopy (const std::string& id) override { engine->openVersionCopy (id); }
+    void setBackupFolder (const juce::File& folder) override { engine->setBackupFolder (folder); dirty = true; }
 
     theme::LookAndFeel lookAndFeel;
     std::unique_ptr<tutti::Engine> engine;

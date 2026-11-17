@@ -63,4 +63,9 @@ struct AppActions
     virtual void setStartAtLogin (bool) = 0;
     virtual void showLogs() = 0;
     virtual void openUrl (const juce::String&) = 0;
+    virtual void updateNow() = 0;
+    virtual void labelVersion (const std::string& label) = 0;
+    virtual void restoreVersion (const std::string& id) = 0;
+    virtual void openVersionCopy (const std::string& id) = 0;
+    virtual void setBackupFolder (const juce::File& folder) = 0;
 };

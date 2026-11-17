@@ -72,6 +72,16 @@ namespace tutti
         int myColor = 0;
         std::string playTogetherMode;  // "ask", "auto", "never"
         std::string startStatus;       // progress while starting a session
+
+        struct Version
+        {
+            std::string id, when, byName, label, summary;
+            bool current = false;
+        };
+        bool updateAvailable = false;  // someone saved changes this Live doesn't have yet
+        std::string updateBy;
+        std::vector<Version> versions; // newest first
+        std::string backupFolder;
     };
 
     class Engine : private Session::Listener
@@ -108,6 +118,13 @@ namespace tutti
         void acceptIdea (const std::string& ideaTrack);
         void rejectIdea (const std::string& ideaTrack);
         void setIdentity (const std::string& name, int color);
+
+        // --- save lane and versions (EngineVersions.cpp)
+        void updateNow();                                // reload Live into the latest snapshot
+        void labelVersion (const std::string& label);    // name the current version
+        void restoreVersion (const std::string& id);     // Player 1: make an old version current
+        void openVersionCopy (const std::string& id);    // open an old version as a separate copy
+        void setBackupFolder (const juce::File& folder);
 
         EngineView view() const;
         const Session& session() const { return *sessionPtr; }
@@ -195,6 +212,20 @@ namespace tutti
         std::string trackName (const std::string& trackId) const;
         double barOf (double beats) const;
 
+        // --- save lane (EngineVersions.cpp)
+        juce::File snapshotsDir() const;
+        std::optional<Json> loadSnapshot (const std::string& id) const;
+        void storeSnapshot (const Json& meta);
+        void pollSave();
+        void onSaved (const juce::File& saved);
+        void sendSave (Json save);
+        void handleSave (const std::string& from, const Json& save);
+        void processSaves();
+        void handleSnapshotNotice (const std::string& from, const Json& meta);
+        void reloadInto (const Json& meta);
+        std::unique_ptr<juce::XmlElement> localCopyOf (const Json& meta, const juce::File& folder, juce::String& error);
+        void backUp (const Json& meta);
+
         // --- settings
         void loadSettings();
         void saveSettings() const;
@@ -280,5 +311,19 @@ namespace tutti
 
         std::deque<std::string> notices;
         double lastTick = 0;
+
+        // Save lane
+        juce::int64 songStamp = 0;        // size ^ mtime of the session song we last saw
+        double songChangedAt = 0;
+        juce::int64 ignoreStamp = 0;      // our own writes to the song file
+        double lastSavePoll = 0;
+        Json pendingSave;                 // waiting for the Remote Script's structure map
+        int structureRequest = 0;
+        std::deque<std::pair<std::string, Json>> saveQueue; // Player 1: saves to merge, in order
+        std::string latestSnapshot;       // newest snapshot we know about
+        std::string updateBy;
+        bool reloadWhenMerged = false;    // our save is being merged: reload when it comes back
+        bool reloading = false;
+        juce::File backupFolder;
     };
 }

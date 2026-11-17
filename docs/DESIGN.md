@@ -151,11 +151,16 @@ member's colour, muted for everyone (others audition with their personal solo). 
 
 ## Shared bounces (Tutti Stand-in)
 
-Each member reports which plugins they have (from Live's browser). A track whose plugin some
-members lack gets a Stand-in right after that plugin. Owners' Stand-ins capture audio (with song
-position and tempo) while they play; segments are shared like any audio file. Non-owners'
-Stand-ins play the segments in time. Changing that track's notes or the plugin's knobs marks the
-covered segments out of date until an owner plays them again.
+Each member's Remote Script reports which plugins Live knows (from its browser). A member who owns
+a plugin some others lack puts the Stand-in right after it (it's a third-party plugin to Live, so
+it travels with the next save). Each Stand-in has a random **Link** id in its second parameter
+(`p1` of its device entity), which is how the app matches the plugin instance on this computer to
+the device in the shared song. Owners' Stand-ins record (with song position and tempo) while they
+play; each stretch of playback becomes a segment in the device's `bounce` prop
+(`{file, start, len, tempo, fp, by, byName}`), shared like any audio file. Non-owners' Stand-ins
+play the segments in time. `fp` fingerprints the track's clips, notes and the devices before the
+Stand-in; when it no longer matches, the segment still plays but shows as out of date until an
+owner plays that part again.
 
 ## Updates
 

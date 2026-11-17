@@ -684,10 +684,24 @@ class _AppView(object):
     focused_document_view = "Arranger"
 
 
+class _BrowserItem(object):
+    def __init__(self, name, children=(), is_folder=False):
+        self.name = name
+        self.children = list(children)
+        self.is_folder = is_folder
+        self.is_loadable = not is_folder
+
+
+class _Browser(object):
+    def __init__(self, plugins):
+        self.plugins = _BrowserItem("Plug-Ins", [_BrowserItem("VST3", [_BrowserItem(n) for n in plugins], True)], True)
+
+
 class FakeApplication(object):
-    def __init__(self, song):
+    def __init__(self, song, plugins=()):
         self._song = song
         self.view = _AppView()
+        self.browser = _Browser(plugins)
 
     def get_major_version(self):
         return VERSION[0]

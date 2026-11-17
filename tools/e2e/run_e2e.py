@@ -146,12 +146,14 @@ class Peer(object):
         self.cmd(cmd="state")
         return self.wait_event("state", 10)
 
+    plugins = ()
+
     def open_live(self, song):
         """Live opens a Set: a new Song and a fresh Remote Script instance."""
         if self.engine is not None:
             self.engine.shutdown()
         self.song = song
-        app = Live.Application.Application(song)
+        app = Live.Application.Application(song, self.plugins)
         self.engine = Engine(song, app, Live, Bridge(port=self.local_port), clock=time.time)
 
     def tick(self):
@@ -177,6 +179,45 @@ class Peer(object):
             pass
         if self.engine is not None:
             self.engine.shutdown()
+
+
+class FakeStandIn(object):
+    """The Tutti Stand-in plugin as the Tutti app sees it: a local connection with a Link id."""
+
+    def __init__(self, port, link):
+        from Tutti import framing
+        self.framing = framing
+        self.sock = socket.create_connection(("127.0.0.1", port))
+        self.sock.setblocking(False)
+        self.decoder = framing.Decoder()
+        self.link = link
+        self.last = None
+        self.send({"type": "hello", "role": "standin", "link": link})
+
+    def send(self, message):
+        self.sock.setblocking(True)
+        self.sock.sendall(self.framing.encode(message))
+        self.sock.setblocking(False)
+
+    def poll(self):
+        try:
+            while True:
+                chunk = self.sock.recv(65536)
+                if not chunk:
+                    break
+                self.decoder.feed(chunk)
+        except BlockingIOError:
+            pass
+        while True:
+            m = self.decoder.next()
+            if m is None:
+                break
+            if m.get("type") == "standin":
+                self.last = m
+        return self.last
+
+    def close(self):
+        self.sock.close()
 
 
 def demo_song(audio_path):
@@ -363,6 +404,42 @@ def main():
                                             else os.listdir(store)[1])).read().decode("utf-8")
         check("bob-drums" in merged_xml and "cara-bass" in merged_xml, "the merge kept Bob's and Cara's changes")
         check(len(cara.state()["notices"]) > 0, "Cara was told what happened")
+
+        print("4c. Bob owns a plugin Alice doesn't: the Stand-in shares his recording")
+        bob.plugins = ("Serum 2",)
+        bob.open_live(bob.song)  # restart Bob's script so it reports his plugins
+        check(h.run(15, lambda: bob.state()["live_bound"]), "Bob's Live is back in sync")
+        bob.song.tracks[1].ui_add_device("Serum 2", class_name="PluginDevice", params=[("Cutoff", 0.5, 0.0, 1.0)])
+        bob.song.tracks[1].ui_add_device("Tutti Stand-in", class_name="PluginDevice", params=[("Link", 0.424242, 0.0, 1.0)])
+
+        def has_standin(p):
+            return any("Tutti Stand-in" in json.dumps(e["v"]) for e in p.state()["doc"]["e"] if e["t"] == "device")
+        check(h.run(10, lambda: has_standin(alice)), "the Stand-in is in the shared song")
+
+        bob_si = FakeStandIn(bob.local_port, 0.424242)
+        alice_si = FakeStandIn(alice.local_port, 0.424242)
+        check(h.run(10, lambda: (bob_si.poll() or {}).get("mode") == "capture"), "Bob's Stand-in records (he owns Serum 2)")
+        check(h.run(10, lambda: (alice_si.poll() or {}).get("mode") == "play"), "Alice's Stand-in plays (she doesn't)")
+
+        take3 = write_wav(os.path.join(h.dir, "standin take.wav"), seconds=2.0)
+        bob_si.send({"type": "segment", "link": 0.424242, "path": take3, "start": 0.0, "len": 4.0, "tempo": 120.0,
+                     "rate": 44100.0})
+
+        def alice_gets_segment():
+            m = alice_si.poll() or {}
+            segs = m.get("segments") or []
+            return len(segs) == 1 and os.path.exists(segs[0]["path"]) and not segs[0]["stale"]
+        check(h.run(20, alice_gets_segment), "Alice's Stand-in gets Bob's recording")
+
+        bob.song.tracks[1].ui_draw_arrangement_clip(16.0, 4.0).ui_add_note(50, 2.0, 0.5)
+
+        def stale():
+            m = alice_si.poll() or {}
+            segs = m.get("segments") or []
+            return len(segs) == 1 and segs[0]["stale"]
+        check(h.run(15, stale), "it's marked out of date once Bob changes the notes")
+        bob_si.close()
+        alice_si.close()
 
         print("5. Cara asks to be Player 1; Alice says yes")
         cara.cmd(cmd="request_p1")

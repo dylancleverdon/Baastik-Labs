@@ -97,6 +97,11 @@ namespace tutti
         pollSave();
         if (sessionPtr->isPlayer1())
             processSaves();
+        if (! standIns.empty() && t - lastStandInUpdate > 1.0)
+        {
+            lastStandInUpdate = t;
+            updateStandIns();
+        }
         if (reloadWhenMerged && ! reloading)
             if (auto meta = loadSnapshot (latestSnapshot); meta && contentStore.has (str (*meta, "als")))
                 reloadInto (*meta);
@@ -300,10 +305,14 @@ namespace tutti
                     sendToLive (Json { { "type", "welcome" }, { "peer", self.peer }, { "name", self.name } });
                     bindLive();
                 }
+                else if (state.role == "standin")
+                    handleStandIn (linkId, frame.json);
                 return;
             }
             if (state.role == "live" && linkId == liveLink)
                 handleLive (frame.json);
+            else if (state.role == "standin")
+                handleStandIn (linkId, frame.json);
             return;
         }
 
@@ -388,6 +397,7 @@ namespace tutti
         const auto state = it->second;
         links.erase (it);
 
+        standIns.erase (linkId);
         if (state.local && linkId == liveLink)
         {
             liveLink = 0;

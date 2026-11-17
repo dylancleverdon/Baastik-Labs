@@ -226,6 +226,12 @@ namespace tutti
         std::unique_ptr<juce::XmlElement> localCopyOf (const Json& meta, const juce::File& folder, juce::String& error);
         void backUp (const Json& meta);
 
+        // --- Tutti Stand-in (EngineStandIn.cpp)
+        void handleStandIn (uint64_t linkId, const Json& message);
+        void updateStandIns();
+        std::string trackFingerprint (const Doc& doc, const std::string& trackId, double beforePos) const;
+        const std::string* standInDevice (const Doc& doc, double link) const;
+
         // --- settings
         void loadSettings();
         void saveSettings() const;
@@ -311,6 +317,15 @@ namespace tutti
 
         std::deque<std::string> notices;
         double lastTick = 0;
+
+        // Stand-ins: local plugin links and what we last told each one
+        struct StandIn
+        {
+            double link = -1;
+            std::string sent;
+        };
+        std::map<uint64_t, StandIn> standIns;
+        double lastStandInUpdate = 0;
 
         // Save lane
         juce::int64 songStamp = 0;        // size ^ mtime of the session song we last saw

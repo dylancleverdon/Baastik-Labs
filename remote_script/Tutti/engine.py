@@ -171,11 +171,32 @@ class Engine(object):
                 self._on_connected()  # tell the app what's open now
             self._last_fingerprint = fp
 
+    _plugins = None
+
+    def installed_plugins(self):
+        """Names of the third-party plugins Live knows on this computer (for the Stand-in)."""
+        if self._plugins is not None:
+            return self._plugins
+        names = set()
+        try:
+            stack = [(self.app.browser.plugins, 0)]
+            while stack and len(names) < 5000:
+                item, depth = stack.pop()
+                for child in item.children:
+                    if getattr(child, "is_folder", False) or (len(child.children) > 0 and depth < 5):
+                        stack.append((child, depth + 1))
+                    elif getattr(child, "is_loadable", True):
+                        names.add(child.name)
+        except Exception:
+            pass
+        self._plugins = sorted(names)
+        return self._plugins
+
     def _on_connected(self):
         self.bridge.send({
             "type": "hello", "role": "live", "proto": PROTOCOL, "script": SCRIPT_VERSION,
             "live": self.live_version(), "caps": self.caps, "bound": self.bound, "session": self.session,
-            "fingerprint": self.fingerprint(), "unsent": len(self.unsent),
+            "fingerprint": self.fingerprint(), "unsent": len(self.unsent), "plugins": self.installed_plugins(),
         })
         if self.unsent:
             self.bridge.send({"type": "ops", "ops": self.unsent})

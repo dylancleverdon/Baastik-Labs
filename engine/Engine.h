@@ -169,7 +169,9 @@ namespace tutti
             std::string addr;
             bool local = false;        // the Remote Script / Stand-in side
             std::string role;          // "peer", "live", "standin"
+            std::string tag;           // chosen by whoever dialled; both ends learn it from the hello
         };
+        bool keepNewLink (const LinkState& existing, const LinkState& added, const std::string& peer) const;
         void closeLink (uint64_t linkId, const std::string& why); // close on purpose, ignore what's still in flight
         void restartTransfersFrom (const std::string& peer);
         void startServers();

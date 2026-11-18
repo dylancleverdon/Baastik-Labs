@@ -308,6 +308,8 @@ namespace tutti
         state.local = local;
         state.addr = addr.toStdString();
         state.role = local ? "" : "peer";
+        if (outgoing && ! local)
+            state.tag = juce::String::toHexString (juce::Random::getSystemRandom().nextInt64()).toStdString();
         links[id] = state;
         link->start ([this] (uint64_t lid, protocol::Frame f) {
                          auto shared = std::make_shared<protocol::Frame> (std::move (f));
@@ -332,15 +334,29 @@ namespace tutti
 
     void Engine::sendHello (LinkState& state)
     {
-        state.link->send (protocol::encode (helloMessage()));
+        auto hello = helloMessage();
+        if (state.link->outgoing() && ! state.tag.empty())
+            hello["link"] = state.tag; // so both ends rank this link the same way
+        state.link->send (protocol::encode (hello));
     }
 
     void Engine::broadcastStatus()
     {
-        const auto bytes = protocol::encode (helloMessage());
         for (auto& [id, l] : links)
             if (! l.local)
-                l.link->send (bytes);
+                sendHello (l);
+    }
+
+    // Two links to the same friend: both ends must keep the same one, whatever order their hellos
+    // arrived in. Prefer the link dialled by the smaller peer id, then the smaller dialler's tag.
+    bool Engine::keepNewLink (const LinkState& existing, const LinkState& added, const std::string& peer) const
+    {
+        const auto& smaller = std::min (self.peer, peer);
+        auto rank = [&] (const LinkState& l) {
+            const auto& dialler = l.link->outgoing() ? self.peer : peer;
+            return std::make_pair (dialler == smaller ? 0 : 1, l.tag);
+        };
+        return rank (added) < rank (existing);
     }
 
     void Engine::sendTo (uint64_t linkId, const Json& message)
@@ -429,6 +445,9 @@ namespace tutti
             return;
         }
 
+        if (! state.link->outgoing() && state.tag.empty())
+            state.tag = str (hello, "link"); // the dialler's tag for this link
+
         // Remember where friends are, for when Tailscale can't list them.
         if (const auto host = juce::String (str (hello, "addr")).upToFirstOccurrenceOf (":", false, false).toStdString();
             tailscale::isTailscaleAddress (host) && knownPeers.insert (host).second)
@@ -444,8 +463,9 @@ namespace tutti
 
         if (auto existing = peerLinks.find (peer); existing != peerLinks.end() && existing->second != linkId)
         {
-            // Both sides dialled each other: keep the link started by the smaller peer id.
-            const bool keepNew = self.peer < peer ? state.link->outgoing() : ! state.link->outgoing();
+            // Both sides dialled each other (or one side twice): both ends keep the same link.
+            auto& current = links[existing->second];
+            const bool keepNew = keepNewLink (current, state, peer);
             if (! keepNew)
             {
                 log ("two links to " + str (hello, "name") + ": keeping " + std::to_string (existing->second)

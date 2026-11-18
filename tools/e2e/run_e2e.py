@@ -459,6 +459,17 @@ def main():
         check(same, "Alice and Bob agree")
         print("All end-to-end checks passed.")
         return 0
+    except AssertionError:
+        # Say what each Tutti was doing, so a failure in CI can be diagnosed from the log.
+        for p in h.peers.values():
+            log = os.path.join(p.data, "Logs", "tutti.log")
+            print("--- %s's tutti.log (last 30 lines)" % p.name)
+            try:
+                with open(log) as f:
+                    print("".join(f.readlines()[-30:]))
+            except OSError:
+                print("(no log)")
+        raise
     finally:
         h.close()
 

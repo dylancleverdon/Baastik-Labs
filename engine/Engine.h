@@ -280,6 +280,7 @@ namespace tutti
         juce::File pendingStartCopy;
         bool waitingForCapture = false;
         double captureSentAt = 0;          // when we asked Live to read the song
+        double snapshotRequestedAt = 0;    // when we last asked Player 1 for the song (joining)
         int bindFailures = 0;
         bool joinedWaitingForSong = false;
         Json joinSnapshot;

@@ -115,6 +115,14 @@ namespace tutti
             playRequest = nullptr;
         if (liveLink != 0 && ! liveBound && sessionPtr->inSession() && t - lastBindAttempt > 3.0)
             bindLive();
+        // Joining: the request for the song can be lost while both computers connect to each other
+        // and one of the two connections is dropped. Ask again until the song arrives.
+        if (sessionPtr->inSession() && ! sessionPtr->isPlayer1() && currentSong == juce::File()
+            && joinSnapshot.is_null() && snapshotRequestedAt > 0 && t - snapshotRequestedAt > 5.0)
+        {
+            log ("asking Player 1 for the song again");
+            requestSnapshot();
+        }
         if (waitingForCapture && captureSentAt > 0 && t - captureSentAt > 90.0)
             cancelStart ("Live didn't finish reading the song. Restart Live and try again.");
 
@@ -543,6 +551,7 @@ namespace tutti
         currentNotes = nullptr;
         joinSnapshot = nullptr;
         joinedWaitingForSong = false;
+        snapshotRequestedAt = 0;
         stale.clear();
         presence.clear();
         pendingSave = nullptr;
@@ -1101,6 +1110,7 @@ namespace tutti
 
     void Engine::requestSnapshot()
     {
+        snapshotRequestedAt = now();
         const auto& info = sessionPtr->info();
         send (info.p1, Json { { "type", "snap_req" }, { "id", info.snapshot }, { "session", info.id } });
     }

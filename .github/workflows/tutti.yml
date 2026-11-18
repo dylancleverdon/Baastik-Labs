@@ -62,7 +62,12 @@ jobs:
           ALL=false
           CHANGED=""
           BEFORE="${{ github.event.before }}"
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          LAST_RELEASE="$(git describe --tags --abbrev=0 --match 'tutti-v*' HEAD 2>/dev/null || true)"
+          if [[ $PUBLISH == true ]]; then
+            # A release checks everything since the last published release, so changes from a run
+            # that failed or was cancelled are never skipped.
+            if [[ -n "$LAST_RELEASE" ]]; then CHANGED="$(git diff --name-only "$LAST_RELEASE" HEAD)"; else ALL=true; fi
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             CHANGED="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD)"
           elif [[ "${{ github.event_name }}" == "push" && -n "$BEFORE" && "$BEFORE" != 0000000000000000000000000000000000000000 ]] \
                && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
@@ -98,7 +103,7 @@ jobs:
             echo "build_app=$BUILD_APP"; echo "build_plugin=$BUILD_PLUGIN"; echo "updater=$UPDATER"
             echo "mac=$MAC"; echo "windows=$WINDOWS"
           } >> "$GITHUB_OUTPUT"
-          echo "Tutti $VERSION (publish: $PUBLISH)"
+          echo "Tutti $VERSION (publish: $PUBLISH, last release: ${LAST_RELEASE:-none})"
           echo "Changed:"; sed 's/^/  /' <<< "${CHANGED:-  (everything)}"
           echo "Checks: core=$CPP script=$SCRIPT e2e=$E2E app=$APP plugin=$PLUGIN updater=$UPDATER (skip: $SKIP)"
 

@@ -170,6 +170,8 @@ namespace tutti
             bool local = false;        // the Remote Script / Stand-in side
             std::string role;          // "peer", "live", "standin"
         };
+        void closeLink (uint64_t linkId, const std::string& why); // close on purpose, ignore what's still in flight
+        void restartTransfersFrom (const std::string& peer);
         void startServers();
         void discover();
         void connectPeer (const juce::String& host, int port);
@@ -294,6 +296,7 @@ namespace tutti
             int64_t received = 0, total = -1;
             double started = 0, retryAt = 0;
             int retries = 0;
+            double lastProgress = 0;  // when a chunk last arrived (or the request was sent)
             bool active = false;
         };
         std::map<std::string, Transfer> transfers; // key: hash + ":" + kind
@@ -326,6 +329,7 @@ namespace tutti
 
         std::deque<std::string> notices;
         double lastTick = 0;
+        double lastLinkCheck = 0;
 
         // Stand-ins: local plugin links and what we last told each one
         struct StandIn

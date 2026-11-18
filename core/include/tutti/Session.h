@@ -118,6 +118,7 @@ namespace tutti
         Role role() const { return currentRole; }
         bool isPlayer1() const { return currentRole == Role::player1; }
         bool inSession() const { return currentRole == Role::guest || currentRole == Role::player1; }
+        bool hasLink (const std::string& peer) const { return links.count (peer) != 0; }
         const SessionInfo& info() const { return sessionInfo; }
         const MemberInfo& self() const { return me; }
         const Replica& replica() const { return rep; }

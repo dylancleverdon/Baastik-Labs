@@ -115,6 +115,17 @@ namespace tutti
             playRequest = nullptr;
         if (liveLink != 0 && ! liveBound && sessionPtr->inSession() && t - lastBindAttempt > 3.0)
             bindLive();
+        // The session's idea of who we're connected to must match the links we really have.
+        if (t - lastLinkCheck > 1.0)
+        {
+            lastLinkCheck = t;
+            for (const auto& [peer, lid] : peerLinks)
+                if (! sessionPtr->hasLink (peer))
+                {
+                    log ("the session had lost track of the link to " + peer + "; fixed");
+                    sessionPtr->connected (peer, t);
+                }
+        }
         // Joining: the request for the song can be lost while both computers connect to each other
         // and one of the two connections is dropped. Ask again until the song arrives.
         if (sessionPtr->inSession() && ! sessionPtr->isPlayer1() && currentSong == juce::File()
@@ -131,6 +142,26 @@ namespace tutti
             lastTick = t;
             onChange();
         }
+    }
+
+    void Engine::closeLink (uint64_t linkId, const std::string& why)
+    {
+        if (auto it = links.find (linkId); it != links.end() && ! it->second.link->closed())
+        {
+            if (! it->second.local)
+                log ("closing link " + std::to_string (linkId) + ": " + why);
+            it->second.link->close();
+        }
+    }
+
+    void Engine::restartTransfersFrom (const std::string& peer)
+    {
+        for (auto& [key, t] : transfers)
+            if (t.active && t.from == peer)
+            {
+                t.active = false;
+                t.retryAt = 0;
+            }
     }
 
     void Engine::notice (const std::string& text)
@@ -325,6 +356,10 @@ namespace tutti
         if (it == links.end())
             return;
         auto& state = it->second;
+        // A link we've closed can still deliver what it had already read. Acting on that (say, a
+        // hello on a replaced duplicate) would undo the decision to close it.
+        if (state.link->closed())
+            return;
 
         if (state.local)
         {
@@ -385,12 +420,12 @@ namespace tutti
         if (integer (hello, "proto") != protocol::kProtocolVersion)
         {
             notice (str (hello, "name", "Someone") + " has a different Tutti version; updates usually fix this within the hour.");
-            state.link->close();
+            closeLink (linkId, "different protocol");
             return;
         }
         if (peer.empty() || peer == self.peer)
         {
-            state.link->close();
+            closeLink (linkId, "no peer id, or ourselves");
             return;
         }
 
@@ -413,22 +448,27 @@ namespace tutti
             const bool keepNew = self.peer < peer ? state.link->outgoing() : ! state.link->outgoing();
             if (! keepNew)
             {
-                state.link->close();
+                log ("two links to " + str (hello, "name") + ": keeping " + std::to_string (existing->second)
+                     + ", closing " + std::to_string (linkId));
+                closeLink (linkId, "duplicate");
                 return;
             }
             auto old = existing->second;
+            log ("two links to " + str (hello, "name") + ": keeping " + std::to_string (linkId)
+                 + ", closing " + std::to_string (old));
             peerLinks.erase (existing);
             if (auto o = links.find (old); o != links.end())
-            {
                 o->second.peer.clear();
-                o->second.link->close();
-            }
+            closeLink (old, "replaced by a duplicate");
+            restartTransfersFrom (peer); // whatever was on the old link is lost
         }
 
         state.peer = peer;
         const auto addr = str (hello, "addr");
         if (! addr.empty())
             state.addr = addr;
+        log ("link " + std::to_string (linkId) + (state.link->outgoing() ? " to " : " from ") + str (hello, "name")
+             + " (" + state.addr + ")");
         peerLinks[peer] = linkId;
         peerHellos[peer] = hello;
         sessionPtr->connected (peer, now());
@@ -457,6 +497,7 @@ namespace tutti
             auto p = peerLinks.find (state.peer);
             if (p != peerLinks.end() && p->second == linkId)
             {
+                log ("link " + std::to_string (linkId) + " closed: no link to that peer now");
                 peerLinks.erase (p);
                 peerHellos.erase (state.peer);
                 sessionPtr->disconnected (state.peer, now());

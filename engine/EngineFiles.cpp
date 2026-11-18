@@ -36,9 +36,12 @@ namespace tutti
         int active = 0;
         for (auto& [key, tr] : transfers)
         {
-            if (tr.active && t - tr.started > 60.0 && tr.received == 0)
+            if (tr.active && t - tr.lastProgress > 15.0)
             {
-                tr.active = false; // nothing in a minute: try someone else
+                // Nothing for 15 s (the request or chunks were lost, or the sender is stuck):
+                // ask again, from someone else if anyone else has it.
+                log ("transfer of " + tr.hash.substr (0, 12) + " (" + tr.kind + ") from " + tr.from + " stalled; asking again");
+                tr.active = false;
                 tr.tried.push_back (tr.from);
             }
             if (tr.active)
@@ -80,6 +83,7 @@ namespace tutti
                 tr.active = true;
                 tr.from = pick;
                 tr.started = t;
+                tr.lastProgress = t;
                 tr.received = 0;
                 tr.total = -1;
                 contentStore.partialFor (tr.hash, tr.kind).deleteFile();
@@ -205,6 +209,7 @@ namespace tutti
             out.write (binary->data.data(), binary->data.size());
         }
         tr.received += static_cast<int64_t> (binary->data.size());
+        tr.lastProgress = now();
         if (tr.received < tr.total)
             return;
 

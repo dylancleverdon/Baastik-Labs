@@ -465,10 +465,10 @@ def main():
             code = p.proc.poll()
             print("--- %s's Tutti is %s" % (p.name, "running" if code is None else "gone (exit %s)" % code))
             log = os.path.join(p.data, "Logs", "tutti.log")
-            print("--- %s's tutti.log (last 30 lines)" % p.name)
+            print("--- %s's tutti.log (last 60 lines)" % p.name)
             try:
                 with open(log) as f:
-                    print("".join(f.readlines()[-30:]))
+                    print("".join(f.readlines()[-60:]))
             except OSError:
                 print("(no log)")
         raise

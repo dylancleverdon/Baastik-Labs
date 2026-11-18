@@ -29,6 +29,7 @@ namespace tutti::net
 
         uint64_t id() const { return linkId; }
         bool outgoing() const { return isOutgoing; }
+        bool closed() const { return stopping.load(); }
         size_t queuedBytes() const { return queued.load(); }
         juce::String remoteHost() const;
 

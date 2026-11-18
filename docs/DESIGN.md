@@ -11,7 +11,7 @@ the decisions behind it. Keep it current when a decision changes.
 | Build or buy | Build our own (SameSet exists; we want our own workflow, free). |
 | How people work | Mostly together, live, on a call. Edits should show up within a second. |
 | Live | Everyone has **Live 12 Suite**. Everyone in a session must run the same Live 12 minor version. |
-| Computers | Macs and Windows PCs. |
+| Computers | Macs with Apple Silicon (no Intel Macs) and Windows PCs. No Linux. |
 | What syncs | MIDI, arranging, mixing/sound design, recording/samples. Mostly **Arrangement View**. |
 | Plugins | People own **different** third-party plugins: tracks using a plugin someone lacks get a **shared bounce** (Tutti Stand-in plugin). |
 | Conflicts | Everyone edits everything. One person is **Player 1** (the host). Player 1's edits win clashes. |

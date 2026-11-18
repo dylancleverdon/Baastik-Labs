@@ -4,8 +4,8 @@ About ten minutes, once per computer. After this, Tutti keeps itself up to date 
 nothing else to install or type.
 
 **You need:** Ableton Live 12 Suite (everyone on the **same 12.x update**: check *Live > About
-Live* on a Mac or *Help > About Live* on Windows), and a Mac (macOS 11 or later) or a Windows
-10/11 PC.
+Live* on a Mac or *Help > About Live* on Windows), and a Mac with Apple Silicon (M1 or later,
+macOS 11 or later) or a Windows 10/11 PC.
 
 ## 1. Tailscale: your group's private network
 

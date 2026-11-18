@@ -9,8 +9,10 @@ live) lives only on the `tutti` branch.
   touch other programs' branches from a Tutti session.
 - Work on your `claude/*` session branch, then push it to `tutti` to ship.
 - **Every push to `tutti` becomes an update** on everyone's computer: `.github/workflows/tutti.yml`
-  builds, tests and publishes `tutti-v<version>` plus the rolling `tutti-channel` release. Installed
-  copies pick it up within an hour. Only push to `tutti` when the build is green.
+  builds, checks and publishes `tutti-v<version>` plus the rolling `tutti-channel` release. Installed
+  copies pick it up within an hour. Before pushing, run the tests relevant to what you changed
+  (below). Don't wait for a separate CI run first: the release run on `tutti` runs the relevant
+  checks on macOS and Windows and publishes only if they pass. Docs-only pushes publish nothing.
 - Releases are prerelease-only and never marked "Latest", so other programs' releases are unaffected.
 
 ## Build and test
@@ -22,13 +24,19 @@ python3 -m pytest remote_script/tests -q          # Remote Script tests (fake Li
 python3 tools/e2e/run_e2e.py build                # several headless peers + fake Live scripts
 ```
 - `-DTUTTI_BUILD_APP=OFF -DTUTTI_BUILD_PLUGIN=OFF` builds only the core, CLI and tests.
-- Linux needs the ALSA/X11/freetype/curl `-dev` packages (see `.github/workflows/tutti.yml`).
+- Only run the tests relevant to the change: `remote_script/` -> pytest and the end-to-end test;
+  `core/`, `engine/`, `tests/` -> ctest and the end-to-end test; `app/` -> build the app (screenshots
+  for UI changes); `plugin/` -> build it (pluginval for real changes); docs -> nothing.
+- Tutti ships for **Apple Silicon Macs and Windows only** (no Intel Macs, no Linux). Building on
+  Linux is only for local development and needs the ALSA/X11/freetype/curl `-dev` packages.
 - `build/app/Tutti_artefacts/Release/Tutti --screenshot <dir>` renders every screen to PNGs
   (use `xvfb-run -a` on Linux).
 - `build/tools/cli/tutti-peer` is a headless Tutti (no GUI) used by the end-to-end tests.
-- CI also installs and uninstalls the Windows installer, and runs self-update tests on macOS and
-  Windows (an old build updates itself from the published `tutti-channel` release). Those don't
-  gate publishing. The updater logs to `updater.log` in Tutti's logs folder.
+- CI (macOS arm64 + Windows) runs only the checks matching the changed files (see the `plan` job).
+  Releases always build and package both platforms. The installer tests run when the app or
+  packaging is built; the self-update tests (an old build updates itself from the published
+  `tutti-channel` release) run when the updater or packaging changes and don't gate publishing.
+  The updater logs to `updater.log` in Tutti's logs folder.
 
 ## Architecture (details in `docs/DESIGN.md`)
 - `remote_script/Tutti/`: Python Remote Script, the only code that talks to Live's API. Keep it

@@ -10,7 +10,7 @@ new tracks and recordings show up for everyone within a second.
 
 | | |
 | --- | --- |
-| **Mac** | [Tutti-Installer.pkg](https://github.com/dylancleverdon/Baastik-Labs/releases/download/tutti-channel/Tutti-Installer.pkg). The first time only, macOS asks you to approve it: **System Settings > Privacy & Security > Open Anyway**. No admin password needed. |
+| **Mac** (Apple Silicon) | [Tutti-Installer.pkg](https://github.com/dylancleverdon/Baastik-Labs/releases/download/tutti-channel/Tutti-Installer.pkg). The first time only, macOS asks you to approve it: **System Settings > Privacy & Security > Open Anyway**. No admin password needed. |
 | **Windows** | [Tutti-Installer.exe](https://github.com/dylancleverdon/Baastik-Labs/releases/download/tutti-channel/Tutti-Installer.exe). If Windows says it protected your PC, click **More info > Run anyway**. It asks for admin once, to put Tutti's helper plugin where Live finds plugins. |
 
 Then, once (step by step, with troubleshooting: [docs/SETUP.md](docs/SETUP.md)):
@@ -92,6 +92,6 @@ python3 -m pytest remote_script/tests -q
 python3 tools/e2e/run_e2e.py build
 ```
 
-Every push to the `tutti` branch builds and tests on Linux, macOS and Windows and, if everything
-passes, publishes `tutti-v<version>` and refreshes the `tutti-channel` release (prereleases,
-never marked "Latest").
+Every push to the `tutti` branch builds for Apple Silicon Macs and Windows, runs the checks that
+match what changed and, if they pass, publishes `tutti-v<version>` and refreshes the
+`tutti-channel` release (prereleases, never marked "Latest"). Docs-only changes publish nothing.

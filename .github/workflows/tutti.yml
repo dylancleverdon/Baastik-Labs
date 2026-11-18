@@ -1,14 +1,17 @@
 name: Tutti
 
-# Builds and tests Tutti on Linux, macOS and Windows for every push. Pushes to the `tutti` branch
-# also publish: tutti-v<version> (prerelease, never "Latest") and the rolling tutti-channel release
-# that the install links and every installed Tutti's updater read. Nothing is published unless
-# every job passes, and no secrets are needed.
+# Builds Tutti for Apple Silicon Macs and Windows and runs only the checks that match what
+# changed. Pushes to the `tutti` branch also publish: tutti-v<version> (prerelease, never
+# "Latest") and the rolling tutti-channel release that the install links and every installed
+# Tutti's updater read. Nothing is published unless every check that ran passed. Changes to
+# docs alone run nothing and publish nothing. No secrets are needed.
 
 on:
   push:
     branches: ["tutti", "claude/**"]
+    paths-ignore: ["**/*.md", "docs/**", "suggestions/Code.gs", ".gitignore"]
   pull_request:
+    paths-ignore: ["**/*.md", "docs/**", "suggestions/Code.gs", ".gitignore"]
   workflow_dispatch:
     inputs:
       publish:
@@ -28,13 +31,25 @@ env:
 
 jobs:
   plan:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04   # a few seconds of bookkeeping, not a build
     outputs:
       version: ${{ steps.plan.outputs.version }}
       build: ${{ steps.plan.outputs.build }}
       publish: ${{ steps.plan.outputs.publish }}
+      cpp: ${{ steps.plan.outputs.cpp }}
+      script: ${{ steps.plan.outputs.script }}
+      e2e: ${{ steps.plan.outputs.e2e }}
+      app: ${{ steps.plan.outputs.app }}
+      plugin: ${{ steps.plan.outputs.plugin }}
+      build_app: ${{ steps.plan.outputs.build_app }}
+      build_plugin: ${{ steps.plan.outputs.build_plugin }}
+      updater: ${{ steps.plan.outputs.updater }}
+      mac: ${{ steps.plan.outputs.mac }}
+      windows: ${{ steps.plan.outputs.windows }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - id: plan
         run: |
           BUILD="${{ github.run_number }}"
@@ -42,71 +57,55 @@ jobs:
           PUBLISH=false
           if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/tutti" ]]; then PUBLISH=true; fi
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.publish }}" == "true" ]]; then PUBLISH=true; fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
-          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+
+          # What changed since the last run of this branch decides which checks run.
+          ALL=false
+          CHANGED=""
+          BEFORE="${{ github.event.before }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            CHANGED="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD)"
+          elif [[ "${{ github.event_name }}" == "push" && -n "$BEFORE" && "$BEFORE" != 0000000000000000000000000000000000000000 ]] \
+               && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            CHANGED="$(git diff --name-only "$BEFORE" HEAD)"
+          else
+            ALL=true   # a new branch or a run started by hand: check everything
+          fi
+          if grep -q '^\.github/' <<< "$CHANGED"; then ALL=true; fi
+          # A commit that is already on tutti gets checked by its release run, not twice.
+          SKIP=false
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" != "refs/heads/tutti" ]] \
+             && [[ "$(git ls-remote origin refs/heads/tutti | cut -f1)" == "$GITHUB_SHA" ]]; then SKIP=true; fi
+          flag() {
+            if $SKIP; then echo false; elif $ALL || grep -qE "$1" <<< "$CHANGED"; then echo true; else echo false; fi
+          }
+          CPP=$(flag '^(core|engine|tests|cmake)/|^CMakeLists\.txt$|^VERSION$')
+          SCRIPT=$(flag '^remote_script/')
+          E2E=$(flag '^(core|engine|remote_script|tools)/')
+          APP=$(flag '^(app|core|engine|cmake)/|^CMakeLists\.txt$|^VERSION$')
+          PLUGIN=$(flag '^(plugin|cmake)/|^core/src/Protocol\.cpp$|^core/include/tutti/Protocol\.h$|^CMakeLists\.txt$')
+          PACKAGING=$(flag '^(packaging|tools/release)/')
+          UPDATER=$(flag '^app/Source/(AppUpdater|Main)|^core/src/Update\.cpp$|^core/include/tutti/Update\.h$|^(packaging|tools/release)/')
+          BUILD_APP=false; BUILD_PLUGIN=false
+          if [[ $PUBLISH == true || $APP == true || $PACKAGING == true ]]; then BUILD_APP=true; fi
+          if [[ $PUBLISH == true || $PLUGIN == true ]]; then BUILD_PLUGIN=true; fi
+          MAC=false; WINDOWS=false
+          if [[ $BUILD_APP == true || $BUILD_PLUGIN == true || $CPP == true || $SCRIPT == true || $E2E == true ]]; then MAC=true; fi
+          if [[ $BUILD_APP == true || $BUILD_PLUGIN == true || $CPP == true ]]; then WINDOWS=true; fi
+
+          {
+            echo "version=$VERSION"; echo "build=$BUILD"; echo "publish=$PUBLISH"
+            echo "cpp=$CPP"; echo "script=$SCRIPT"; echo "e2e=$E2E"; echo "app=$APP"; echo "plugin=$PLUGIN"
+            echo "build_app=$BUILD_APP"; echo "build_plugin=$BUILD_PLUGIN"; echo "updater=$UPDATER"
+            echo "mac=$MAC"; echo "windows=$WINDOWS"
+          } >> "$GITHUB_OUTPUT"
           echo "Tutti $VERSION (publish: $PUBLISH)"
-
-  linux:
-    name: Linux build, tests, end-to-end
-    needs: plan
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build xvfb libasound2-dev libjack-jackd2-dev libfreetype-dev \
-            libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
-            libxrandr-dev libxrender-dev libxi-dev libglu1-mesa-dev libegl-dev mesa-common-dev
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11" # the Python inside Live 12
-
-      - name: Configure
-        run: >
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DTUTTI_BUILD_NUMBER=${{ needs.plan.outputs.build }} -DTUTTI_COMMIT=${{ github.sha }}
-
-      - name: Build
-        run: cmake --build build
-
-      - name: Core tests
-        run: ctest --test-dir build --output-on-failure
-
-      - name: Remote Script tests (fake Live)
-        run: |
-          python -m pip install --quiet pytest
-          python -m pytest remote_script/tests -q
-
-      - name: End-to-end (three Tuttis, real Remote Script, fake Lives)
-        run: python tools/e2e/run_e2e.py build
-
-      - name: pluginval (Stand-in VST3, strictness 8)
-        run: |
-          VST3="build/plugin/TuttiStandIn_artefacts/Release/VST3/Tutti Stand-in.vst3"
-          if [ ! -d "$VST3" ]; then echo "no plugin in this build"; exit 0; fi
-          curl -fsSL -o pluginval.zip "https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Linux.zip"
-          unzip -q pluginval.zip
-          chmod +x pluginval
-          xvfb-run -a ./pluginval --strictness-level 8 --validate-in-process --validate "$VST3"
-
-      - name: Screenshots of every screen
-        run: |
-          mkdir -p shots
-          (cd shots && xvfb-run -a ../build/app/Tutti_artefacts/Release/Tutti --screenshot .)
-          ls -la shots
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tutti-screens-linux
-          path: shots/
+          echo "Changed:"; sed 's/^/  /' <<< "${CHANGED:-  (everything)}"
+          echo "Checks: core=$CPP script=$SCRIPT e2e=$E2E app=$APP plugin=$PLUGIN updater=$UPDATER (skip: $SKIP)"
 
   macos:
-    name: macOS build and package
+    name: macOS (Apple Silicon) build, checks and package
     needs: plan
+    if: needs.plan.outputs.mac == 'true'
     runs-on: macos-15
     env:
       VERSION: ${{ needs.plan.outputs.version }}
@@ -117,19 +116,41 @@ jobs:
       - name: Install Ninja
         run: command -v ninja || brew install ninja
 
-      - name: Configure (universal)
+      - uses: actions/setup-python@v5
+        if: needs.plan.outputs.script == 'true' || needs.plan.outputs.e2e == 'true'
+        with:
+          python-version: "3.11" # the Python inside Live 12
+
+      - name: Remote Script tests (fake Live)
+        if: needs.plan.outputs.script == 'true'
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest remote_script/tests -q
+
+      - name: Configure (Apple Silicon)
+        if: needs.plan.outputs.build_app == 'true' || needs.plan.outputs.build_plugin == 'true' || needs.plan.outputs.cpp == 'true' || needs.plan.outputs.e2e == 'true'
         run: >
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DTUTTI_BUILD_TOOLS=OFF
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64
+          -DTUTTI_BUILD_APP=${{ needs.plan.outputs.build_app == 'true' && 'ON' || 'OFF' }}
+          -DTUTTI_BUILD_PLUGIN=${{ needs.plan.outputs.build_plugin == 'true' && 'ON' || 'OFF' }}
+          -DTUTTI_BUILD_TESTS=${{ needs.plan.outputs.cpp == 'true' && 'ON' || 'OFF' }}
+          -DTUTTI_BUILD_TOOLS=${{ needs.plan.outputs.e2e == 'true' && 'ON' || 'OFF' }}
           -DTUTTI_BUILD_NUMBER=${BUILD} -DTUTTI_COMMIT=${{ github.sha }}
 
       - name: Build
+        if: needs.plan.outputs.build_app == 'true' || needs.plan.outputs.build_plugin == 'true' || needs.plan.outputs.cpp == 'true' || needs.plan.outputs.e2e == 'true'
         run: cmake --build build
 
       - name: Core tests
+        if: needs.plan.outputs.cpp == 'true'
         run: ctest --test-dir build --output-on-failure
 
+      - name: End-to-end (three Tuttis, real Remote Script, fake Lives)
+        if: needs.plan.outputs.e2e == 'true'
+        run: python tools/e2e/run_e2e.py build
+
       - name: Stage and sign the payload
+        if: needs.plan.outputs.build_app == 'true'
         run: |
           PAYLOAD="dist/payload"
           mkdir -p "$PAYLOAD"
@@ -145,6 +166,7 @@ jobs:
           ls -la "$PAYLOAD"
 
       - name: Package (installer + update zip)
+        if: needs.plan.outputs.build_app == 'true'
         run: |
           mkdir -p out
           packaging/macos/build_pkg.sh dist/payload "$VERSION" out
@@ -152,6 +174,7 @@ jobs:
           ls -la out
 
       - name: Installer smoke test
+        if: needs.plan.outputs.build_app == 'true'
         run: |
           export TUTTI_NO_LAUNCH=1
           installer -pkg out/Tutti-Installer.pkg -target CurrentUserHomeDirectory
@@ -159,6 +182,7 @@ jobs:
           pkill -x Tutti 2>/dev/null || true
 
       - name: Screenshots from the installed app
+        if: needs.plan.outputs.app == 'true'
         continue-on-error: true
         run: |
           mkdir -p shots
@@ -169,6 +193,7 @@ jobs:
           ls -la shots
 
       - name: Opening Tutti again brings its window back (Dock icon, Finder, Spotlight)
+        if: needs.plan.outputs.app == 'true'
         run: |
           APP="$HOME/Applications/Tutti.app"
           LOG="$HOME/Library/Logs/Tutti/tutti.log"
@@ -184,8 +209,13 @@ jobs:
           pkill -x Tutti || true
 
       - name: auval and pluginval (Stand-in)
+        if: needs.plan.outputs.plugin == 'true'
         run: |
-          if [ ! -d "$HOME/Library/Audio/Plug-Ins/Components/Tutti Stand-in.component" ]; then echo "no plugin in this build"; exit 0; fi
+          PLUGINS=build/plugin/TuttiStandIn_artefacts/Release
+          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components" "$HOME/Library/Audio/Plug-Ins/VST3"
+          rm -rf "$HOME/Library/Audio/Plug-Ins/Components/Tutti Stand-in.component" "$HOME/Library/Audio/Plug-Ins/VST3/Tutti Stand-in.vst3"
+          ditto "$PLUGINS/AU/Tutti Stand-in.component" "$HOME/Library/Audio/Plug-Ins/Components/Tutti Stand-in.component"
+          ditto "$PLUGINS/VST3/Tutti Stand-in.vst3" "$HOME/Library/Audio/Plug-Ins/VST3/Tutti Stand-in.vst3"
           killall -9 AudioComponentRegistrar 2>/dev/null || true
           sleep 2
           auval -v aufx TtSi Bstk
@@ -195,21 +225,23 @@ jobs:
             --validate "$HOME/Library/Audio/Plug-Ins/VST3/Tutti Stand-in.vst3"
 
       - uses: actions/upload-artifact@v4
+        if: needs.plan.outputs.build_app == 'true'
         with:
           name: tutti-mac
           path: out/
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && needs.plan.outputs.app == 'true'
         with:
           name: tutti-screens-mac
           path: shots/
           if-no-files-found: ignore
 
   windows:
-    name: Windows build and package
+    name: Windows build, checks and package
     needs: plan
+    if: needs.plan.outputs.windows == 'true'
     runs-on: windows-latest
     env:
       VERSION: ${{ needs.plan.outputs.version }}
@@ -223,15 +255,20 @@ jobs:
       - name: Configure
         run: >
           cmake -S . -B build -A x64 -DTUTTI_BUILD_TOOLS=OFF
+          -DTUTTI_BUILD_APP=${{ needs.plan.outputs.build_app == 'true' && 'ON' || 'OFF' }}
+          -DTUTTI_BUILD_PLUGIN=${{ needs.plan.outputs.build_plugin == 'true' && 'ON' || 'OFF' }}
+          -DTUTTI_BUILD_TESTS=${{ needs.plan.outputs.cpp == 'true' && 'ON' || 'OFF' }}
           -DTUTTI_BUILD_NUMBER=${BUILD} -DTUTTI_COMMIT=${{ github.sha }}
 
       - name: Build
         run: cmake --build build --config Release --parallel
 
       - name: Core tests
+        if: needs.plan.outputs.cpp == 'true'
         run: ctest --test-dir build -C Release --output-on-failure
 
       - name: Stage the payload
+        if: needs.plan.outputs.build_app == 'true'
         run: |
           PAYLOAD=dist/payload
           mkdir -p "$PAYLOAD"
@@ -244,6 +281,7 @@ jobs:
           ls -la "$PAYLOAD"
 
       - name: Package (installer + update zip)
+        if: needs.plan.outputs.build_app == 'true'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path out | Out-Null
@@ -256,6 +294,7 @@ jobs:
           Get-ChildItem out
 
       - name: Installer smoke test (install, check, uninstall)
+        if: needs.plan.outputs.build_app == 'true'
         shell: pwsh
         run: |
           $p = Start-Process -FilePath "out\Tutti-Installer.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/LOG=install.log" -Wait -PassThru
@@ -287,6 +326,7 @@ jobs:
           Write-Host "Install and uninstall OK"
 
       - name: Screenshots
+        if: needs.plan.outputs.app == 'true'
         shell: pwsh
         continue-on-error: true
         run: |
@@ -296,24 +336,27 @@ jobs:
           Get-ChildItem shots
 
       - uses: actions/upload-artifact@v4
+        if: needs.plan.outputs.build_app == 'true'
         with:
           name: tutti-windows
           path: out/
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && needs.plan.outputs.app == 'true'
         with:
           name: tutti-screens-windows
           path: shots/
           if-no-files-found: ignore
 
-  # Self-update tests: an old Tutti (build 0) built from this commit updates itself from the
-  # published tutti-channel release, exactly as installed copies do. They test this commit's
-  # updater, so they don't gate publishing (a broken published build must never block its fix).
+  # Self-update tests (only when the updater or packaging changed): an old Tutti (build 0) built
+  # from this commit updates itself from the published tutti-channel release, exactly as installed
+  # copies do. They test this commit's updater, so they don't gate publishing (a broken published
+  # build must never block its fix).
   mac-update-test:
     name: macOS self-update from the published release
     needs: plan
+    if: needs.plan.outputs.updater == 'true'
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -376,6 +419,7 @@ jobs:
   windows-update-test:
     name: Windows self-update from the published release
     needs: plan
+    if: needs.plan.outputs.updater == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -452,9 +496,9 @@ jobs:
 
   publish:
     name: Publish release
-    needs: [plan, linux, macos, windows]
-    if: needs.plan.outputs.publish == 'true'
-    runs-on: ubuntu-24.04
+    needs: [plan, macos, windows]
+    if: needs.plan.outputs.publish == 'true' && needs.macos.result == 'success' && needs.windows.result == 'success'
+    runs-on: ubuntu-24.04   # uploads the release; builds nothing
     permissions:
       contents: write
     env:

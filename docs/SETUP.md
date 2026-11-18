@@ -39,8 +39,8 @@ and open it.
 - The first time, macOS says it can't check the installer. Click **Done**, open **System
   Settings > Privacy & Security**, scroll down and click **Open Anyway** next to
   "Tutti-Installer.pkg" (macOS may ask for your Mac's password to confirm).
-- Click through the installer. It installs just for you (no admin password) and opens Tutti:
-  four overlapping circles in the menu bar.
+- Click through the installer. It installs just for you (no admin password) and opens Tutti.
+  Its icon (four overlapping circles) is in the Dock and the menu bar.
 - Now or later, if macOS asks whether Tutti can find devices on your local network, accept
   incoming connections, or open files in your Documents or Desktop folder, click **Allow**.
   That's how it reaches your friends and copies songs.
@@ -53,10 +53,12 @@ and run it.
 - Click **Yes** when Windows asks for permission. That's the only time Tutti needs it: to put its
   helper plugin where Live finds plugins and to let your friends' Tuttis (and only theirs, over
   Tailscale) reach this one.
-- Finish with **Open Tutti** ticked. Tutti lives in the system tray (the four circles; click the
-  **^** arrow if you don't see it).
+- Finish with **Open Tutti** ticked. Tutti's icon (four overlapping circles) is in the taskbar
+  and the system tray (click the **^** arrow if you don't see it).
 
-Tutti starts by itself when you log in from now on.
+Tutti starts by itself when you log in from now on. Closing its window doesn't quit it (a session
+keeps going): click Tutti in the Dock, or open it from the Start menu on Windows, to bring the
+window back. To quit, use **Quit Tutti** (⌘Q on a Mac, or the tray icon's menu).
 
 ## 3. Connect Live
 
@@ -71,7 +73,7 @@ Tutti starts by itself when you log in from now on.
 
 ## 4. Check it
 
-Click the four circles. At the top you should see:
+Open Tutti's window. At the top you should see:
 
 - **Tailscale connected**
 - **Live 12.x connected**
@@ -86,7 +88,8 @@ Player 1, Play together and ideas.
 
 | What you see | What to do |
 | --- | --- |
-| No four circles in a Mac's menu bar | A crowded menu bar (especially on a MacBook with a notch) can hide them. Quit a few other menu bar apps to make room. |
+| Tutti's window is gone | It's still running: click Tutti in the Dock (Mac) or open Tutti from the Start menu (Windows). |
+| Tutti says **Restart Live** | Tutti updated itself, and Live only loads the new version when it starts. Quit Live and open it again. |
 | Windows blocks the installer with no **Run anyway** | That's Smart App Control, which blocks apps that aren't signed. It can be turned off in **Windows Security > App & browser control**, but on many PCs it can't be turned back on, so ask whoever runs the group first. |
 | Tutti isn't in Live's Control Surface list | Open Tutti once, then quit and reopen Live. Tutti's **Settings** shows where it put its Live part (the Remote Script). If it says it couldn't, open Live once, then quit and reopen Tutti. |
 | **Tailscale is off** | Open Tailscale and sign in. |

@@ -168,6 +168,21 @@ jobs:
           kill $pid 2>/dev/null || true
           ls -la shots
 
+      - name: Opening Tutti again brings its window back (Dock icon, Finder, Spotlight)
+        run: |
+          APP="$HOME/Applications/Tutti.app"
+          LOG="$HOME/Library/Logs/Tutti/tutti.log"
+          pkill -x Tutti 2>/dev/null || true
+          open -g "$APP" --args --background
+          for i in $(seq 1 20); do pgrep -x Tutti >/dev/null && break; sleep 1; done
+          sleep 3
+          open "$APP"   # what clicking the Dock icon does when Tutti is running
+          for i in $(seq 1 20); do grep -q "reopened: showing the window" "$LOG" 2>/dev/null && break; sleep 1; done
+          [ "$(pgrep -x Tutti | wc -l | tr -d ' ')" = "1" ] || { echo "::error::expected one Tutti"; pgrep -fl Tutti; exit 1; }
+          grep -q "reopened: showing the window" "$LOG" || { echo "::error::reopening didn't show the window"; tail -20 "$LOG"; exit 1; }
+          echo "Reopening shows the window"
+          pkill -x Tutti || true
+
       - name: auval and pluginval (Stand-in)
         run: |
           if [ ! -d "$HOME/Library/Audio/Plug-Ins/Components/Tutti Stand-in.component" ]; then echo "no plugin in this build"; exit 0; fi

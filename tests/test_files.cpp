@@ -49,9 +49,16 @@ namespace
             <Path Value=")" + samplePath + R"("/><Type Value="1"/><LivePackName Value=""/><LivePackId Value=""/>
             <OriginalFileSize Value="1234"/><OriginalCrc Value="99"/>
           </FileRef></SampleRef>
+          <SourceContext><Value><BranchSourceContext><OriginalFileRef><FileRef>
+            <RelativePathType Value="5"/><RelativePath Value="Presets/Old.adv"/><Path Value="/gone/Old.adv"/>
+          </FileRef></OriginalFileRef></BranchSourceContext></Value></SourceContext>
         </AudioClip></Events></ArrangerAutomation></Sample></MainSequencer></DeviceChain>
       </AudioTrack>
-      <ReturnTrack Id="2"><Name><EffectiveName Value="A-Reverb"/></Name></ReturnTrack>
+      <ReturnTrack Id="2"><Name><EffectiveName Value="A-Reverb"/></Name>
+        <DeviceChain><Devices><MxDeviceAudioEffect Id="3"><PatchSlot><Value><MxPatchRef><FileRef>
+          <RelativePathType Value="0"/><RelativePath Value=""/><Path Value="/m4l/Echo Space.amxd"/>
+        </FileRef></MxPatchRef></Value></PatchSlot></MxDeviceAudioEffect></Devices></DeviceChain>
+      </ReturnTrack>
     </Tracks>
     <MasterTrack><Name><EffectiveName Value="Main"/></Name></MasterTrack>
   </LiveSet>
@@ -85,9 +92,11 @@ TEST_CASE ("Live Sets: read tracks, plugins and file references, then repoint th
     CHECK (als::matchScore (tracks, { "Drums", "Vox" }) == 1.0);
     CHECK (als::matchScore (tracks, { "Drums", "Bass", "Keys" }) < 0.5);
 
+    // The sample and the Max for Live device; not the preset the clip came from.
     auto refs = als::fileRefs (*loaded);
-    REQUIRE (refs.size() == 1);
+    REQUIRE (refs.size() == 2);
     CHECK (als::resolve (refs[0], tmp.dir) == sample);
+    CHECK (refs[1].path == "/m4l/Echo Space.amxd");
 
     auto project = tmp.dir.getChildFile ("Tutti/Song");
     auto moved = project.getChildFile ("Samples/Tutti/take.wav");
@@ -105,6 +114,43 @@ TEST_CASE ("Live Sets: read tracks, plugins and file references, then repoint th
     CHECK_FALSE (als::load (tmp.dir.getChildFile ("missing.als"), error));
     tmp.dir.getChildFile ("junk.als").replaceWithText ("not gzip");
     CHECK_FALSE (als::load (tmp.dir.getChildFile ("junk.als"), error));
+}
+
+TEST_CASE ("Asking Tailscale never hangs, and the Mac app is told to act as the command line", "[tailscale]")
+{
+   #if ! JUCE_WINDOWS
+    TempDir tmp;
+    auto script = [&] (const juce::String& name, const juce::String& body) {
+        auto f = tmp.dir.getChildFile (name);
+        f.replaceWithText ("#!/bin/sh\n" + body + "\n", false, false, "\n"); // JUCE defaults to CRLF
+        f.setExecutePermission (true);
+        return f;
+    };
+    // The Mac app's binary opens the app (and never answers) unless TAILSCALE_BE_CLI is set.
+    auto app = script ("tailscale-app", "if [ \"$TAILSCALE_BE_CLI\" != 1 ]; then sleep 30; fi\n"
+                                        "echo '{\"BackendState\":\"Running\",\"Self\":{\"TailscaleIPs\":[\"100.101.1.2\"]}}'");
+    std::string problem;
+    auto status = tailscale::queryWith (app, &problem, 3000);
+    INFO (problem);
+    REQUIRE (status);
+    CHECK (status->running());
+    CHECK (status->selfIp4 == "100.101.1.2");
+
+    auto stuck = script ("tailscale-stuck", "exec sleep 30"); // like the Mac app opening instead
+    const auto started = juce::Time::getMillisecondCounterHiRes();
+    CHECK_FALSE (tailscale::queryWith (stuck, &problem, 1000));
+    CHECK (juce::Time::getMillisecondCounterHiRes() - started < 5000.0);
+    CHECK (problem.find ("didn't answer") != std::string::npos);
+
+    auto junk = script ("tailscale-junk", "echo 'failed to connect to local Tailscale service'");
+    CHECK_FALSE (tailscale::queryWith (junk, &problem, 3000));
+    CHECK (problem.find ("failed to connect") != std::string::npos);
+   #endif
+    CHECK (tailscale::isTailscaleAddress ("100.64.0.1"));
+    CHECK (tailscale::isTailscaleAddress ("100.127.255.254"));
+    CHECK_FALSE (tailscale::isTailscaleAddress ("100.128.0.1"));
+    CHECK_FALSE (tailscale::isTailscaleAddress ("192.168.1.10"));
+    CHECK_FALSE (tailscale::isTailscaleAddress ("junk"));
 }
 
 TEST_CASE ("Store keeps files by hash and checks downloads", "[store]")

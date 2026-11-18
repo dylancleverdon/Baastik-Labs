@@ -39,8 +39,16 @@ Live 12 (each computer)                     Tutti app (each computer)           
   the Set, turns changes into ops, applies everyone else's ops, reports presence, and runs Play
   together. Live forbids changing the Set inside a listener callback, so all writes happen on the
   script's tick (`update_display`, ~10 Hz). Written for Python 3.7+ (Live 12 ships 3.11).
-- `app/` (C++/JUCE): menu bar / tray app that starts at login. Hosts or joins sessions, keeps the
-  document replica, sequences edits when it is Player 1, stores audio and versions, updates itself.
+  Live also answers some questions with an error rather than a value (the Main, group and return
+  tracks raise if asked for arrangement clips, even via `hasattr`), so the script never asks them,
+  checks attributes with `livemodel.has`, and reports a failed read (`capture_failed`) instead of
+  leaving the app waiting. The fake Live in the tests enforces the same rules. The app tells
+  people to restart Live when Live still runs an older script than the one it ships.
+- `app/` (C++/JUCE): a normal app (Dock icon on macOS, taskbar on Windows) plus a menu bar / tray
+  icon. It starts at login and keeps running when its window is closed, so a session never ends
+  because a window did; the Dock icon or opening Tutti again brings the window back. Hosts or joins
+  sessions, keeps the document replica, sequences edits when it is Player 1, stores audio and
+  versions, updates itself.
 - `core/` (C++, juce_core + nlohmann/json): all logic that can be tested without Live, a GUI or a
   network: document, ops, sequencer, replica, session state machine, protocol framing, .als
   handling, store, versions, updater decisions, suggestion queue. Compiled into each consumer
@@ -102,6 +110,9 @@ by whoever creates the entity (the Remote Script for Live objects). The root is 
 - A snapshot is an `.als` + a **structure map** (Live structure path -> entity id, made by the
   saver's Remote Script, e.g. `T3`, `T3/D0`, `T3/A5`, `R1`, `S4`; note ids per clip in canonical
   order) + the document at a sequence number + content hashes of every referenced audio file.
+- Files a Set needs are the ones under `SampleRef` (samples) and `MxPatchRef` (Max for Live
+  devices). Other `FileRef`s only say which preset or groove something was loaded from; they're
+  left alone.
 - Joining: download the snapshot (audio previews first), rewrite file paths to the local store,
   open it in Live, then the Remote Script binds ids by path and reconciles the whole Set with the
   document (replaying everything since the snapshot).
@@ -111,7 +122,10 @@ by whoever creates the entity (the Remote Script for Live objects). The root is 
 ## Sessions and Player 1
 
 - Every app listens on its Tailscale address (TCP 47380). Discovery uses `tailscale status
-  --json` to list online peers, then asks each for the session it hosts.
+  --json` to list online peers, then asks each for the session it hosts. On macOS the tool is the
+  Tailscale app's own executable, which only acts as the tool from a terminal, so Tutti sets
+  `TAILSCALE_BE_CLI=1`; each check has an 8 s limit. If the tool can't answer, Tutti takes its
+  address from the network interfaces (100.64.0.0/10) and dials the friends it has met before.
 - Messages are length-prefixed JSON frames; binary file chunks use a separate frame kind.
 - Session state: members, Player 1, **epoch** (bumped on every Player 1 change), line of
   succession (join order, editable by Player 1), last sequence number. Stale-epoch messages are

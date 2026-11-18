@@ -115,6 +115,8 @@ namespace tutti
             playRequest = nullptr;
         if (liveLink != 0 && ! liveBound && sessionPtr->inSession() && t - lastBindAttempt > 3.0)
             bindLive();
+        if (waitingForCapture && captureSentAt > 0 && t - captureSentAt > 90.0)
+            cancelStart ("Live didn't finish reading the song. Restart Live and try again.");
 
         if ((busy || t - lastTick > 0.5) && onChange)
         {
@@ -192,18 +194,46 @@ namespace tutti
             return;
         discovering = true;
         juce::Thread::launch ([this] {
-            auto status = tailscale::query();
-            const bool installed = tailscale::findCli() != juce::File();
-            post ([this, status, installed] {
+            std::string problem;
+            auto status = tailscale::query (&problem);
+            const auto local = tailscale::localAddress();
+            const bool installed = tailscale::findCli() != juce::File() || ! local.empty();
+            post ([this, status, installed, problem, local] {
                 discovering = false;
                 tailscaleInstalled = installed;
-                tailscaleStatus = status;
-                if (! status || ! status->running())
+                auto effective = status;
+                if (! effective && ! local.empty())
+                {
+                    // The tool couldn't be asked, but Tailscale is clearly up: use our address
+                    // from the network settings and reach the friends we've met before.
+                    tailscale::Status s;
+                    s.backendState = "Running";
+                    s.selfIp4 = local;
+                    effective = s;
+                }
+                if (problem != lastTailscaleProblem)
+                {
+                    if (! problem.empty())
+                        log ("Tailscale check: " + problem
+                             + (local.empty() ? std::string() : " (using " + local + " from the network settings)"));
+                    lastTailscaleProblem = problem;
+                }
+                tailscaleStatus = effective;
+                if (! effective || ! effective->running())
                     return;
                 startServers();
-                for (const auto& p : status->peers)
+                bool learned = false;
+                for (const auto& p : effective->peers)
+                {
+                    learned |= knownPeers.insert (p.ip4).second;
                     if (p.online)
                         connectPeer (p.ip4, options.peerPort);
+                }
+                if (effective->peers.empty())
+                    for (const auto& ip : knownPeers)
+                        connectPeer (ip, options.peerPort);
+                if (learned)
+                    saveSettings();
             });
         });
     }
@@ -355,6 +385,11 @@ namespace tutti
             state.link->close();
             return;
         }
+
+        // Remember where friends are, for when Tailscale can't list them.
+        if (const auto host = juce::String (str (hello, "addr")).upToFirstOccurrenceOf (":", false, false).toStdString();
+            tailscale::isTailscaleAddress (host) && knownPeers.insert (host).second)
+            saveSettings();
 
         if (state.peer == peer)
         {
@@ -561,6 +596,28 @@ namespace tutti
 
     // ================================================================== Live
 
+    namespace
+    {
+        // The Remote Script this app ships (remote_script/Tutti/engine.py SCRIPT_VERSION). Live loads
+        // scripts only when it starts, so after an update it may still run the old one.
+        constexpr const char* kRemoteScriptVersion = "2";
+    }
+
+    bool Engine::liveScriptOutdated() const
+    {
+        return liveLink != 0 && liveHello.is_object() && str (liveHello, "script") != kRemoteScriptVersion;
+    }
+
+    void Engine::cancelStart (const std::string& why)
+    {
+        waitingForCapture = false;
+        captureSentAt = 0;
+        startStatus.clear();
+        pendingStartSource = pendingStartCopy = juce::File();
+        liveStatus = "Ready";
+        notice (why);
+    }
+
     void Engine::sendToLive (const Json& message)
     {
         if (liveLink != 0)
@@ -594,6 +651,13 @@ namespace tutti
         lastBindAttempt = now();
         if (liveLink == 0)
             return;
+        if (liveScriptOutdated())
+        {
+            liveStatus = "Restart Live to finish updating Tutti";
+            if (waitingForCapture)
+                cancelStart ("Restart Live, then share the song again: Tutti was updated and Live is still running the old version.");
+            return;
+        }
         auto& s = *sessionPtr;
         if (! s.inSession())
         {
@@ -601,6 +665,7 @@ namespace tutti
             {
                 liveStatus = "Reading your song...";
                 startStatus = "Reading your song in Live...";
+                captureSentAt = now();
                 sendToLive (Json { { "type", "capture" } });
             }
             else
@@ -641,6 +706,22 @@ namespace tutti
             if (waitingForCapture)
                 finishStart (m);
         }
+        else if (type == "capture_failed")
+        {
+            log ("Live couldn't read the song: " + str (m, "error"));
+            if (waitingForCapture)
+                cancelStart ("Live couldn't read the song, so the session didn't start. Details are in Tutti's log (Settings > Show logs).");
+        }
+        else if (type == "bind_failed")
+        {
+            log ("Live couldn't load the session song: " + str (m, "error"));
+            liveBound = false;
+            reloading = false;
+            liveStatus = "Couldn't connect your Live to the session";
+            if (bindFailures++ == 0)
+                notice ("Live couldn't load the session song. Details are in Tutti's log (Settings > Show logs).");
+            lastBindAttempt = now() + 57.0; // try again in a minute, not every few seconds
+        }
         else if (type == "structure")
         {
             if (! pendingSave.is_null() && integer (m, "req") == structureRequest)
@@ -664,6 +745,7 @@ namespace tutti
                 notice ("Your Live is up to date.");
             }
             liveBound = true;
+            bindFailures = 0;
             liveStatus = "In sync";
             stale.clear();
             const auto& stats = field (m, "stats");
@@ -856,6 +938,11 @@ namespace tutti
             error = "You're already in a session.";
             return false;
         }
+        if (liveScriptOutdated())
+        {
+            error = "Restart Live first: Tutti was updated and Live is still running the old version.";
+            return false;
+        }
         auto set = als::load (source, error);
         if (set == nullptr)
             return false;
@@ -873,18 +960,21 @@ namespace tutti
         juce::Thread::launch ([this, shared, source, folder, copy] {
             juce::String err;
             int missing = 0;
+            juce::StringArray missingNames;
             for (auto& ref : als::fileRefs (*shared))
             {
                 auto file = als::resolve (ref, source.getParentDirectory());
                 if (file == juce::File())
                 {
                     ++missing;
+                    missingNames.add (ref.path.isNotEmpty() ? ref.path : ref.relative);
                     continue;
                 }
                 auto hash = contentStore.add (file, err);
                 if (! hash)
                 {
                     ++missing;
+                    missingNames.add (file.getFullPathName() + " (" + err + ")");
                     continue;
                 }
                 audio::describe (contentStore, *hash);
@@ -892,7 +982,9 @@ namespace tutti
             }
             folder.createDirectory();
             const bool saved = copy == source || als::save (*shared, copy);
-            post ([this, saved, missing, copy] {
+            post ([this, saved, missing, missingNames, copy] {
+                if (missing > 0)
+                    log ("files the song refers to that couldn't be found: " + missingNames.joinIntoString ("; ").toStdString());
                 if (! saved)
                 {
                     waitingForCapture = false;
@@ -901,7 +993,7 @@ namespace tutti
                     return;
                 }
                 if (missing > 0)
-                    notice (std::to_string (missing) + " audio file(s) in the song couldn't be found; they'll be missing for everyone.");
+                    notice (std::to_string (missing) + " sample(s) in the song couldn't be found; they'll be missing for everyone.");
                 startStatus = "Opening the song in Live...";
                 options.openInLive (copy);
                 bindLive();
@@ -913,6 +1005,7 @@ namespace tutti
     void Engine::finishStart (const Json& captured)
     {
         waitingForCapture = false;
+        captureSentAt = 0;
         Json docJson = field (captured, "doc");
         // Audio paths in the captured document become content hashes.
         for (auto& e : docJson["e"])
@@ -993,6 +1086,11 @@ namespace tutti
         auto it = peerHellos.find (hostPeer);
         if (it == peerHellos.end() || sessionPtr->inSession())
             return;
+        if (liveScriptOutdated())
+        {
+            notice ("Restart Live first: Tutti was updated and Live is still running the old version.");
+            return;
+        }
         MemberInfo host;
         host.peer = hostPeer;
         host.name = str (it->second, "name");

@@ -1,11 +1,12 @@
-# The Tutti app: menu bar (macOS) / tray (Windows) app with a small window.
+# The Tutti app: a normal app with a window (Dock icon on macOS, taskbar on Windows) that keeps
+# running in the background when the window is closed, plus a menu bar / tray icon.
 juce_add_gui_app(Tutti
     PRODUCT_NAME "Tutti"
     COMPANY_NAME "Baastik Labs"
     BUNDLE_ID com.baastiklabs.tutti
     VERSION ${TUTTI_VERSION}
     ICON_BIG ${CMAKE_CURRENT_SOURCE_DIR}/Resources/icon.png
-    PLIST_TO_MERGE "<plist><dict><key>LSUIElement</key><true/><key>NSHumanReadableCopyright</key><string>Baastik Labs</string></dict></plist>")
+    PLIST_TO_MERGE "<plist><dict><key>NSHumanReadableCopyright</key><string>Baastik Labs</string><key>NSLocalNetworkUsageDescription</key><string>Tutti connects to your friends' computers over Tailscale to share your song.</string></dict></plist>")
 
 juce_add_binary_data(TuttiAppData
     NAMESPACE TuttiAppData
@@ -27,6 +28,10 @@ target_compile_definitions(Tutti PRIVATE
     JUCE_APPLICATION_NAME_STRING="Tutti"
     JUCE_APPLICATION_VERSION_STRING="${TUTTI_VERSION}"
     JUCE_DISPLAY_SPLASH_SCREEN=0)
+
+if(APPLE)
+    target_link_libraries(Tutti PRIVATE "-framework CoreServices") # Dock icon clicks (MacReopen.cpp)
+endif()
 
 target_link_libraries(Tutti PRIVATE
     tutti_engine

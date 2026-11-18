@@ -162,6 +162,10 @@ namespace
     }
 }
 
+#if JUCE_MAC
+void installReopenHandler (std::function<void()>); // MacReopen.cpp
+#endif
+
 class TuttiApp : public juce::JUCEApplication, private AppActions, private juce::Timer
 {
 public:
@@ -218,6 +222,15 @@ public:
 
         window = std::make_unique<Window> (static_cast<AppActions&> (*this));
         createTray();
+       #if JUCE_MAC
+        // Dock icon clicks bring the window back (installed once launching has finished).
+        juce::MessageManager::callAsync ([this] {
+            installReopenHandler ([this] {
+                engine->logLine ("reopened: showing the window");
+                showWindow();
+            });
+        });
+       #endif
         if (! args.contains ("--background"))
             showWindow();
         startTimer (20);
@@ -266,7 +279,9 @@ private:
             setResizeLimits (400, 520, 900, 1400);
             centreWithSize (440, 720);
         }
-        void closeButtonPressed() override { setVisible (false); } // keeps running in the menu bar / tray
+        // Tutti keeps running (a session mustn't end because a window closed). The Dock icon, the
+        // menu bar / tray icon, or opening Tutti again brings the window back; Quit quits.
+        void closeButtonPressed() override { setVisible (false); }
         MainComponent* content = nullptr;
     };
 
@@ -318,6 +333,9 @@ private:
         if (window == nullptr)
             return;
         window->setVisible (true);
+       #if JUCE_MAC
+        juce::Process::makeForegroundProcess();
+       #endif
         window->toFront (true);
         dirty = true;
     }

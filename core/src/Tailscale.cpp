@@ -1,5 +1,8 @@
 #include "tutti/Tailscale.h"
 
+#include <memory>
+#include <thread>
+
 namespace tutti::tailscale
 {
     namespace
@@ -71,16 +74,77 @@ namespace tutti::tailscale
         return {};
     }
 
-    std::optional<Status> query()
+    std::optional<Status> query (std::string* problem)
     {
-        auto cli = findCli();
+        return queryWith (findCli(), problem);
+    }
+
+    std::optional<Status> queryWith (const juce::File& cli, std::string* problem, int timeoutMs)
+    {
+        auto say = [problem] (const std::string& text) {
+            if (problem != nullptr)
+                *problem = text;
+        };
         if (cli == juce::File())
+        {
+            say ("the tailscale command isn't installed");
             return std::nullopt;
-        juce::ChildProcess process;
-        if (! process.start (juce::StringArray { cli.getFullPathName(), "status", "--json" }, juce::ChildProcess::wantStdOut))
+        }
+        juce::StringArray args;
+       #if ! JUCE_WINDOWS
+        // The Mac app's executable is both the app and the command-line tool, and it only acts as
+        // the tool when started from a terminal. Started by Tutti it could open the app instead and
+        // never answer. Tailscale's documented escape hatch: TAILSCALE_BE_CLI=1.
+        args.addArray ({ "/usr/bin/env", "TAILSCALE_BE_CLI=1" });
+       #endif
+        args.addArray ({ cli.getFullPathName(), "status", "--json" });
+        // Read on a thread of its own and wait for it with a deadline. Waiting for the output to
+        // end isn't enough: a process the tool starts can keep the pipe open long after it quits.
+        struct Run
+        {
+            juce::ChildProcess process;
+            juce::String out;
+            juce::WaitableEvent done;
+        };
+        auto run = std::make_shared<Run>();
+        if (! run->process.start (args, juce::ChildProcess::wantStdOut))
+        {
+            say ("couldn't run " + cli.getFullPathName().toStdString());
             return std::nullopt;
-        const auto out = process.readAllProcessOutput();
-        process.waitForProcessToFinish (5000);
-        return parse (out.toStdString());
+        }
+        std::thread ([run] {
+            run->out = run->process.readAllProcessOutput();
+            run->done.signal();
+        }).detach();
+        if (! run->done.wait (timeoutMs))
+        {
+            run->process.kill();
+            say ("tailscale status didn't answer within " + std::to_string (timeoutMs / 1000) + " seconds");
+            return std::nullopt;
+        }
+        const auto out = run->out;
+        auto status = parse (out.toStdString());
+        if (! status)
+            say ("tailscale status said: " + out.substring (0, 200).trim().replaceCharacters ("\r\n", "  ").toStdString());
+        return status;
+    }
+
+    bool isTailscaleAddress (const std::string& ip4)
+    {
+        // 100.64.0.0/10: 100.64.x.x to 100.127.x.x
+        juce::StringArray parts;
+        parts.addTokens (juce::String (ip4), ".", {});
+        if (parts.size() != 4 || parts[0] != "100")
+            return false;
+        const int second = parts[1].getIntValue();
+        return second >= 64 && second <= 127;
+    }
+
+    std::string localAddress()
+    {
+        for (const auto& a : juce::IPAddress::getAllAddresses (false))
+            if (const auto ip = a.toString().toStdString(); isTailscaleAddress (ip))
+                return ip;
+        return {};
     }
 }

@@ -20,7 +20,7 @@ Then, once (step by step, with troubleshooting: [docs/SETUP.md](docs/SETUP.md)):
    reach your friends privately; your songs never go through anyone's server.
 2. **Live.** In Live 12, open **Settings > Link, Tempo & MIDI** and pick **Tutti** as a Control
    Surface (leave Input and Output empty). If it isn't in the list, restart Live once.
-3. Open Tutti (the four circles in your menu bar or tray). It shows a tick next to both.
+3. Open Tutti (four overlapping circles, in the Dock or taskbar). It shows a tick next to both.
 
 Everyone in a session needs the **same Live 12 update**, and the same third-party plugins where
 possible (see "Plugins" below).
@@ -63,7 +63,7 @@ shows the version and what's new, and has **Check now**, **Roll back** and an au
 
 ## Uninstall
 
-- **Mac:** quit Tutti from the menu bar, then delete `~/Applications/Tutti.app`,
+- **Mac:** quit Tutti (⌘Q), then delete `~/Applications/Tutti.app`,
   `~/Library/Application Support/Tutti`, `~/Library/LaunchAgents/com.baastiklabs.tutti.plist` and
   the `Tutti` folder in Live's `User Library/Remote Scripts`.
 - **Windows:** Settings > Apps > Tutti > Uninstall.

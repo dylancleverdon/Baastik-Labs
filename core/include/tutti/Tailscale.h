@@ -36,6 +36,13 @@ namespace tutti::tailscale
     // The tailscale command-line tool on this computer, if installed.
     juce::File findCli();
 
-    // Runs `tailscale status --json` (blocking, a second or so). nullopt if Tailscale isn't there.
-    std::optional<Status> query();
+    // Runs `tailscale status --json` (blocking: a second or so, never more than ~8 s). nullopt if
+    // it couldn't; `problem` then says why (for the log).
+    std::optional<Status> query (std::string* problem = nullptr);
+    std::optional<Status> queryWith (const juce::File& cli, std::string* problem, int timeoutMs = 8000);
+
+    // Our Tailscale address read from this computer's network interfaces (100.64.0.0/10), for
+    // when the command-line tool can't be asked. Empty if there's none.
+    std::string localAddress();
+    bool isTailscaleAddress (const std::string& ip4);
 }

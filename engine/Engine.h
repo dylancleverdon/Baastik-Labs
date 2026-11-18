@@ -55,6 +55,7 @@ namespace tutti
         bool tailscaleInstalled = false, tailscaleRunning = false;
         std::string selfAddress;
         bool liveConnected = false, liveBound = false;
+        bool liveNeedsRestart = false;     // Tutti was updated; Live still runs the old script
         std::string liveVersion, liveStatus;
         std::vector<Peer> peers;
         Session::Role role = Session::Role::idle;
@@ -135,6 +136,7 @@ namespace tutti
 
         // Hooks for the save lane / versions (EngineVersions.cpp) and tests.
         void notice (const std::string& text);
+        void logLine (const std::string& text) { log (text); }  // tutti.log only
         void sendToLive (const Json& message);
         Json liveDoc (const Doc& doc) const;  // document with local audio paths, for the Remote Script
         double now() const;
@@ -183,6 +185,8 @@ namespace tutti
         // --- Live (Remote Script)
         void handleLive (const Json& message);
         void bindLive();
+        bool liveScriptOutdated() const;   // Live still runs an older Tutti script: restart Live
+        void cancelStart (const std::string& why);
         void submitFromLive (Ops ops);
         void applyLocalAndSubmit (const Ops& ops);
         Ops toLive (const Ops& ops) const;
@@ -253,6 +257,8 @@ namespace tutti
         std::map<std::string, Json> peerHellos;    // peer id -> last hello (for discovery)
         std::optional<tailscale::Status> tailscaleStatus;
         bool tailscaleInstalled = false;
+        std::string lastTailscaleProblem;
+        std::set<std::string> knownPeers;          // Tailscale addresses of friends we've met
         double lastDiscovery = -1e9;
         bool discovering = false;
 
@@ -273,6 +279,8 @@ namespace tutti
         juce::File pendingStartSource;
         juce::File pendingStartCopy;
         bool waitingForCapture = false;
+        double captureSentAt = 0;          // when we asked Live to read the song
+        int bindFailures = 0;
         bool joinedWaitingForSong = false;
         Json joinSnapshot;
 

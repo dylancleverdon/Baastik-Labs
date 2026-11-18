@@ -19,10 +19,15 @@ namespace tutti::als
             c->setAttribute ("Value", value);
         }
 
-        void collect (juce::XmlElement& e, std::vector<FileRef>& out)
+        // A Set refers to files for samples (SampleRef) and Max for Live devices (MxPatchRef). Its
+        // other FileRefs only say which preset or groove something was loaded from: Live doesn't
+        // need those files, and they often no longer exist.
+        void collect (juce::XmlElement& e, const juce::String& parent, std::vector<FileRef>& out)
         {
             if (e.hasTagName ("FileRef"))
             {
+                if (parent != "SampleRef" && parent != "MxPatchRef")
+                    return;
                 FileRef ref;
                 ref.element = &e;
                 ref.path = childValue (e, "Path");
@@ -34,7 +39,7 @@ namespace tutti::als
                 return;
             }
             for (auto* c : e.getChildIterator())
-                collect (*c, out);
+                collect (*c, e.getTagName(), out);
         }
 
         juce::String trackName (const juce::XmlElement& track)
@@ -104,7 +109,7 @@ namespace tutti::als
     std::vector<FileRef> fileRefs (juce::XmlElement& root)
     {
         std::vector<FileRef> out;
-        collect (root, out);
+        collect (root, {}, out);
         return out;
     }
 

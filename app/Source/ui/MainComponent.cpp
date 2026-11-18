@@ -92,6 +92,9 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
         if (! e.liveConnected)
             add ({ "live", Row::Style::warning, "Connect Ableton Live",
                    "In Live, open Settings > Link, Tempo & MIDI and pick Tutti as a Control Surface (leave Input and Output empty). If Tutti isn't in the list, restart Live once." });
+        else if (e.liveNeedsRestart)
+            add ({ "live", Row::Style::warning, "Restart Live",
+                   "Tutti was updated. Quit Live and open it again so it loads the new Tutti." });
         else
             add ({ "live", Row::Style::good, "Live " + juce::String (e.liveVersion) + " connected", juce::String (e.liveStatus) });
 
@@ -144,6 +147,8 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
 
     if (! e.liveConnected)
         add ({ "live", Row::Style::warning, "Live isn't connected", "Open Live, with Tutti chosen as a Control Surface." });
+    else if (e.liveNeedsRestart)
+        add ({ "live", Row::Style::warning, "Restart Live", "Tutti was updated. Quit Live and open it again so it loads the new Tutti." });
     else if (e.liveBound)
     {
         juce::String detail = "Player 1: " + juce::String (p1Name);

@@ -498,6 +498,10 @@ namespace tutti
         playMode = str (j, "play", "ask");
         if (const auto b = str (j, "backup"); ! b.empty())
             backupFolder = juce::File (juce::String (b));
+        if (const auto& known = field (j, "known"); known.is_array())
+            for (const auto& ip : known)
+                if (ip.is_string() && tailscale::isTailscaleAddress (ip.get<std::string>()))
+                    knownPeers.insert (ip.get<std::string>());
         saveSettings();
     }
 
@@ -510,6 +514,7 @@ namespace tutti
         j["color"] = self.color;
         j["play"] = playMode;
         j["backup"] = backupFolder.getFullPathName().toStdString();
+        j["known"] = Json (std::vector<std::string> (knownPeers.begin(), knownPeers.end()));
         file.replaceWithText (juce::String (j.dump (2)));
     }
 
@@ -524,6 +529,7 @@ namespace tutti
         v.tailscaleRunning = tailscaleStatus && tailscaleStatus->running();
         v.selfAddress = self.addr;
         v.liveConnected = liveLink != 0;
+        v.liveNeedsRestart = liveScriptOutdated();
         v.liveBound = liveBound;
         v.liveVersion = self.live;
         v.liveStatus = liveStatus;

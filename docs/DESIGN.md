@@ -171,6 +171,17 @@ installs when no session is running (relaunching itself). The previous version i
 back (the rolled-back-from build is then skipped). The Remote Script is installed or updated into
 Live's User Library by the app; Live picks it up on its next launch.
 
+- Relaunch: the old Tutti closes its sockets, starts the new one with `--updated` and quits. A
+  Tutti started with `--updated` waits (up to 30 s) for the old one's single-instance lock, then
+  takes it, so it never mistakes the quitting Tutti for a running one.
+- Windows: normal users can't add or remove folders in `Common Files\VST3`, so the Stand-in is
+  updated file by file inside its bundle (the installer makes the bundle writable for Users);
+  that also works while Live has the plugin open. If an install fails, everything is put back and
+  the same download is retried ten minutes later. Progress is logged to `updater.log`.
+- CI's self-update tests build an old Tutti (build 0) from the commit under test and let it update
+  itself from the published `tutti-channel` release on macOS and Windows. They don't gate
+  publishing, so a broken published build can always be replaced.
+
 ## Suggestion box
 
 `suggestions/Code.gs` is an Apps Script web app bound to the sheet. The app POSTs JSON

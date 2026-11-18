@@ -26,6 +26,9 @@ python3 tools/e2e/run_e2e.py build                # several headless peers + fak
 - `build/app/Tutti_artefacts/Release/Tutti --screenshot <dir>` renders every screen to PNGs
   (use `xvfb-run -a` on Linux).
 - `build/tools/cli/tutti-peer` is a headless Tutti (no GUI) used by the end-to-end tests.
+- CI also installs and uninstalls the Windows installer, and runs self-update tests on macOS and
+  Windows (an old build updates itself from the published `tutti-channel` release). Those don't
+  gate publishing. The updater logs to `updater.log` in Tutti's logs folder.
 
 ## Architecture (details in `docs/DESIGN.md`)
 - `remote_script/Tutti/`: Python Remote Script, the only code that talks to Live's API. Keep it

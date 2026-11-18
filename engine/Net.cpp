@@ -1,5 +1,7 @@
 #include "Net.h"
 
+#include "tutti/SocketIO.h"
+
 namespace tutti::net
 {
     namespace
@@ -19,7 +21,10 @@ namespace tutti::net
         : socket (std::move (s)), linkId (id), isOutgoing (out)
     {
         if (socket != nullptr)
+        {
             protocol::noSigPipe (*socket);
+            io::makeBlocking (socket->getRawSocketHandle());
+        }
     }
 
     Link::~Link()
@@ -63,8 +68,10 @@ namespace tutti::net
         if (stopping.exchange (true))
             return;
         wake.signal();
+        // Only shut it down: the reader and writer may still be using the handle, and closing it
+        // here would let another socket reuse it under them. The destructor releases it.
         if (socket != nullptr)
-            socket->close();
+            io::shutdownBoth (socket->getRawSocketHandle());
         if (! closedReported.exchange (true) && closedFn)
             closedFn (linkId);
     }
@@ -73,14 +80,17 @@ namespace tutti::net
     {
         protocol::Decoder decoder;
         std::vector<char> buffer (1 << 16);
+        const int handle = socket->getRawSocketHandle();
         while (! stopping.load())
         {
-            const int ready = socket->waitUntilReady (true, 200);
+            const int ready = io::waitReadable (handle, 200);
             if (ready < 0)
                 break;
             if (ready == 0)
                 continue;
-            const int n = socket->read (buffer.data(), static_cast<int> (buffer.size()), false);
+            const int n = io::receive (handle, buffer.data(), static_cast<int> (buffer.size()));
+            if (n == -2)
+                continue;
             if (n <= 0)
                 break;
             decoder.feed (buffer.data(), static_cast<size_t> (n));
@@ -111,16 +121,11 @@ namespace tutti::net
                 wake.wait (200);
                 continue;
             }
-            size_t done = 0;
-            while (done < next.size() && ! stopping.load())
+            // Waits while the send buffer is full; only a dead link fails.
+            if (! io::sendAll (socket->getRawSocketHandle(), next.data(), static_cast<int> (next.size())))
             {
-                const int n = socket->write (next.data() + done, static_cast<int> (next.size() - done));
-                if (n <= 0)
-                {
-                    close();
-                    return;
-                }
-                done += static_cast<size_t> (n);
+                close();
+                return;
             }
             queued -= next.size();
         }

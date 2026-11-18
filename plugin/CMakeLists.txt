@@ -22,7 +22,8 @@ juce_add_plugin(TuttiStandIn
 target_sources(TuttiStandIn PRIVATE
     Source/StandIn.cpp
     Source/StandIn.h
-    ${CMAKE_SOURCE_DIR}/core/src/Protocol.cpp)
+    ${CMAKE_SOURCE_DIR}/core/src/Protocol.cpp
+    ${CMAKE_SOURCE_DIR}/core/src/SocketIO.cpp)
 target_include_directories(TuttiStandIn PRIVATE
     ${CMAKE_SOURCE_DIR}/core/include
     ${CMAKE_CURRENT_SOURCE_DIR}/Source)

@@ -1,8 +1,11 @@
 #include "tutti/Als.h"
 #include "tutti/AudioFiles.h"
+#include "tutti/SocketIO.h"
 #include "tutti/Tailscale.h"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <thread>
 #include <juce_audio_formats/juce_audio_formats.h>
 
 using namespace tutti;
@@ -238,4 +241,50 @@ TEST_CASE ("Tailscale status is parsed", "[tailscale]")
     CHECK (sam.user == "Sam");
     CHECK (sam.online);
     CHECK_FALSE (tailscale::parse ("not json"));
+}
+
+TEST_CASE ("Links send everything even when the socket was switched to non-blocking", "[net]")
+{
+    // JUCE's non-blocking read flips the whole socket to non-blocking; a write from another
+    // thread then hit "would block" as soon as the send buffer filled, and Tutti hung up.
+    juce::StreamingSocket listener;
+    int port = 0;
+    for (int p = 47600; p < 47700 && port == 0; ++p)
+        if (listener.createListener (p, "127.0.0.1"))
+            port = p;
+    REQUIRE (port != 0);
+    juce::StreamingSocket client;
+    REQUIRE (client.connect ("127.0.0.1", port, 2000));
+    std::unique_ptr<juce::StreamingSocket> server (listener.waitForNextConnection());
+    REQUIRE (server != nullptr);
+
+    std::vector<char> data (4 * 1024 * 1024);
+    for (size_t i = 0; i < data.size(); ++i)
+        data[i] = static_cast<char> ((i * 31) & 0xff);
+
+    std::vector<char> received;
+    std::thread reader ([&] {
+        std::vector<char> buffer (1 << 16);
+        while (received.size() < data.size())
+        {
+            if (tutti::io::waitReadable (server->getRawSocketHandle(), 200) <= 0)
+                continue;
+            const int n = tutti::io::receive (server->getRawSocketHandle(), buffer.data(), (int) buffer.size());
+            if (n == -2)
+                continue;
+            if (n <= 0)
+                break;
+            received.insert (received.end(), buffer.data(), buffer.data() + n);
+        }
+    });
+    char probe[1];
+    client.read (probe, 1, false); // what JUCE does: leaves the socket non-blocking
+    CHECK (tutti::io::sendAll (client.getRawSocketHandle(), data.data(), (int) data.size()));
+    reader.join();
+    CHECK (received == data);
+
+    tutti::io::shutdownBoth (client.getRawSocketHandle());
+    char after[16];
+    CHECK (tutti::io::waitReadable (server->getRawSocketHandle(), 1000) == 1);
+    CHECK (tutti::io::receive (server->getRawSocketHandle(), after, sizeof (after)) == 0); // closed
 }

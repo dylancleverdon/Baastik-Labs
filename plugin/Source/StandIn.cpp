@@ -1,6 +1,7 @@
 #include "StandIn.h"
 
 #include "tutti/Protocol.h"
+#include "tutti/SocketIO.h"
 
 namespace
 {
@@ -28,7 +29,7 @@ public:
         {
             std::lock_guard<std::mutex> g (socketLock);
             if (socket != nullptr)
-                socket->close();
+                tutti::io::shutdownBoth (socket->getRawSocketHandle()); // wakes the reader; released below
         }
         stopThread (3000);
     }
@@ -38,7 +39,7 @@ public:
         const auto bytes = tutti::protocol::encode (message);
         std::lock_guard<std::mutex> g (socketLock);
         if (socket != nullptr && socket->isConnected())
-            socket->write (bytes.data(), (int) bytes.size());
+            tutti::io::sendAll (socket->getRawSocketHandle(), bytes.data(), (int) bytes.size());
     }
 
     void sayHello()
@@ -58,6 +59,7 @@ public:
                 continue;
             }
             tutti::protocol::noSigPipe (*s); // a closed Tutti app must never take Live down with it
+            tutti::io::makeBlocking (s->getRawSocketHandle());
             {
                 std::lock_guard<std::mutex> g (socketLock);
                 socket = std::move (s);
@@ -87,12 +89,16 @@ private:
             }
             if (s == nullptr)
                 return;
-            const int ready = s->waitUntilReady (true, 250);
+            // Our own reads: JUCE's non-blocking read would flip the whole socket to non-blocking
+            // and break the sends.
+            const int ready = tutti::io::waitReadable (s->getRawSocketHandle(), 250);
             if (ready < 0)
                 return;
             if (ready == 0)
                 continue;
-            const int n = s->read (buffer.data(), (int) buffer.size(), false);
+            const int n = tutti::io::receive (s->getRawSocketHandle(), buffer.data(), (int) buffer.size());
+            if (n == -2)
+                continue;
             if (n <= 0)
                 return;
             decoder.feed (buffer.data(), (size_t) n);

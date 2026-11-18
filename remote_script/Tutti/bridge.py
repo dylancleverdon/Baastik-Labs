@@ -6,6 +6,7 @@ poll() connects when needed, reads what has arrived and writes what is queued.""
 import errno
 import select
 import socket
+import sys
 import time
 
 from . import framing
@@ -52,6 +53,12 @@ class Bridge(object):
                 sock.connect(("127.0.0.1", self._port))
                 sock.setblocking(False)
                 sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                if sys.platform == "darwin":
+                    # Writing to a closed Tutti app must never raise SIGPIPE inside Live.
+                    try:
+                        sock.setsockopt(socket.SOL_SOCKET, getattr(socket, "SO_NOSIGPIPE", 0x1022), 1)
+                    except (OSError, socket.error):
+                        pass
             except (OSError, socket.error):
                 try:
                     sock.close()

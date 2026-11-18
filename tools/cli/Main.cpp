@@ -9,6 +9,7 @@
 // Events:   {"event":"open","path":...} when Tutti asks Live to open a song,
 //           {"event":"state", ...} in reply to "state".
 
+#include <csignal>
 #include "Engine.h"
 
 #include <iostream>
@@ -51,6 +52,9 @@ namespace
 
 int main (int argc, char* argv[])
 {
+   #if ! JUCE_WINDOWS
+    std::signal (SIGPIPE, SIG_IGN); // a friend's closed connection must not kill us
+   #endif
     juce::StringArray args;
     for (int i = 1; i < argc; ++i)
         args.add (argv[i]);

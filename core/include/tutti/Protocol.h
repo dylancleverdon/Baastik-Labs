@@ -2,10 +2,16 @@
 
 #include "Json.h"
 
+#include <juce_core/juce_core.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
+
+#if ! defined (_WIN32)
+ #include <sys/socket.h>
+#endif
 
 namespace tutti::protocol
 {
@@ -45,4 +51,16 @@ namespace tutti::protocol
         size_t readPos = 0;
         bool bad = false;
     };
+
+    // Writing to a connection the other side has closed raises SIGPIPE on macOS, which kills the
+    // process (Tutti, or Live itself for the Stand-in) unless the socket opts out. JUCE doesn't.
+    inline void noSigPipe (juce::StreamingSocket& socket)
+    {
+       #if defined (SO_NOSIGPIPE)
+        const int on = 1;
+        setsockopt (socket.getRawSocketHandle(), SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof (on));
+       #else
+        (void) socket;
+       #endif
+    }
 }

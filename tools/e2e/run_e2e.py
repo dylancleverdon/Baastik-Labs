@@ -462,6 +462,8 @@ def main():
     except AssertionError:
         # Say what each Tutti was doing, so a failure in CI can be diagnosed from the log.
         for p in h.peers.values():
+            code = p.proc.poll()
+            print("--- %s's Tutti is %s" % (p.name, "running" if code is None else "gone (exit %s)" % code))
             log = os.path.join(p.data, "Logs", "tutti.log")
             print("--- %s's tutti.log (last 30 lines)" % p.name)
             try:

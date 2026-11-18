@@ -4,6 +4,7 @@
 //   Tutti --background    start at login: just the menu bar / tray icon
 //   Tutti --screenshot D  render every screen to PNGs in folder D, then quit (for checking the UI)
 
+#include <csignal>
 #include "AppUpdater.h"
 #include "BinaryData.h"
 #include "Platform.h"
@@ -181,6 +182,9 @@ public:
 
     void initialise (const juce::String& commandLine) override
     {
+       #if ! JUCE_WINDOWS
+        std::signal (SIGPIPE, SIG_IGN); // a friend's closed connection must not quit Tutti
+       #endif
         juce::LookAndFeel::setDefaultLookAndFeel (&lookAndFeel);
         const auto args = juce::StringArray::fromTokens (commandLine, true);
         if (args.contains ("--screenshot"))

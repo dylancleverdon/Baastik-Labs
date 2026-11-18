@@ -57,6 +57,7 @@ public:
                 wait (2000);
                 continue;
             }
+            tutti::protocol::noSigPipe (*s); // a closed Tutti app must never take Live down with it
             {
                 std::lock_guard<std::mutex> g (socketLock);
                 socket = std::move (s);

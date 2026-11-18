@@ -18,6 +18,8 @@ namespace tutti::net
     Link::Link (std::unique_ptr<juce::StreamingSocket> s, uint64_t id, bool out)
         : socket (std::move (s)), linkId (id), isOutgoing (out)
     {
+        if (socket != nullptr)
+            protocol::noSigPipe (*socket);
     }
 
     Link::~Link()

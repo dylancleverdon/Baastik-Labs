@@ -41,6 +41,9 @@ and open it.
   "Tutti-Installer.pkg" (macOS may ask for your Mac's password to confirm).
 - Click through the installer. It installs just for you (no admin password) and opens Tutti:
   four overlapping circles in the menu bar.
+- Now or later, if macOS asks whether Tutti can find devices on your local network, accept
+  incoming connections, or open files in your Documents or Desktop folder, click **Allow**.
+  That's how it reaches your friends and copies songs.
 
 **Windows:** download [Tutti-Installer.exe](https://github.com/dylancleverdon/Baastik-Labs/releases/download/tutti-channel/Tutti-Installer.exe)
 and run it.
@@ -83,12 +86,14 @@ Player 1, Play together and ideas.
 
 | What you see | What to do |
 | --- | --- |
+| No four circles in a Mac's menu bar | A crowded menu bar (especially on a MacBook with a notch) can hide them. Quit a few other menu bar apps to make room. |
+| Windows blocks the installer with no **Run anyway** | That's Smart App Control, which blocks apps that aren't signed. It can be turned off in **Windows Security > App & browser control**, but on many PCs it can't be turned back on, so ask whoever runs the group first. |
 | Tutti isn't in Live's Control Surface list | Open Tutti once, then quit and reopen Live. Tutti's **Settings** shows where it put its Live part (the Remote Script). If it says it couldn't, open Live once, then quit and reopen Tutti. |
 | **Tailscale is off** | Open Tailscale and sign in. |
 | A friend's session doesn't show up | Both of you: Tailscale on, and you see each other's computers in Tailscale's menu; Tutti open. On a Mac with the firewall turned on, click **Allow** when macOS asks whether Tutti may accept incoming connections. |
 | **Live isn't connected** | Live is closed, or Tutti isn't chosen as a Control Surface (step 3). |
 | Live versions don't match | Everyone updates Live to the same 12.x version. |
-| A plugin is missing on your computer | Expected when you don't own it. Whoever owns it puts **Tutti Stand-in** right after it on that track; you then hear their recording of it. See the README's [Plugins](../README.md#plugins) section. |
+| A plugin is missing on your computer | Expected when you don't own it. Whoever owns it puts **Tutti Stand-in** right after it on that track and saves; their Stand-in records whenever they play the song, and you hear that recording. See the README's [Plugins](../README.md#plugins) section. |
 | The suggestion box says suggestions are waiting to send | The box isn't connected to the sheet yet (see below). Your suggestions are kept and sent as soon as it is. |
 | Something else | Tutti's **Settings > Show logs** opens its log folder. Send what you see through the **Suggestion box** as a Problem. |
 

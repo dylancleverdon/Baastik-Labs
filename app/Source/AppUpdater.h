@@ -19,6 +19,7 @@ public:
         juce::String manifestUrl = tutti::update::manifestUrl;
         std::vector<std::string> extraPrefixes;     // test hook
         std::function<bool()> safeToInstall;         // false while in a session
+        std::function<void()> beforeRelaunch;        // let go of ports and connections
         std::function<void()> quitForRelaunch;
     };
 
@@ -45,6 +46,7 @@ private:
     void relaunch();
     void saveSettings();
     void setStatus (const std::string&);
+    static void logLine (const std::string&);
 
     Options options;
     tutti::update::Settings settings;
@@ -56,6 +58,7 @@ private:
     std::string availableVersion, availableNotes;
     juce::File staged;           // extracted payload ready to install
     juce::int64 stagedBuild = 0;
+    juce::int64 retryInstallAt = 0; // after a failed install (e.g. Live still using the Stand-in)
     std::string stagedVersion, stagedNotes;
     std::atomic<bool> busy { false };
     std::unique_ptr<juce::Thread> worker;

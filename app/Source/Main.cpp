@@ -167,7 +167,13 @@ class TuttiApp : public juce::JUCEApplication, private AppActions, private juce:
 public:
     const juce::String getApplicationName() override { return "Tutti"; }
     const juce::String getApplicationVersion() override { return tutti::version::string; }
-    bool moreThanOneInstanceAllowed() override { return false; }
+    // Only one Tutti runs at a time, except: an update or roll back starts the new Tutti while the
+    // old one is still quitting (initialise waits for it), and screenshots run beside a real Tutti.
+    bool moreThanOneInstanceAllowed() override
+    {
+        const auto args = getCommandLineParameterArray();
+        return args.contains ("--updated") || args.contains ("--screenshot");
+    }
 
     void initialise (const juce::String& commandLine) override
     {
@@ -181,6 +187,12 @@ public:
             return;
         }
 
+        if (args.contains ("--updated") && ! takeOverFromPreviousInstance())
+        {
+            quit(); // another Tutti is running after all: it carries on
+            return;
+        }
+
         AppUpdater::cleanUpAfterUpdate();
         engine = std::make_unique<tutti::Engine> (tutti::EngineOptions {});
         engine->onChange = [this] { dirty = true; };
@@ -189,6 +201,11 @@ public:
         AppUpdater::Options updaterOptions;
         updaterOptions.dataDir = engine->dataDir();
         updaterOptions.safeToInstall = [this] { return ! engine->session().inSession(); };
+        updaterOptions.beforeRelaunch = [this] {
+            stopTimer();
+            if (engine != nullptr)
+                engine->shutdown();
+        };
         updaterOptions.quitForRelaunch = [] { juce::JUCEApplication::getInstance()->systemRequestedQuit(); };
         updater = std::make_unique<AppUpdater> (updaterOptions);
         updater->onChange = [this] { dirty = true; };
@@ -223,6 +240,19 @@ public:
     void anotherInstanceStarted (const juce::String&) override { showWindow(); }
 
 private:
+    // Relaunched by an update: the old Tutti holds the single-instance lock until it has quit and
+    // let go of its ports. Wait for that (up to 30 s), then take the lock the usual way so later
+    // launches hand over to this Tutti. False if another Tutti still holds it.
+    bool takeOverFromPreviousInstance()
+    {
+        {
+            juce::InterProcessLock previous ("juceAppLock_" + getApplicationName());
+            if (previous.enter (30 * 1000))
+                previous.exit();
+        }
+        return ! sendCommandLineToPreexistingInstance();
+    }
+
     // ------------------------------------------------------------ window and tray
     struct Window : juce::DocumentWindow
     {

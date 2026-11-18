@@ -114,11 +114,14 @@ namespace
 
     juce::File userHome() { return juce::File::getSpecialLocation (juce::File::userHomeDirectory); }
 
-    // Where each part of a payload is installed on this computer.
+    // Where each part of a payload is installed on this computer. `inPlace` items are updated file
+    // by file inside the existing folder: Windows' VST3 folder only lets admins add or remove the
+    // plugin's folder, but the installer lets everyone change what's inside it.
     struct Item
     {
         juce::String name;
         juce::File destination;
+        bool inPlace = false;
     };
 
     std::vector<Item> layout()
@@ -132,7 +135,8 @@ namespace
         const auto exe = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
         items.push_back ({ "Tutti Stand-in.vst3",
                            juce::File::getSpecialLocation (juce::File::globalApplicationsDirectory)
-                               .getChildFile ("Common Files/VST3/Tutti Stand-in.vst3") });
+                               .getChildFile ("Common Files/VST3/Tutti Stand-in.vst3"),
+                           true });
         items.push_back ({ "RemoteScript", exe.getParentDirectory().getChildFile ("RemoteScript") });
         items.push_back ({ "Tutti.exe", exe });
        #endif
@@ -153,6 +157,53 @@ namespace
         if (from.isDirectory())
             return from.moveFileTo (to) || from.copyDirectoryTo (to);
         return from.moveFileTo (to) || from.copyFileTo (to);
+    }
+
+    // Puts every file of `from` at the same place inside `to`, moving each file it replaces into
+    // `backup`. Files in use can still be moved aside on Windows (Live keeps the Stand-in's DLL
+    // open), so this works while Live runs; Live loads the new plugin next time it starts.
+    // On failure, everything is put back.
+    bool replaceContents (const juce::File& from, const juce::File& to, const juce::File& backup)
+    {
+        backup.deleteRecursively();
+        std::vector<juce::File> added;
+        std::vector<std::pair<juce::File, juce::File>> movedAside; // installed file, its backup
+        auto undo = [&] {
+            for (const auto& f : added)
+                f.deleteFile();
+            for (auto it = movedAside.rbegin(); it != movedAside.rend(); ++it)
+                it->second.moveFileTo (it->first);
+            return false;
+        };
+        for (const auto& file : from.findChildFiles (juce::File::findFiles, true))
+        {
+            const auto relative = file.getRelativePathFrom (from);
+            const auto dest = to.getChildFile (relative);
+            if (dest.exists())
+            {
+                const auto keep = backup.getChildFile (relative);
+                keep.getParentDirectory().createDirectory();
+                if (! dest.moveFileTo (keep))
+                    return undo();
+                movedAside.push_back ({ dest, keep });
+            }
+            dest.getParentDirectory().createDirectory();
+            if (! file.moveFileTo (dest) && ! file.copyFileTo (dest))
+                return undo();
+            added.push_back (dest);
+        }
+        return true;
+    }
+
+    // Undoes replaceContents: the files kept in `backup` go back over the new ones.
+    void restoreContents (const juce::File& backup, const juce::File& to)
+    {
+        for (const auto& file : backup.findChildFiles (juce::File::findFiles, true))
+        {
+            const auto dest = to.getChildFile (file.getRelativePathFrom (backup));
+            dest.deleteFile();
+            file.moveFileTo (dest);
+        }
     }
 }
 
@@ -179,6 +230,20 @@ void AppUpdater::cleanUpAfterUpdate()
    #endif
 }
 
+// Updates leave a trail in updater.log (Settings > Show logs), for when one doesn't arrive.
+void AppUpdater::logLine (const std::string& text)
+{
+    static std::mutex fileLock;
+    std::lock_guard<std::mutex> g (fileLock);
+    auto dir = tutti::platform::logsDir();
+    dir.createDirectory();
+    auto file = dir.getChildFile ("updater.log");
+    if (file.getSize() > 512 * 1024)
+        file.moveFileTo (dir.getChildFile ("updater.old.log"));
+    file.appendText (juce::Time::getCurrentTime().toISO8601 (true) + "  " + tutti::version::string + "  "
+                     + juce::String (text) + "\n");
+}
+
 void AppUpdater::saveSettings()
 {
     auto j = settings.toJson();
@@ -193,6 +258,7 @@ void AppUpdater::setStatus (const std::string& s)
         std::lock_guard<std::mutex> g (lock);
         status = s;
     }
+    logLine (s);
     juce::MessageManager::callAsync ([this] { if (onChange) onChange(); });
 }
 
@@ -235,7 +301,7 @@ void AppUpdater::tick()
     if (! busy && nowMs - launched > 60 * 1000 && nowMs - lastCheck > 60 * 60 * 1000)
         startCheck (false);
 
-    if (! busy && staged != juce::File() && options.safeToInstall && options.safeToInstall())
+    if (! busy && staged != juce::File() && nowMs >= retryInstallAt && options.safeToInstall && options.safeToInstall())
         installStaged();
 }
 
@@ -295,6 +361,15 @@ void AppUpdater::runCheck (bool manual)
         return;
     }
 
+    {
+        std::lock_guard<std::mutex> g (lock);
+        if (staged != juce::File() && stagedBuild == manifest->build)
+        {
+            status = "Tutti " + manifest->version + " is ready: it installs when you're not in a session";
+            return; // already downloaded, waiting to install
+        }
+    }
+
     const auto& asset = manifest->platforms.at (platformKey().toStdString());
     auto updates = options.dataDir.getChildFile ("updates");
     auto zip = updates.getChildFile (juce::File::createLegalFileName (juce::String (asset.name)));
@@ -312,6 +387,13 @@ void AppUpdater::runCheck (bool manual)
     }
     juce::String unzipError;
     auto dir = updates.getChildFile ("staged-" + juce::String (manifest->build));
+    {
+        std::lock_guard<std::mutex> g (lock);
+        staged = juce::File(); // an older download that never got installed is replaced by this one
+    }
+    for (const auto& old : updates.findChildFiles (juce::File::findDirectories, false, "staged-*"))
+        if (old != dir)
+            old.deleteRecursively();
     if (! unzip (zip, dir, unzipError))
     {
         setStatus ("Couldn't unpack the update: " + unzipError.toStdString());
@@ -341,22 +423,39 @@ bool AppUpdater::swapIn (const juce::File& payload, const juce::File& previous)
     // Install everything; if anything fails, put back what was already replaced.
     previous.deleteRecursively();
     previous.createDirectory();
-    std::vector<Item> done;
+    struct Done
+    {
+        Item item;
+        bool fileByFile = false;
+    };
+    std::vector<Done> done;
     for (const auto& item : layout())
     {
         auto from = payload.getChildFile (item.name);
         if (! from.exists())
             continue;
-        if (! replace (from, item.destination, previous.getChildFile (item.name)))
+        const auto backup = previous.getChildFile (item.name);
+        const bool fileByFile = item.inPlace && from.isDirectory() && item.destination.isDirectory();
+        const bool ok = fileByFile ? replaceContents (from, item.destination, backup)
+                                   : replace (from, item.destination, backup);
+        if (! ok)
         {
             for (auto it = done.rbegin(); it != done.rend(); ++it)
             {
-                it->destination.deleteRecursively();
-                previous.getChildFile (it->name).moveFileTo (it->destination);
+                const auto kept = previous.getChildFile (it->item.name);
+                if (it->fileByFile)
+                {
+                    restoreContents (kept, it->item.destination);
+                }
+                else
+                {
+                    it->item.destination.deleteRecursively();
+                    kept.moveFileTo (it->item.destination);
+                }
             }
             return false;
         }
-        done.push_back (item);
+        done.push_back ({ item, fileByFile });
     }
     return ! done.empty();
 }
@@ -379,9 +478,17 @@ bool AppUpdater::installStaged()
     // The running version becomes "previous", ready for Roll back.
     if (! swapIn (dir, options.dataDir.getChildFile ("previous")))
     {
-        setStatus ("Couldn't install the update; trying again later");
+        // Something still uses the old files (on Windows, Live keeps the Stand-in plugin open).
+        // Everything was put back; try the same download again in a few minutes.
+        {
+            std::lock_guard<std::mutex> g (lock);
+            staged = dir;
+        }
+        retryInstallAt = juce::Time::currentTimeMillis() + 10 * 60 * 1000;
+        setStatus ("Tutti " + version + " will install in a few minutes (closing Live helps)");
         return false;
     }
+    logLine ("installed Tutti " + version + "; relaunching");
     auto previousInfo = options.dataDir.getChildFile ("installed.json").loadFileAsString();
     options.dataDir.getChildFile ("previous/installed.json").replaceWithText (previousInfo);
     tutti::Json info { { "version", version }, { "build", build }, { "notes", notes } };
@@ -420,10 +527,14 @@ void AppUpdater::rollBack()
 
 void AppUpdater::relaunch()
 {
+    // Close Tutti's sockets first: a process started below must not inherit them (the new Tutti
+    // listens on the same ports). The new Tutti then waits for this one to quit (see Main.cpp).
+    if (options.beforeRelaunch)
+        options.beforeRelaunch();
    #if JUCE_MAC
     const auto app = juce::File::getSpecialLocation (juce::File::currentApplicationFile);
     juce::ChildProcess p;
-    p.start (juce::StringArray { "/bin/sh", "-c", "sleep 1; /usr/bin/open -n \"" + app.getFullPathName() + "\" --args --background --updated" }, 0);
+    p.start (juce::StringArray { "/usr/bin/open", "-n", app.getFullPathName(), "--args", "--background", "--updated" }, 0);
    #elif JUCE_WINDOWS
     juce::File::getSpecialLocation (juce::File::currentExecutableFile).startAsProcess ("--background --updated");
    #endif

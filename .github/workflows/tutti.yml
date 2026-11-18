@@ -250,9 +250,13 @@ jobs:
           if (-not (Test-Path "$app\RemoteScript\Tutti\__init__.py")) { throw "the Remote Script wasn't installed" }
           $vst3 = Join-Path $env:CommonProgramFiles "VST3\Tutti Stand-in.vst3"
           if ((Test-Path "dist\payload\Tutti Stand-in.vst3") -and -not (Test-Path "$vst3\Contents\x86_64-win\Tutti Stand-in.vst3")) { throw "the Stand-in wasn't installed" }
-          # Updates replace files without admin rights: the folder must be writable by Users.
-          $writable = (Get-Acl $app).Access | Where-Object { $_.IdentityReference -like "*Users" -and $_.FileSystemRights -match "Modify|FullControl" -and $_.AccessControlType -eq "Allow" }
-          if (-not $writable) { (Get-Acl $app).Access | Format-Table | Out-String | Write-Host; throw "the app folder isn't writable by Users" }
+          # Tutti updates itself without admin rights: what it replaces must be changeable by Users.
+          $mustBeWritable = @($app, "$app\Tutti.exe", "$app\RemoteScript\Tutti\__init__.py")
+          if (Test-Path $vst3) { $mustBeWritable += @($vst3, "$vst3\Contents\x86_64-win\Tutti Stand-in.vst3") }
+          foreach ($path in $mustBeWritable) {
+            $writable = (Get-Acl $path).Access | Where-Object { $_.IdentityReference -like "*\Users" -and $_.FileSystemRights -match "Modify|FullControl" -and $_.AccessControlType -eq "Allow" }
+            if (-not $writable) { (Get-Acl $path).Access | Format-Table | Out-String | Write-Host; throw "$path isn't writable by Users" }
+          }
           $rule = netsh advfirewall firewall show rule name=Tutti verbose | Out-String
           Write-Host $rule
           if ($rule -notmatch "47380" -or $rule -notmatch "100\.64\.0\.0") { throw "the firewall rule is missing or wrong" }
@@ -288,6 +292,148 @@ jobs:
           name: tutti-screens-windows
           path: shots/
           if-no-files-found: ignore
+
+  # Self-update tests: an old Tutti (build 0) built from this commit updates itself from the
+  # published tutti-channel release, exactly as installed copies do. They test this commit's
+  # updater, so they don't gate publishing (a broken published build must never block its fix).
+  mac-update-test:
+    name: macOS self-update from the published release
+    needs: plan
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Is there a published release to update to?
+        id: channel
+        run: |
+          if curl -fsSL -o manifest.json "https://github.com/${{ github.repository }}/releases/download/tutti-channel/tutti-update.json"; then
+            cat manifest.json
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No Tutti release is published yet, so there's nothing to update to."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build an old Tutti (build 0) from this commit
+        if: steps.channel.outputs.ready == 'true'
+        run: |
+          command -v ninja || brew install ninja
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DTUTTI_BUILD_TESTS=OFF -DTUTTI_BUILD_TOOLS=OFF -DTUTTI_BUILD_PLUGIN=OFF -DTUTTI_BUILD_NUMBER=0
+          cmake --build build --target Tutti
+
+      - name: Let it update itself, then check
+        if: steps.channel.outputs.ready == 'true'
+        run: |
+          WANT_VERSION=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
+          WANT_BUILD=$(python3 -c "import json; print(json.load(open('manifest.json'))['build'])")
+          APP="$HOME/Applications/Tutti.app"
+          DATA="$HOME/Library/Application Support/Tutti"
+          pkill -x Tutti 2>/dev/null || true
+          rm -rf "$APP" "$DATA" "$HOME/Library/Logs/Tutti"
+          mkdir -p "$HOME/Applications"
+          ditto build/app/Tutti_artefacts/Release/Tutti.app "$APP"
+          OLD_VERSION=$(defaults read "$APP/Contents/Info.plist" CFBundleShortVersionString)
+          echo "Old Tutti $OLD_VERSION; the channel has $WANT_VERSION (build $WANT_BUILD)"
+          open "$APP" --args --background
+          # The first check runs a minute after launch.
+          for i in $(seq 1 60); do
+            sleep 5
+            NOW=$(defaults read "$APP/Contents/Info.plist" CFBundleShortVersionString 2>/dev/null || echo "?")
+            if [ "$NOW" = "$WANT_VERSION" ] && lsof -nP -iTCP:47381 -sTCP:LISTEN >/dev/null 2>&1; then break; fi
+          done
+          sleep 3
+          echo "--- updater.log"; cat "$HOME/Library/Logs/Tutti/updater.log" || true
+          echo "--- processes"; pgrep -fl "MacOS/Tutti" || true
+          echo "--- listening"; lsof -nP -iTCP:47381 -sTCP:LISTEN || true
+          fail() { echo "::error::$1"; exit 1; }
+          [ "$(defaults read "$APP/Contents/Info.plist" CFBundleShortVersionString)" = "$WANT_VERSION" ] || fail "Tutti wasn't updated to $WANT_VERSION"
+          python3 -c "import json,sys; b=json.load(open(sys.argv[1]))['build']; sys.exit(0 if b == int(sys.argv[2]) else 1)" "$DATA/installed.json" "$WANT_BUILD" || fail "installed.json doesn't record build $WANT_BUILD"
+          [ "$(defaults read "$DATA/previous/Tutti.app/Contents/Info.plist" CFBundleShortVersionString)" = "$OLD_VERSION" ] || fail "the old version wasn't kept for Roll back"
+          [ "$(pgrep -f "MacOS/Tutti" | wc -l | tr -d ' ')" = "1" ] || fail "expected exactly one Tutti running"
+          pgrep -f "MacOS/Tutti.*--updated" >/dev/null || fail "the running Tutti isn't the relaunched one"
+          LISTENER=$(lsof -nP -t -iTCP:47381 -sTCP:LISTEN | head -n1)
+          [ "$LISTENER" = "$(pgrep -f "MacOS/Tutti.*--updated")" ] || fail "the relaunched Tutti isn't listening for Live"
+          codesign --verify --deep --strict "$APP" || fail "the updated app's signature is broken"
+          echo "Updated $OLD_VERSION -> $WANT_VERSION and relaunched"
+          pkill -x Tutti || true
+
+  windows-update-test:
+    name: Windows self-update from the published release
+    needs: plan
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Is there a published release to update to?
+        id: channel
+        shell: bash
+        run: |
+          if curl -fsSL -o manifest.json "https://github.com/${{ github.repository }}/releases/download/tutti-channel/tutti-update.json"; then
+            cat manifest.json
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No Tutti release is published yet, so there's nothing to update to."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build an old Tutti (build 0) from this commit
+        if: steps.channel.outputs.ready == 'true'
+        shell: bash
+        run: |
+          cmake -S . -B build -A x64 -DTUTTI_BUILD_TESTS=OFF -DTUTTI_BUILD_TOOLS=OFF -DTUTTI_BUILD_PLUGIN=OFF -DTUTTI_BUILD_NUMBER=0
+          cmake --build build --config Release --target Tutti --parallel
+
+      - name: Let it update itself, then check
+        if: steps.channel.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          $m = Get-Content manifest.json -Raw | ConvertFrom-Json
+          # Install the published Tutti the way a friend would, then put the old build in its place.
+          Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/tutti-channel/Tutti-Installer.exe" -OutFile Tutti-Installer.exe
+          $p = Start-Process .\Tutti-Installer.exe -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "the published installer failed" }
+          Get-Process Tutti -ErrorAction SilentlyContinue | Stop-Process -Force
+          $app = Join-Path $env:ProgramFiles "Baastik Labs\Tutti"
+          $data = Join-Path $env:LOCALAPPDATA "Tutti"
+          Remove-Item -Recurse -Force $data -ErrorAction SilentlyContinue
+          Copy-Item build\app\Tutti_artefacts\Release\Tutti.exe "$app\Tutti.exe" -Force
+          $oldHash = (Get-FileHash "$app\Tutti.exe").Hash
+
+          # What the update should install.
+          Invoke-WebRequest -Uri $m.platforms.windows.url -OutFile published.zip
+          Expand-Archive published.zip -DestinationPath published
+          $wantHash = (Get-FileHash published\Tutti.exe).Hash
+
+          Start-Process "$app\Tutti.exe" -ArgumentList "--background"
+          # The first check runs a minute after launch.
+          $deadline = (Get-Date).AddMinutes(5)
+          do {
+            Start-Sleep -Seconds 5
+            $hash = (Get-FileHash "$app\Tutti.exe" -ErrorAction SilentlyContinue).Hash
+            $listening = Get-NetTCPConnection -LocalPort 47381 -State Listen -ErrorAction SilentlyContinue
+          } until (($hash -eq $wantHash -and $listening) -or (Get-Date) -gt $deadline)
+          Start-Sleep -Seconds 3
+
+          Write-Host "--- updater.log"; Get-Content "$data\Logs\updater.log" -ErrorAction SilentlyContinue
+          $procs = @(Get-CimInstance Win32_Process -Filter "Name='Tutti.exe'")
+          Write-Host "--- processes"; $procs | Format-Table ProcessId, ExecutablePath, CommandLine -AutoSize | Out-String -Width 300 | Write-Host
+          $listening = @(Get-NetTCPConnection -LocalPort 47381 -State Listen -ErrorAction SilentlyContinue)
+          Write-Host "--- listening"; $listening | Format-Table | Out-String | Write-Host
+
+          if ((Get-FileHash "$app\Tutti.exe").Hash -ne $wantHash) { throw "Tutti.exe wasn't replaced by the published one" }
+          if ((Get-Content "$data\installed.json" -Raw | ConvertFrom-Json).build -ne $m.build) { throw "installed.json doesn't record build $($m.build)" }
+          if ((Get-FileHash "$data\previous\Tutti.exe").Hash -ne $oldHash) { throw "the old version wasn't kept for Roll back" }
+          if (Test-Path "published\Tutti Stand-in.vst3") {
+            $dll = "Tutti Stand-in.vst3\Contents\x86_64-win\Tutti Stand-in.vst3"
+            if (-not (Test-Path (Join-Path $env:CommonProgramFiles "VST3\$dll"))) { throw "the Stand-in is missing after the update" }
+            if (-not (Test-Path "$data\previous\$dll")) { throw "the Stand-in wasn't updated file by file" }
+          }
+          if ($procs.Count -ne 1) { throw "expected exactly one Tutti running, found $($procs.Count)" }
+          if ($procs[0].CommandLine -notmatch "--updated") { throw "the running Tutti isn't the relaunched one" }
+          if ($listening.Count -lt 1 -or $listening[0].OwningProcess -ne $procs[0].ProcessId) { throw "the relaunched Tutti isn't listening for Live" }
+          Write-Host "Updated and relaunched"
+          Stop-Process -Id $procs[0].ProcessId -Force
 
   publish:
     name: Publish release

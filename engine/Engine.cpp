@@ -53,8 +53,7 @@ namespace tutti
 
     void Engine::startup()
     {
-        startServers();
-        discover();
+        discover(); // starts the servers too
     }
 
     void Engine::shutdown()
@@ -148,10 +147,14 @@ namespace tutti
 
     void Engine::startServers()
     {
-        localServer.start (options.localPort, "127.0.0.1", [this] (std::unique_ptr<juce::StreamingSocket> s) {
-            auto shared = std::make_shared<std::unique_ptr<juce::StreamingSocket>> (std::move (s));
-            post ([this, shared] { adoptSocket (std::move (*shared), false, true, "local"); });
-        });
+        // Live's Remote Script and the Stand-ins connect here. Retried with every discovery until it
+        // works: a just-updated Tutti can start while the old one is still letting go of the port.
+        if (! localServer.running()
+            && ! localServer.start (options.localPort, "127.0.0.1", [this] (std::unique_ptr<juce::StreamingSocket> s) {
+                   auto shared = std::make_shared<std::unique_ptr<juce::StreamingSocket>> (std::move (s));
+                   post ([this, shared] { adoptSocket (std::move (*shared), false, true, "local"); });
+               }))
+            log ("couldn't listen on 127.0.0.1:" + std::to_string (options.localPort) + " yet");
 
         juce::String bind = options.bindAddress;
         if (bind.isEmpty() && tailscaleStatus && tailscaleStatus->running())
@@ -179,6 +182,7 @@ namespace tutti
     void Engine::discover()
     {
         lastDiscovery = now();
+        startServers();
         for (const auto& extra : options.extraPeers)
         {
             const auto [host, port] = splitAddr (extra.toStdString(), options.peerPort);

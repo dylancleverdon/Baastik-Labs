@@ -15,7 +15,7 @@ import time
 from . import livemodel as lm
 from .mirror import Mirror
 
-SCRIPT_VERSION = "1"
+SCRIPT_VERSION = "2"   # the app asks people to restart Live when its script is newer
 PROTOCOL = 1
 APPLY_BUDGET = 400          # entity writes per tick, so a big join doesn't freeze Live
 FULL_SCAN_EVERY = 4.0       # seconds: catch changes that have no listener (warp mode, gain...)
@@ -64,6 +64,7 @@ class Engine(object):
         self._listeners = []
         self._watched = set()
         self._last_full_scan = 0.0
+        self._logged = {}          # repeating problems -> when we last logged them
         self._presence_state = None
         self._presence_sent = 0.0
         self.play_at = None
@@ -80,7 +81,10 @@ class Engine(object):
 
     def _probe_caps(self):
         song = self.song
-        any_track = song.tracks[0] if len(song.tracks) else song.master_track
+        tracks = list(song.tracks)
+        # Ask a plain audio/MIDI track: group, return and Main tracks refuse some questions.
+        plain = [t for t in tracks if not lm.safe(lambda: t.is_foldable, False)]
+        any_track = plain[0] if plain else (tracks[0] if tracks else song.master_track)
         slot = None
         for t in song.tracks:
             slots = list(getattr(t, "clip_slots", []))
@@ -89,17 +93,17 @@ class Engine(object):
                 break
         caps = {
             "live": [self.app.get_major_version(), self.app.get_minor_version(), self.app.get_bugfix_version()],
-            "notes": hasattr(self.Live.Clip, "MidiNoteSpecification"),
-            "arrangement_clips": hasattr(any_track, "arrangement_clips"),
-            "arrangement_create": hasattr(any_track, "create_midi_clip"),
-            "arrangement_audio": hasattr(any_track, "create_audio_clip"),
-            "duplicate_to_arrangement": hasattr(any_track, "duplicate_clip_to_arrangement"),
-            "delete_clip": hasattr(any_track, "delete_clip"),
-            "insert_device": hasattr(any_track, "insert_device"),
-            "delete_device": hasattr(any_track, "delete_device"),
-            "session_audio": slot is not None and hasattr(slot, "create_audio_clip"),
-            "data": hasattr(any_track, "set_data") and hasattr(any_track, "get_data"),
-            "duplicate_track": hasattr(song, "duplicate_track"),
+            "notes": lm.has(self.Live.Clip, "MidiNoteSpecification"),
+            "arrangement_clips": hasattr(type(any_track), "arrangement_clips") or lm.has(any_track, "arrangement_clips"),
+            "arrangement_create": lm.has(any_track, "create_midi_clip"),
+            "arrangement_audio": lm.has(any_track, "create_audio_clip"),
+            "duplicate_to_arrangement": lm.has(any_track, "duplicate_clip_to_arrangement"),
+            "delete_clip": lm.has(any_track, "delete_clip"),
+            "insert_device": lm.has(any_track, "insert_device"),
+            "delete_device": lm.has(any_track, "delete_device"),
+            "session_audio": slot is not None and lm.has(slot, "create_audio_clip"),
+            "data": lm.has(any_track, "set_data") and lm.has(any_track, "get_data"),
+            "duplicate_track": lm.has(song, "duplicate_track"),
         }
         return caps
 
@@ -203,6 +207,25 @@ class Engine(object):
             self.unsent = []
         self._show("Tutti: connected")
 
+    def _failed(self, what, error):
+        """Reading or binding the Set failed: stop half-way states from retrying forever and tell
+        the app, which tells the person."""
+        self.log("couldn't %s the Set: %r" % (what, error))
+        try:
+            self.unbind()
+        except Exception:
+            pass
+        self.bridge.send({"type": what + "_failed", "error": "%s: %s" % (type(error).__name__, error)})
+
+    def _log_limited(self, key, text, every=300.0):
+        """Logs a repeating problem once every few minutes instead of every scan."""
+        now = self.clock()
+        last = self._logged.get(key)
+        if last is not None and now - last < every:
+            return
+        self._logged[key] = now
+        self.log(text)
+
     def fingerprint(self):
         names = [t.name for t in list(self.song.tracks)[:64]]
         return {"tracks": names, "n": len(self.song.tracks), "returns": len(self.song.return_tracks),
@@ -226,14 +249,26 @@ class Engine(object):
         t = m.get("type")
         if t == "capture":
             self.session = m.get("session")
-            doc, path_map, notes_map = self.capture()
+            try:
+                doc, path_map, notes_map = self.capture()
+            except Exception as e:
+                self._failed("capture", e)
+                return
             self.bridge.send({"type": "captured", "doc": doc, "map": path_map, "notes": notes_map})
         elif t == "bind":
             self.session = m.get("session")
-            stats = self.bind(m.get("doc") or {"e": []}, m.get("map") or {}, m.get("notes") or {})
+            try:
+                stats = self.bind(m.get("doc") or {"e": []}, m.get("map") or {}, m.get("notes") or {})
+            except Exception as e:
+                self._failed("bind", e)
+                return
             self.bridge.send({"type": "bound", "stats": stats, "fingerprint": self.fingerprint()})
         elif t == "full":
-            stats = self.full(m.get("doc") or {"e": []})
+            try:
+                stats = self.full(m.get("doc") or {"e": []})
+            except Exception as e:
+                self._failed("bind", e)
+                return
             self.bridge.send({"type": "bound", "stats": stats, "full": True})
         elif t == "unbind":
             self.unbind()
@@ -336,7 +371,10 @@ class Engine(object):
 
     def _watch(self, eid, obj):
         etype = self.mirror.type_of(eid)
+        no_arrangement = etype == "track" and lm.track_kind(obj, self.song) in lm.NO_ARRANGEMENT
         for prop, what in self.WATCH.get(etype, ()):
+            if prop == "arrangement_clips" and no_arrangement:
+                continue
             self._listen(obj, prop, self._marker(eid, what))
         if etype == "track":
             mixer = obj.mixer_device
@@ -628,7 +666,7 @@ class Engine(object):
                 # The type is gone with the entity; work it out from the object.
                 for t, attr in (("track", "mixer_device"), ("device", "parameters"), ("clip", "is_midi_clip"),
                                 ("cue", "jump"), ("scene", "tempo")):
-                    if hasattr(obj, attr):
+                    if lm.has(obj, attr):
                         etype = t
                         break
                 self.live.pop(eid, None)
@@ -762,20 +800,20 @@ class Engine(object):
                     song.delete_return_track(i)
                     return True
             elif etype == "device":
-                parent = obj.canonical_parent if hasattr(obj, "canonical_parent") else None
+                parent = obj.canonical_parent if lm.has(obj, "canonical_parent") else None
                 holders = [parent] if parent is not None else list(song.tracks) + list(song.return_tracks) + [song.master_track]
                 for holder in holders:
                     i = index_of(getattr(holder, "devices", []), obj)
-                    if i >= 0 and hasattr(holder, "delete_device"):
+                    if i >= 0 and lm.has(holder, "delete_device"):
                         holder.delete_device(i)
                         return True
             elif etype == "clip":
                 parent = getattr(obj, "canonical_parent", None)
-                if parent is not None and hasattr(parent, "has_clip"):
+                if parent is not None and lm.has(parent, "has_clip"):
                     parent.delete_clip()
                     return True
                 track = parent
-                if track is not None and hasattr(track, "delete_clip"):
+                if track is not None and lm.has(track, "delete_clip"):
                     track.delete_clip(obj)
                     return True
             elif etype == "scene":
@@ -943,7 +981,7 @@ class Engine(object):
                 slot.create_clip(float(props.get("len", 4.0)))
             else:
                 path = props.get("path")
-                if not path or not hasattr(slot, "create_audio_clip"):
+                if not path or not lm.has(slot, "create_audio_clip"):
                     return None
                 slot.create_audio_clip(path)
             return slot.clip
@@ -951,21 +989,21 @@ class Engine(object):
         start = float(props.get("start", 0.0))
         length = float(props.get("len", 4.0))
         if midi:
-            if hasattr(track, "create_midi_clip"):
+            if lm.has(track, "create_midi_clip"):
                 clip = track.create_midi_clip(start, length)
                 return clip if clip is not None else self._arrangement_clip_at(track, start)
             return self._via_session(track, start, lambda slot: slot.create_clip(length))
         path = props.get("path")
         if not path:
             return None  # waits until the audio (or its preview) is here
-        if hasattr(track, "create_audio_clip"):
+        if lm.has(track, "create_audio_clip"):
             clip = track.create_audio_clip(path, start)
             return clip if clip is not None else self._arrangement_clip_at(track, start)
         return self._via_session(track, start, lambda slot: slot.create_audio_clip(path))
 
     def _via_session(self, track, start, make):
         """Older Lives: make the clip in an empty session slot, copy it to the timeline, clean up."""
-        if not hasattr(track, "duplicate_clip_to_arrangement"):
+        if not lm.has(track, "duplicate_clip_to_arrangement"):
             return None
         slots = list(track.clip_slots)
         slot = None
@@ -1084,7 +1122,7 @@ class Engine(object):
         if old is None or track is None:
             return
         props = self.mirror.props(eid)
-        if props.get("where") == "a" and not (hasattr(track, "delete_clip")):
+        if props.get("where") == "a" and not (lm.has(track, "delete_clip")):
             self._mark_stale(eid, "moving clips needs an Update in this Live")
             return
         self.live.pop(eid, None)
@@ -1096,7 +1134,7 @@ class Engine(object):
                 track.delete_clip(old)
             else:
                 parent = getattr(old, "canonical_parent", None)
-                if parent is not None and hasattr(parent, "delete_clip"):
+                if parent is not None and lm.has(parent, "delete_clip"):
                     parent.delete_clip()
         except Exception as e:
             self.log("couldn't remove the old clip: %r" % (e,))
@@ -1150,7 +1188,7 @@ class Engine(object):
                 elif what == "notes":
                     self._sync_notes(eid)
             except Exception as e:
-                self.log("scan error (%s %s): %r" % (what, eid, e))
+                self._log_limited(("scan", what, eid, repr(e)), "scan error (%s %s): %r" % (what, eid, e))
 
     def _sync_props(self, eid):
         etype = self.mirror.type_of(eid)
@@ -1318,17 +1356,22 @@ class Engine(object):
                     if cid is not None:
                         self._sync_devices(cid)
 
-    def _arrangement_clips(self, track):
-        if not hasattr(track, "arrangement_clips"):
+    def _live_arrangement_clips(self, track):
+        """Every arrangement clip on the track, recording ones too. Main, group and return tracks
+        have none, and Live raises if you ask them, so don't."""
+        if lm.track_kind(track, self.song) in lm.NO_ARRANGEMENT:
             return []
-        clips = lm.safe(lambda: list(track.arrangement_clips), [])
+        return lm.safe(lambda: list(track.arrangement_clips), [])
+
+    def _arrangement_clips(self, track):
+        clips = self._live_arrangement_clips(track)
         return sorted([c for c in clips if not lm.safe(lambda: c.is_recording, False)],
                       key=lambda c: c.start_time)
 
     def _sync_clips(self, tid):
         track = self.live[tid]
         # Clips still recording aren't shared yet; hear about it when they finish.
-        for clip in lm.safe(lambda: list(track.arrangement_clips), []) if hasattr(track, "arrangement_clips") else []:
+        for clip in self._live_arrangement_clips(track):
             if lm.safe(lambda: clip.is_recording, False):
                 self._listen(clip, "is_recording", self._marker(tid, "clips"))
         for slot in lm.safe(lambda: list(track.clip_slots), []):

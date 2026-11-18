@@ -32,6 +32,21 @@ def safe(getter, default=None):
         return default
 
 
+def has(obj, name):
+    """hasattr for Live objects. Live answers some questions with an error instead of a value
+    (asking the Main, a group or a return track for its arrangement clips raises RuntimeError),
+    and Python's hasattr only swallows AttributeError, so it would raise too."""
+    try:
+        getattr(obj, name)
+        return True
+    except Exception:
+        return False
+
+
+# Track kinds Live gives no arrangement clips (it raises if you ask).
+NO_ARRANGEMENT = ("master", "return", "group")
+
+
 # ---------------------------------------------------------------- song
 
 def read_song(song):

@@ -356,6 +356,32 @@ class ClipSlot(_Listenable):
 
 # ---------------------------------------------------------------- tracks
 
+# Real Live answers some questions with an error instead of a value. Python's hasattr doesn't
+# swallow those, so code must not even ask.
+NO_ARRANGEMENT = ("master", "return", "group")
+NO_ARRANGEMENT_ERROR = "Main, Group and Return Tracks have no arrangement clips"
+
+
+def _refused(message):
+    def refuse(*args, **kwargs):
+        raise RuntimeError(message)
+    return refuse
+
+
+def _track_prop(name, refused_kinds, message):
+    def getter(self):
+        if self.kind in refused_kinds:
+            raise RuntimeError(message)
+        return self.__dict__.get("_" + name)
+
+    def setter(self, value):
+        if self.kind in refused_kinds:
+            raise RuntimeError(message)
+        self._set(name, value)
+
+    return property(getter, setter)
+
+
 class FakeTrack(_Listenable, _Data):
     _props = ("name", "color", "mute", "solo", "arm", "devices", "clip_slots", "arrangement_clips",
               "output_meter_level")
@@ -373,12 +399,17 @@ class FakeTrack(_Listenable, _Data):
 
     name = _prop("name")
     color = _prop("color")
-    mute = _prop("mute")
-    solo = _prop("solo")
+    mute = _track_prop("mute", ("master",), "Main track has no mute")
+    solo = _track_prop("solo", ("master",), "Main track has no solo")
     arm = _prop("arm")
     devices = _prop("devices", readonly=True)
     clip_slots = _prop("clip_slots", readonly=True)
-    arrangement_clips = _prop("arrangement_clips", readonly=True)
+
+    @property
+    def arrangement_clips(self):
+        if self.kind in NO_ARRANGEMENT:
+            raise RuntimeError(NO_ARRANGEMENT_ERROR)
+        return self.__dict__.get("_arrangement_clips")
 
     def _add_arrangement_clip(self, clip):
         clips = sorted(self._arrangement_clips + [clip], key=lambda c: c.start_time)
@@ -396,6 +427,13 @@ class FakeTrack(_Listenable, _Data):
     def __getattr__(self, name):
         if name in ("get_data", "set_data"):
             return _Data.__getattr__(self, name)
+        if self.__dict__.get("kind") in NO_ARRANGEMENT and name in (
+                "add_arrangement_clips_listener", "remove_arrangement_clips_listener",
+                "arrangement_clips_has_listener", "create_midi_clip", "create_audio_clip",
+                "duplicate_clip_to_arrangement", "delete_clip"):
+            if name in ("create_midi_clip", "create_audio_clip") and not FEATURES["arrangement_create"]:
+                raise AttributeError(name)
+            return _refused(NO_ARRANGEMENT_ERROR)
         if name in ("create_midi_clip", "create_audio_clip") and not FEATURES["arrangement_create"]:
             raise AttributeError(name)
         if name == "create_midi_clip":
@@ -526,7 +564,7 @@ class FakeSong(_Listenable, _Data):
                              _signature_numerator=4, _signature_denominator=4, _swing_amount=0.0,
                              _current_song_time=0.0, _is_playing=False, _record_mode=False, _metronome=False,
                              _loop=False, view=SongView())
-        self.__dict__["master_track"] = FakeTrack(self, "master", "Master")
+        self.__dict__["master_track"] = FakeTrack(self, "master", "Main")
 
     tracks = _prop("tracks", readonly=True)
     return_tracks = _prop("return_tracks", readonly=True)
@@ -595,7 +633,7 @@ class FakeSong(_Listenable, _Data):
             copy.__dict__["_parameters"] = [FakeDeviceParameter(p.name, p.value, p.min, p.max, p.is_quantized)
                                             for p in d.parameters]
             track._devices.append(copy)
-        for c in src.arrangement_clips:
+        for c in src._arrangement_clips:
             dup = FakeClip(c.length, c.is_midi_clip, c.start_time, c.file_path, True, parent=track)
             for k in ("name", "color", "muted", "looping", "loop_start", "loop_end", "start_marker", "end_marker"):
                 dup.__dict__["_" + k] = c.__dict__["_" + k]

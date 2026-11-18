@@ -43,7 +43,10 @@ def clone_song(src):
     for _ in src.return_tracks:
         song.create_return_track()
     for i, t in enumerate(src.tracks):
-        nt = song.create_midi_track(i) if t.has_midi_input else song.create_audio_track(i)
+        if t.kind == "group":  # joiners open the saved song, which has the same groups
+            nt = song.ui_add_track("group", i)
+        else:
+            nt = song.create_midi_track(i) if t.has_midi_input else song.create_audio_track(i)
         copy_track(t, nt)
     copy_track(src.master_track, song.master_track)
     for i, r in enumerate(src.return_tracks):
@@ -55,14 +58,15 @@ def clone_song(src):
 def copy_track(t, nt):
     nt.name = t.name
     nt.color = t.color
-    nt.mute = t.mute
+    if t.kind != "master":  # the Main track has no mute
+        nt.mute = t.mute
     nt.mixer_device.volume.value = t.mixer_device.volume.value
     nt.mixer_device.panning.value = t.mixer_device.panning.value
     for d in t.devices:
         nd = nt.ui_add_device(d.name, params=[], class_name=d.class_name)
         nd.__dict__["_parameters"] = [Live.DeviceParameter.DeviceParameter(p.name, p.value, p.min, p.max)
                                       for p in d.parameters]
-    for c in t.arrangement_clips:
+    for c in (t.arrangement_clips if t.kind not in Live.NO_ARRANGEMENT else []):
         if c.is_midi_clip:
             nc = nt.ui_draw_arrangement_clip(c.start_time, c.length)
         else:
@@ -112,7 +116,7 @@ def verify(engine):
         for d in t.devices:
             if engine.id_of(d) is None:
                 problems.append(("unbound device", d.name))
-        for c in t.arrangement_clips:
+        for c in (t.arrangement_clips if t.kind not in Live.NO_ARRANGEMENT else []):
             if engine.id_of(c) is None:
                 problems.append(("unbound clip", c.start_time))
     assert not problems, problems
@@ -441,3 +445,70 @@ def test_session_clip_in_new_scene():
     assert len(song_b.scenes) == 3
     assert song_b.tracks[1].clip_slots[2].has_clip
     verify(b)
+
+
+def test_main_group_and_return_tracks_are_read_without_asking_for_clips():
+    # Real Live raises "Main, Group and Return Tracks have no arrangement clips" if you even ask
+    # (hasattr included). The first real session hit this and never got going.
+    song = Live.Song.Song()
+    group = song.ui_add_track("group", name="Drums")
+    kick = song.ui_add_track("audio", name="Kick")
+    kick.ui_record_audio_clip(0.0, "/samples/kick.wav", 4.0)
+    keys = song.ui_add_track("midi", name="Keys")
+    keys.ui_draw_arrangement_clip(4.0, 4.0).ui_add_note(60, 0.0, 1.0)
+    song.create_return_track()
+    e, song, bridge, clock = make_engine(song)
+    hello_caps = e.caps
+    assert hello_caps["arrangement_clips"] is True     # probed on a plain track, not the group
+    doc, path_map, notes_map = capture(e)
+    kinds = sorted(ent["v"]["kind"] for ent in doc["e"] if ent["t"] == "track")
+    assert kinds == ["audio", "group", "master", "midi", "return"]
+    assert len([ent for ent in doc["e"] if ent["t"] == "clip"]) == 2
+    assert path_map["T1/A0"] == e.id_of(kick.arrangement_clips[0])
+    # Full scans and edits keep working, and nothing complains.
+    group.name = "Drum Bus"
+    for _ in range(3):
+        clock.t += 5.0
+        e.tick()
+    assert any(op.get("v", {}).get("name") == "Drum Bus" for op in bridge.ops())
+    assert [m["text"] for m in bridge.take("log")] == []
+    verify(e)
+
+    # Joining a song like this binds everything too.
+    b, song_b, bridge_b, _ = make_engine(clone_song(song))
+    bridge_b.inbox.append({"type": "bind", "doc": e.mirror.to_json(), "map": path_map, "notes": notes_map,
+                           "session": "s1"})
+    b.tick()
+    bound = bridge_b.take("bound")
+    assert bound and bound[0]["stats"]["matched"] == 7 and bound[0]["stats"]["stale"] == 0
+    problems = [m["text"] for m in bridge_b.take("log")
+                if any(w in m["text"] for w in ("error", "couldn't", "stale "))]
+    assert problems == []
+
+
+def test_a_failed_capture_is_reported_not_retried_forever():
+    e, song, bridge, clock = make_engine(demo_song())
+
+    def broken():
+        raise RuntimeError("Live said no")
+    e.capture = broken
+    bridge.inbox.append({"type": "capture", "session": "s1"})
+    e.tick()
+    failed = bridge.take("capture_failed")
+    assert failed and "Live said no" in failed[0]["error"]
+    assert bridge.take("captured") == []
+    assert e.bound is False
+    logs = [m["text"] for m in bridge.take("log")]
+    for _ in range(10):
+        clock.t += 5.0
+        e.tick()
+    assert len(logs) == 1 and bridge.take("log") == []
+
+
+def test_hello_says_which_script_version_is_running():
+    from Tutti.engine import Engine
+    from conftest import FakeBridge
+    song = demo_song()
+    bridge = FakeBridge()
+    Engine(song, Live.Application.Application(song), Live, bridge).tick()
+    assert bridge.take("hello")[0]["script"] == "2"

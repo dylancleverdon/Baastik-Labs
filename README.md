@@ -13,7 +13,7 @@ new tracks and recordings show up for everyone within a second.
 | **Mac** | [Tutti-Installer.pkg](https://github.com/dylancleverdon/Baastik-Labs/releases/download/tutti-channel/Tutti-Installer.pkg). The first time only, macOS asks you to approve it: **System Settings > Privacy & Security > Open Anyway**. No admin password needed. |
 | **Windows** | [Tutti-Installer.exe](https://github.com/dylancleverdon/Baastik-Labs/releases/download/tutti-channel/Tutti-Installer.exe). If Windows says it protected your PC, click **More info > Run anyway**. It asks for admin once, to put Tutti's helper plugin where Live finds plugins. |
 
-Then, once:
+Then, once (step by step, with troubleshooting: [docs/SETUP.md](docs/SETUP.md)):
 
 1. **Tailscale.** Install [Tailscale](https://tailscale.com/download) and sign in. One person
    invites the others to their Tailscale network (free for up to 6 people). Tutti uses it to

@@ -240,6 +240,33 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Get-ChildItem out
 
+      - name: Installer smoke test (install, check, uninstall)
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "out\Tutti-Installer.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/LOG=install.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Get-Content install.log; throw "installer exited with $($p.ExitCode)" }
+          $app = Join-Path $env:ProgramFiles "Baastik Labs\Tutti"
+          if (-not (Test-Path "$app\Tutti.exe")) { throw "Tutti.exe wasn't installed" }
+          if (-not (Test-Path "$app\RemoteScript\Tutti\__init__.py")) { throw "the Remote Script wasn't installed" }
+          $vst3 = Join-Path $env:CommonProgramFiles "VST3\Tutti Stand-in.vst3"
+          if ((Test-Path "dist\payload\Tutti Stand-in.vst3") -and -not (Test-Path "$vst3\Contents\x86_64-win\Tutti Stand-in.vst3")) { throw "the Stand-in wasn't installed" }
+          # Updates replace files without admin rights: the folder must be writable by Users.
+          $writable = (Get-Acl $app).Access | Where-Object { $_.IdentityReference -like "*Users" -and $_.FileSystemRights -match "Modify|FullControl" -and $_.AccessControlType -eq "Allow" }
+          if (-not $writable) { (Get-Acl $app).Access | Format-Table | Out-String | Write-Host; throw "the app folder isn't writable by Users" }
+          $rule = netsh advfirewall firewall show rule name=Tutti verbose | Out-String
+          Write-Host $rule
+          if ($rule -notmatch "47380" -or $rule -notmatch "100\.64\.0\.0") { throw "the firewall rule is missing or wrong" }
+
+          Start-Process -FilePath "$app\unins000.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
+          # The uninstaller hands over to a copy of itself in TEMP: wait for it to finish.
+          for ($i = 0; $i -lt 60 -and (Test-Path $app); $i++) { Start-Sleep -Seconds 1 }
+          if (Test-Path $app) { Get-ChildItem -Recurse $app | Out-String | Write-Host; throw "the app folder is still there after uninstalling" }
+          if (Test-Path $vst3) { throw "the Stand-in is still there after uninstalling" }
+          netsh advfirewall firewall show rule name=Tutti | Out-Null
+          if ($LASTEXITCODE -eq 0) { throw "the firewall rule is still there after uninstalling" }
+          $global:LASTEXITCODE = 0
+          Write-Host "Install and uninstall OK"
+
       - name: Screenshots
         shell: pwsh
         continue-on-error: true
@@ -293,8 +320,8 @@ jobs:
         run: |
           git fetch --tags --force --quiet
           PREV="$(git tag --list 'tutti-v*' --sort=-creatordate | head -n1)"
-          if [ -n "$PREV" ]; then RANGE="$PREV..HEAD"; else RANGE="HEAD~10..HEAD"; fi
-          git log --no-merges --pretty='- %s' $RANGE | head -n 15 > notes.md || true
+          if [ -n "$PREV" ]; then RANGE="$PREV..HEAD"; else RANGE="HEAD"; fi  # first release: everything
+          git log --no-merges --pretty='- %s' -n 15 $RANGE > notes.md || true
           [ -s notes.md ] || echo "- Improvements" > notes.md
           cat notes.md
 
@@ -328,7 +355,7 @@ jobs:
             echo
             echo "**Install on Windows:** [Tutti-Installer.exe](https://github.com/${GH_REPO}/releases/download/tutti-channel/Tutti-Installer.exe). If Windows says it protected your PC, click **More info > Run anyway**."
             echo
-            echo "Then follow the three setup steps in the app. Tutti keeps itself up to date."
+            echo "Then follow the [setup guide](https://github.com/${GH_REPO}/blob/tutti/docs/SETUP.md) (about ten minutes, once). Tutti keeps itself up to date."
             echo
             echo "### What's new"
             cat notes.md

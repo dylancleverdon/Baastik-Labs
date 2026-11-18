@@ -52,10 +52,24 @@ Source: "{#Payload}\Tutti Stand-in.vst3\*"; DestDir: "{commoncf64}\VST3\Tutti St
 Name: "{autoprograms}\Tutti"; Filename: "{app}\Tutti.exe"
 
 [Run]
-Filename: "{app}\Tutti.exe"; Description: "Open Tutti"; Flags: nowait postinstall runasoriginaluser
+; Let friends' Tuttis reach this one, only from Tailscale addresses (100.64.0.0/10) and only on
+; Tutti's peer port, so Windows never shows a firewall prompt the user could answer wrongly.
+; The rule names the program path, which the updater keeps when it swaps in a new Tutti.exe.
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Tutti"""; Flags: runhidden waituntilterminated; StatusMsg: "Letting your friends' Tuttis reach this one..."
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Tutti"" dir=in action=allow program=""{app}\Tutti.exe"" protocol=TCP localport=47380 remoteip=100.64.0.0/10 profile=any enable=yes"; Flags: runhidden waituntilterminated
+Filename: "{app}\Tutti.exe"; Description: "Open Tutti"; Flags: nowait postinstall runasoriginaluser skipifsilent
+
+[UninstallRun]
+; Quit Tutti (it lives in the tray) so its files can go, and stop it starting at login.
+Filename: "{sys}\taskkill.exe"; Parameters: "/f /im Tutti.exe"; Flags: runhidden waituntilterminated; RunOnceId: "TuttiQuit"
+Filename: "{sys}\reg.exe"; Parameters: "delete ""HKCU\Software\Microsoft\Windows\CurrentVersion\Run"" /v Tutti /f"; Flags: runhidden waituntilterminated; RunOnceId: "TuttiLogin"
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Tutti"""; Flags: runhidden waituntilterminated; RunOnceId: "TuttiFirewall"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{commoncf64}\VST3\Tutti Stand-in.vst3"
+; Files Tutti's own updates added (newer Remote Script files, Tutti.old.exe) aren't in the
+; uninstall log: remove the whole app folder.
+Type: filesandordirs; Name: "{app}"
 
 [Code]
 function HasPlugin: Boolean;

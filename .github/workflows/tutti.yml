@@ -152,7 +152,9 @@ jobs:
 
       - name: End-to-end (three Tuttis, real Remote Script, fake Lives)
         if: needs.plan.outputs.e2e == 'true'
-        run: python tools/e2e/run_e2e.py build
+        run: |
+          python -m pip install --quiet pytest   # the fake Live's helpers import it
+          python tools/e2e/run_e2e.py build
 
       - name: Stage and sign the payload
         if: needs.plan.outputs.build_app == 'true'

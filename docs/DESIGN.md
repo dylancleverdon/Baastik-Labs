@@ -20,8 +20,7 @@ the decisions behind it. Keep it current when a decision changes.
 | Switching Player 1 | Anyone can **ask**; Player 1 clicks Allow (or hands it over directly). |
 | Player 1 drops out | **Next in line takes over** after ~10 s if they can still reach a majority of the group (2-person sessions: a Take over button instead). The old Player 1 rejoins as a guest. |
 | Extras | See who's where; **Play together** (opt-in, never forced: everyone plays on their own while editing); version history; **suggestion mode** (idea copies of a track, Player 1 accepts/rejects). |
-| Backups | Optional copy of every version into a folder; by default `Versions/` in the group's shared Google Drive folder. |
-| Shared Drive folder | Optional "Tutti Shared" Google Drive folder (Drive for desktop): every session file by content hash in `Tutti files/<hash>/`, fetched from there before asking peers (SHA-256 checked). Found by name or chosen in Settings. Live edits and saves stay peer-to-peer. |
+| Backups | Every member keeps each song, its versions and audio locally (no cloud). Optional extra copy of every version into a chosen folder while Player 1. |
 | Opening songs | Tutti waits until Live has really loaded the file it opened (the Remote Script's `doc` token in its hello changes) before reading or binding, so it never binds an Untitled Set whose track names happen to match. |
 | Updates | Silent, Norg-style: SHA-256 verified downloads from this repo's `tutti-*` releases, roll back, what's new, auto-update toggle. Never interrupts a session. |
 | Feedback | A **suggestion box** in the app posts to the Google Sheet "suggestions sheet tutti" through a tiny Apps Script web app (`suggestions/Code.gs`). Queued offline until the endpoint is configured. |

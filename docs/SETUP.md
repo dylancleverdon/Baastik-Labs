@@ -91,13 +91,6 @@ song open (`Music/Tutti/<song>`), so that's where it saves, and Tutti shares the
 everyone. Never use *Save As*. If Live asks where to save, it isn't on the session song: click
 **Open the song** in Tutti.
 
-## 5. Google Drive (optional)
-
-Gives the group a shared folder for recordings and a copy of every saved version. See the
-README's [Google Drive](../README.md#google-drive-optional) section: one person makes a
-**Tutti Shared** folder and shares it, everyone installs Google Drive for desktop and adds the
-folder to **My Drive**, and Tutti finds it.
-
 ## If something's not right
 
 | What you see | What to do |
@@ -122,9 +115,9 @@ folder to **My Drive**, and Tutti finds it.
 - **Suggestion box:** connect it to the "suggestions sheet tutti" Google Sheet by deploying the
   small script in [`suggestions/`](../suggestions/README.md) (about two minutes in the browser).
   Until then the box keeps suggestions on each computer.
-- **Shared Google Drive folder (optional):** make a **Tutti Shared** folder in Google Drive and
-  share it with the group (see step 5). While someone is Player 1, every version of the song, with
-  its audio, is copied into its `Versions` folder; **Settings > Backups...** picks another folder.
+- **Backups (optional):** everyone already keeps every song they've been in, with its audio,
+  in `Music/Tutti`. For an extra copy, **Settings > Backups** copies every version (with its
+  audio) to a folder such as an external drive while you're Player 1.
 - **Logs from Send logs:** they're saved in a **Tutti logs** folder next to the suggestions
   sheet, linked from its Log column, once the sheet's script is updated (see
   [`suggestions/`](../suggestions/README.md#updating-the-script-keeps-the-same-url)).

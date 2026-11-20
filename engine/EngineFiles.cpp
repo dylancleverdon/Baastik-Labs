@@ -18,6 +18,15 @@ namespace tutti
 
     // ================================================================== files
 
+    std::string Engine::memberName (const std::string& peer) const
+    {
+        if (const auto* m = sessionPtr->info().member (peer))
+            return m->name;
+        if (auto it = peerHellos.find (peer); it != peerHellos.end())
+            return str (it->second, "name", peer);
+        return peer;
+    }
+
     void Engine::wantFile (const std::string& hash, bool previewFirst)
     {
         if (hash.size() != 64 || contentStore.has (hash))
@@ -63,20 +72,6 @@ namespace tutti
                     continue;
                 if (tr.kind == "preview" && contentStore.has (tr.hash))
                     continue;
-                // The group's shared Drive folder first: it doesn't need anyone online.
-                if (tr.kind == "full" && t - tr.sharedCheckedAt > 15.0)
-                {
-                    tr.sharedCheckedAt = t;
-                    if (fetchFromShared (tr.hash))
-                    {
-                        tr.active = true;
-                        tr.from = "the shared folder";
-                        tr.started = t;
-                        tr.lastProgress = t + 24 * 3600.0; // finishes (or fails) by itself
-                        ++active;
-                        continue;
-                    }
-                }
 
                 // Player 1 first (it has everything), then the others.
                 std::vector<std::string> candidates;
@@ -529,8 +524,6 @@ namespace tutti
         playMode = str (j, "play", "ask");
         if (const auto b = str (j, "backup"); ! b.empty())
             backupFolder = juce::File (juce::String (b));
-        if (const auto b = str (j, "shared"); ! b.empty())
-            sharedFolder = juce::File (juce::String (b));
         if (const auto& known = field (j, "known"); known.is_array())
             for (const auto& ip : known)
                 if (ip.is_string() && tailscale::isTailscaleAddress (ip.get<std::string>()))
@@ -547,7 +540,6 @@ namespace tutti
         j["color"] = self.color;
         j["play"] = playMode;
         j["backup"] = backupFolder.getFullPathName().toStdString();
-        j["shared"] = sharedFolder.getFullPathName().toStdString();
         j["known"] = Json (std::vector<std::string> (knownPeers.begin(), knownPeers.end()));
         file.replaceWithText (juce::String (j.dump (2)));
     }
@@ -658,12 +650,6 @@ namespace tutti
                     v.waitingForSave.push_back ({ entry.first, what });
         }
         v.backupFolder = backupFolder.getFullPathName().toStdString();
-        if (const auto shared = activeSharedFolder(); shared != juce::File())
-        {
-            v.sharedFolder = shared.getFullPathName().toStdString();
-            v.sharedFolderFound = sharedFolder == juce::File();
-            v.sharedPublishing = static_cast<int> (publishingShared.size());
-        }
         if (s.inSession())
         {
             std::vector<Json> metas;

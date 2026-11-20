@@ -69,5 +69,4 @@ struct AppActions
     virtual void restoreVersion (const std::string& id) = 0;
     virtual void openVersionCopy (const std::string& id) = 0;
     virtual void setBackupFolder (const juce::File& folder) = 0;
-    virtual void setSharedFolder (const juce::File& folder) = 0;  // empty: stop using one
 };

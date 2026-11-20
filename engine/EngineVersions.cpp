@@ -415,14 +415,9 @@ namespace tutti
 
     void Engine::backUp (const Json& meta)
     {
-        // A chosen backup folder, else the group's shared Drive folder.
-        auto root = backupFolder.isDirectory() ? backupFolder : juce::File();
-        if (root == juce::File())
-            if (const auto shared = activeSharedFolder(); shared != juce::File())
-                root = shared.getChildFile ("Versions");
-        if (root == juce::File())
+        if (backupFolder == juce::File() || ! backupFolder.isDirectory())
             return;
-        auto dir = root.getChildFile (juce::File::createLegalFileName (juce::String (currentSongName.empty() ? "Song" : currentSongName)));
+        auto dir = backupFolder.getChildFile (juce::File::createLegalFileName (juce::String (currentSongName.empty() ? "Song" : currentSongName)));
         const auto when = friendlyTime (str (meta, "at")).replace (":", ".");
         const auto name = juce::File::createLegalFileName (when + " " + juce::String (str (meta, "byName"))
                                                            + (str (meta, "label").empty() ? juce::String() : " - " + juce::String (str (meta, "label"))));

@@ -1,7 +1,5 @@
 #include "Pages.h"
 
-#include "Platform.h"
-
 namespace
 {
     void heading (juce::Graphics& g, const juce::String& text, int y, int width)
@@ -38,23 +36,9 @@ SettingsPage::SettingsPage (AppActions& a, std::function<void()> onDone) : actio
     ask.onClick = [this] { actions.setPlayMode ("ask"); };
     automatic.onClick = [this] { actions.setPlayMode ("auto"); };
     never.onClick = [this] { actions.setPlayMode ("never"); };
-    for (auto* b : { &ask, &automatic, &never, &checkNow, &rollBack, &logs, &back, &chooseBackup, &chooseShared, &findShared })
+    for (auto* b : { &ask, &automatic, &never, &checkNow, &rollBack, &logs, &back, &chooseBackup })
         addAndMakeVisible (b);
-    chooseShared.onClick = [this] {
-        juce::File start;
-        for (const auto& d : tutti::platform::googleDriveFolders())
-        {
-            start = d;
-            break;
-        }
-        chooser = std::make_unique<juce::FileChooser> ("Choose your group's shared Google Drive folder", start);
-        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
-                              [this] (const juce::FileChooser& fc) {
-                                  if (fc.getResult().isDirectory())
-                                      actions.setSharedFolder (fc.getResult());
-                              });
-    };
-    findShared.onClick = [this] { actions.setSharedFolder ({}); };
+
     chooseBackup.onClick = [this] {
         chooser = std::make_unique<juce::FileChooser> ("Where should Tutti keep a copy of every version?");
         chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
@@ -117,23 +101,11 @@ void SettingsPage::update (const AppState& s)
                             ? juce::String ("The Tutti Remote Script couldn't be installed into Live's User Library. Check that Live has been opened once on this computer.")
                             : "Remote Script installed in " + s.setup.scriptInstalledIn.joinIntoString (", "),
                         juce::dontSendNotification);
-    juce::String drive;
-    if (s.engine.sharedFolder.empty())
-        drive << "Not set up. Optional: make a Google Drive folder called \"Tutti Shared\" and share it with the group. "
-                 "With Google Drive for desktop on each computer, Tutti finds it and keeps recordings and every saved "
-                 "version there, so everyone gets the audio even when its owner is offline.";
-    else
-    {
-        drive << "Using " << juce::String (s.engine.sharedFolder) << (s.engine.sharedFolderFound ? " (found automatically)." : ".")
-              << " Recordings and samples go in its \"Tutti files\" folder; every saved version, with its audio, goes in \"Versions\". "
-                 "Keep working in Live as usual: don't open songs from this folder.";
-        if (s.engine.sharedPublishing > 0)
-            drive << " Copying " << s.engine.sharedPublishing << " file(s) there now.";
-    }
-    if (! s.engine.backupFolder.empty())
-        drive << " Versions also go to " << juce::String (s.engine.backupFolder) << ".";
-    backupInfo.setText (drive, juce::dontSendNotification);
-    findShared.setEnabled (! s.engine.sharedFolder.empty() && ! s.engine.sharedFolderFound);
+    backupInfo.setText (s.engine.backupFolder.empty()
+                            ? juce::String ("Optional. Everyone in a session already keeps the song, every version and its audio on their own computer. "
+                                            "For an extra copy, choose a folder such as an external drive: while you're Player 1, every version goes there too.")
+                            : "While you're Player 1, every version, with its audio, is also copied to " + juce::String (s.engine.backupFolder) + ".",
+                        juce::dontSendNotification);
     repaint();
 }
 
@@ -169,7 +141,7 @@ void SettingsPage::paint (juce::Graphics& g)
     }
     heading (g, "When someone presses Play together", playTop, getWidth());
     heading (g, "Updates", updatesTop, getWidth());
-    heading (g, "Shared Google Drive folder", backupTop, getWidth());
+    heading (g, "Backups", backupTop, getWidth());
     heading (g, "This computer", setupTop, getWidth());
 }
 
@@ -200,14 +172,9 @@ void SettingsPage::resized()
     y += 112 + 30 + 18;
 
     backupTop = y;
-    backupInfo.setBounds (0, y + 22, w, 84);
-    auto driveButtons = juce::Rectangle<int> (0, y + 108, w, 30);
-    chooseShared.setBounds (driveButtons.removeFromLeft (130));
-    driveButtons.removeFromLeft (6);
-    findShared.setBounds (driveButtons.removeFromLeft (150));
-    driveButtons.removeFromLeft (6);
-    chooseBackup.setBounds (driveButtons.removeFromLeft (juce::jmin (140, driveButtons.getWidth())));
-    y += 108 + 30 + 18;
+    backupInfo.setBounds (0, y + 22, w, 52);
+    chooseBackup.setBounds (0, y + 78, 150, 30);
+    y += 78 + 30 + 18;
 
     setupTop = y;
     startAtLogin.setBounds (0, y + 22, w, 26);

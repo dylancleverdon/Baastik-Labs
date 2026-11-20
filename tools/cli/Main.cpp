@@ -125,8 +125,6 @@ int main (int argc, char* argv[])
             }
             else if (c == "join")
                 engine.joinSession (str (*cmd, "peer"));
-            else if (c == "shared")
-                engine.setSharedFolder (juce::File (juce::String (str (*cmd, "path"))));
             else if (c == "approve")
                 engine.approveJoin (str (*cmd, "peer"), boolean (*cmd, "allow", true));
             else if (c == "request_p1")

@@ -67,24 +67,14 @@ possible (see "Plugins" below).
 - **Recordings** don't need a save: they reach everyone within seconds (a preview first, then
   full quality).
 
-### Google Drive (optional)
+### Your copy of each song
 
-A shared Google Drive folder gives the group a second way to move audio, which doesn't need the
-person who recorded it to be online, and a backup of every version:
-
-1. Whoever runs the group makes a folder called **Tutti Shared** in Google Drive and shares it
-   with everyone (Editor).
-2. Everyone installs [Google Drive for desktop](https://www.google.com/drive/download/) and signs
-   in. Friends open the shared folder in drive.google.com (**Shared with me**), then **Organize >
-   Add shortcut > My Drive**, so it shows up on their computer.
-3. That's it: Tutti finds **Tutti Shared** by itself (Settings > Shared Google Drive folder shows
-   it, or choose a folder there).
-
-Tutti then puts every recording and sample a session uses in `Tutti Shared/Tutti files` and
-every saved version, with its audio, in `Tutti Shared/Versions/<song>`. Live edits and saves
-still go directly between computers over Tailscale. Keep working in Live as usual: don't open or
-save songs inside the Drive folder (Drive syncing a song while Live writes it can corrupt it), and
-open an old version from Tutti's **Versions** instead.
+Everyone who has been in a session keeps their own copy in `Music/Tutti/<song>`, with every
+version and all its audio, so the songs live on all your computers and there's no cloud to set
+up. Open it in Live any time, even with Tutti closed. It's as up to date as your last save or
+update; edits you make outside a session stay on your computer, and **Share a song...** with that
+copy starts a new session from it. For an extra copy, **Settings > Backups** can copy every
+version to a folder such as an external drive while you're Player 1.
 
 ### Plugins
 

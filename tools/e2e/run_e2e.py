@@ -326,18 +326,6 @@ def main():
         check(h.run(15, lambda: alice.state()["role"] == "player1"), "Alice is Player 1")
         snapshot_song = clone(alice.song)  # what the song file holds right now
 
-        print("1b. Alice and Cara share a Google Drive folder (Bob doesn't)")
-        shared = os.path.join(h.dir, "Tutti Shared")
-        os.makedirs(shared)
-        for p in (alice, cara):
-            p.cmd(cmd="shared", path=shared)
-
-        def shared_has_take():
-            files = os.path.join(shared, "Tutti files")
-            return os.path.isdir(files) and any(
-                f == "vox take 1.wav" for d in os.listdir(files) for f in os.listdir(os.path.join(files, d)))
-        check(h.run(30, shared_has_take), "Alice put the recording in the shared folder")
-
         print("2. Bob and Cara join; Alice lets them in")
         h.run(2.0)
         for guest in (bob, cara):
@@ -357,11 +345,6 @@ def main():
                 check(not guest.state()["live_bound"], "Bob's Tutti doesn't bind the Set that was already open")
             guest.open_live(clone(snapshot_song))
             check(h.run(15, lambda: guest.state()["live_bound"]), guest.name + "'s Live is in sync")
-            if guest is cara:
-                def cara_used_shared():
-                    with open(os.path.join(cara.data, "Logs", "tutti.log")) as f:
-                        return "from the shared folder (" in f.read()
-                check(h.run(20, cara_used_shared), "Cara got the full recording from the shared folder")
 
         print("3. Edits flow both ways")
         alice.song.tracks[1].name = "Sub Bass"

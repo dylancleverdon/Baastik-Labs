@@ -87,9 +87,6 @@ namespace tutti
         struct Waiting { std::string byName, what; };
         std::vector<Waiting> waitingForSave;   // things others added that arrive when they save
         std::string backupFolder;
-        std::string sharedFolder;      // the group's Google Drive folder in use (chosen or found)
-        bool sharedFolderFound = false; // found by name ("Tutti Shared"), not chosen
-        int sharedPublishing = 0;      // audio files still being copied into it
     };
 
     class Engine : private Session::Listener
@@ -134,9 +131,6 @@ namespace tutti
         void restoreVersion (const std::string& id);     // Player 1: make an old version current
         void openVersionCopy (const std::string& id);    // open an old version as a separate copy
         void setBackupFolder (const juce::File& folder);
-        // The group's shared Google Drive folder (empty File: find "Tutti Shared" automatically).
-        void setSharedFolder (const juce::File& folder);
-        juce::File activeSharedFolder() const;
 
         EngineView view() const;
         const Session& session() const { return *sessionPtr; }
@@ -246,9 +240,7 @@ namespace tutti
         void reloadInto (const Json& meta);
         std::unique_ptr<juce::XmlElement> localCopyOf (const Json& meta, const juce::File& folder, juce::String& error);
         void backUp (const Json& meta);
-        void pumpShared();
         std::string memberName (const std::string& peer) const;
-        bool fetchFromShared (const std::string& hash);
 
         // --- Tutti Stand-in (EngineStandIn.cpp)
         void handleStandIn (uint64_t linkId, const Json& message);
@@ -328,7 +320,6 @@ namespace tutti
             int retries = 0;
             double lastProgress = 0;  // when a chunk last arrived (or the request was sent)
             bool active = false;
-            double sharedCheckedAt = -1000; // last look in the shared Drive folder
             bool first = false;             // the song file itself: before any audio
         };
         std::map<std::string, Transfer> transfers; // key: hash + ":" + kind
@@ -385,13 +376,5 @@ namespace tutti
         bool reloadWhenMerged = false;    // our save is being merged: reload when it comes back
         bool reloading = false;
         juce::File backupFolder;
-        juce::File sharedFolder;              // chosen in Settings
-        mutable juce::File foundSharedFolder;  // or found in Google Drive by name
-        mutable double lastSharedSearch = -1000;
-        double lastSharedPump = 0;
-        std::set<std::string> publishedShared;      // hashes known to be in the shared folder
-        std::set<std::string> publishingShared;     // being copied there now
-        std::set<std::string> fetchingShared;       // being copied from there now
-        std::set<std::string> notInShared;          // looked, not there (cleared every pump)
     };
 }

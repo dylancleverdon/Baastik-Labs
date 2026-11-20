@@ -107,32 +107,6 @@ namespace tutti::platform
         return newest;
     }
 
-    juce::Array<juce::File> googleDriveFolders()
-    {
-        juce::Array<juce::File> out;
-       #if JUCE_MAC
-        // Drive for desktop: ~/Library/CloudStorage/GoogleDrive-<account>/{My Drive, Shared drives/*}
-        for (const auto& account : home().getChildFile ("Library/CloudStorage").findChildFiles (juce::File::findDirectories, false, "GoogleDrive-*"))
-        {
-            for (const auto& name : { "My Drive", "Shared drives" })
-                if (auto d = account.getChildFile (name); d.isDirectory())
-                    out.add (d);
-        }
-        for (const auto& d : { home().getChildFile ("Google Drive"), home().getChildFile ("Google Drive/My Drive") })
-            if (d.isDirectory())
-                out.add (d);
-       #elif JUCE_WINDOWS
-        // Drive for desktop mounts a drive letter (G: by default) holding "My Drive" and "Shared drives".
-        juce::Array<juce::File> roots;
-        juce::File::findFileSystemRoots (roots);
-        for (const auto& r : roots)
-            for (const auto& name : { "My Drive", "Shared drives" })
-                if (auto d = r.getChildFile (name); d.isDirectory())
-                    out.add (d);
-       #endif
-        return out;
-    }
-
     juce::Array<juce::File> userLibraries()
     {
         juce::Array<juce::File> out;

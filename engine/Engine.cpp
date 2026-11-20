@@ -98,7 +98,6 @@ namespace tutti
         if (t - lastDiscovery > (sessionPtr->inSession() ? 20.0 : 8.0))
             discover();
         pumpTransfers();
-        pumpShared();
         serveChunks();
         pollSave();
         if (sessionPtr->isPlayer1())

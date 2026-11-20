@@ -54,7 +54,6 @@ namespace
         void restoreVersion (const std::string&) override {}
         void openVersionCopy (const std::string&) override {}
         void setBackupFolder (const juce::File&) override {}
-        void setSharedFolder (const juce::File&) override {}
     };
 
     tutti::MemberInfo member (const std::string& peer, const std::string& name, int colour, bool online = true)
@@ -163,8 +162,6 @@ namespace
         s.updates.availableNotes = "Faster joins for big songs.";
         s.updates.status = "Tutti 0.1.60 is ready: it installs when you're not in a session";
         s.updates.canRollBack = true;
-        s.engine.sharedFolder = "/Users/dylan/Library/CloudStorage/GoogleDrive-dylan/My Drive/Tutti Shared";
-        s.engine.sharedFolderFound = true;
         shoot ("5-settings", s, MainComponent::Page::settings);
         s.suggestions.queued = 1;
         shoot ("6-suggestions", s, MainComponent::Page::suggest);
@@ -613,7 +610,6 @@ private:
     void restoreVersion (const std::string& id) override { engine->restoreVersion (id); }
     void openVersionCopy (const std::string& id) override { engine->openVersionCopy (id); }
     void setBackupFolder (const juce::File& folder) override { engine->setBackupFolder (folder); dirty = true; }
-    void setSharedFolder (const juce::File& folder) override { engine->setSharedFolder (folder); dirty = true; }
 
     theme::LookAndFeel lookAndFeel;
     std::unique_ptr<tutti::Engine> engine;

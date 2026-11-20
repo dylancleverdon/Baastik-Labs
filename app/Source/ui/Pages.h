@@ -25,8 +25,7 @@ private:
     juce::TextButton ask { "Ask me" }, automatic { "Join automatically" }, never { "Never" };
     juce::ToggleButton autoUpdate { "Update automatically" }, startAtLogin { "Start Tutti when I log in" };
     juce::TextButton checkNow { "Check now" }, rollBack { "Roll back" }, logs { "Show logs" }, back { "Done" };
-    juce::TextButton chooseBackup { "Backups..." };
-    juce::TextButton chooseShared { "Choose folder..." }, findShared { "Find it automatically" };
+    juce::TextButton chooseBackup { "Choose folder..." };
     juce::Label updateStatus, notes, scriptInfo, backupInfo;
     std::unique_ptr<juce::FileChooser> chooser;
     int nameTop = 0, playTop = 0, updatesTop = 0, setupTop = 0, backupTop = 0;

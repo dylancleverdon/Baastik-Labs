@@ -17,7 +17,8 @@ namespace
     };
 }
 
-SuggestionBox::SuggestionBox (juce::File dataDir) : file (dataDir.getChildFile ("suggestions.json"))
+SuggestionBox::SuggestionBox (juce::File dataDir)
+    : file (dataDir.getChildFile ("suggestions.json")), logsDir (dataDir.getChildFile ("suggestion-logs"))
 {
     if (auto j = tutti::parseJson (file.loadFileAsString().toStdString()); j && j->is_array())
         queue = *j;
@@ -35,13 +36,22 @@ void SuggestionBox::save()
 }
 
 void SuggestionBox::add (const std::string& kind, const std::string& text, const std::string& from,
-                         const std::string& version, const std::string& os, const std::string& live)
+                         const std::string& version, const std::string& os, const std::string& live, const juce::String& logs)
 {
     {
         std::lock_guard<std::mutex> g (lock);
-        queue.push_back (tutti::Json { { "id", tutti::randomId ("sg") }, { "kind", kind }, { "text", text }, { "from", from },
-                                       { "version", version }, { "os", os }, { "live", live },
-                                       { "at", juce::Time::getCurrentTime().toISO8601 (true).toStdString() } });
+        const auto id = tutti::randomId ("sg");
+        tutti::Json item { { "id", id }, { "kind", kind }, { "text", text }, { "from", from },
+                           { "version", version }, { "os", os }, { "live", live },
+                           { "at", juce::Time::getCurrentTime().toISO8601 (true).toStdString() } };
+        if (logs.isNotEmpty())
+        {
+            logsDir.createDirectory();
+            auto f = logsDir.getChildFile (juce::String (id) + ".txt");
+            if (f.replaceWithText (logs, false, false, "\n"))
+                item["logFile"] = f.getFileName().toStdString();
+        }
+        queue.push_back (item);
         save();
         lastResult = endpoint.empty() ? "Saved." : "Sending...";
         nextTry = 0;
@@ -89,10 +99,19 @@ void SuggestionBox::sendNext()
     }
     if (worker != nullptr)
         worker->stopThread (1000);
-    worker = std::make_unique<Job> ([this, item, url] {
+    auto post = item;
+    juce::File logFile;
+    if (const auto name = item.value ("logFile", std::string()); ! name.empty())
+    {
+        logFile = logsDir.getChildFile (juce::String (name));
+        post.erase ("logFile");
+        if (logFile.existsAsFile())
+            post["log"] = logFile.loadFileAsString().toStdString();
+    }
+    worker = std::make_unique<Job> ([this, item, url, post, logFile] {
         int status = 0;
         auto stream = juce::URL (juce::String (url))
-                          .withPOSTData (juce::String (item.dump()))
+                          .withPOSTData (juce::String (post.dump (-1, ' ', false, tutti::Json::error_handler_t::replace)))
                           .createInputStream (juce::URL::InputStreamOptions (juce::URL::ParameterHandling::inPostData)
                                                   .withExtraHeaders ("Content-Type: text/plain;charset=utf-8")
                                                   .withConnectionTimeoutMs (20000)
@@ -113,7 +132,16 @@ void SuggestionBox::sendNext()
                         break;
                     }
                 save();
-                lastResult = "Sent, thanks!";
+                if (logFile != juce::File())
+                {
+                    logFile.deleteFile();
+                    // The current sheet script answers {"ok":true,"log":"<link>"} when it kept the
+                    // logs; an older one ignores them.
+                    lastResult = body.contains ("\"log\"") || body.isEmpty() ? "Sent with your logs, thanks!"
+                                                                             : "Sent, thanks! (The suggestion sheet's script needs updating to keep logs.)";
+                }
+                else
+                    lastResult = "Sent, thanks!";
             }
             else
             {

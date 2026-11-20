@@ -12,6 +12,7 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
     void mouseUp (const juce::MouseEvent&) override;
+    static constexpr int contentHeight = 720;
 
 private:
     juce::Rectangle<int> swatchArea (int index) const;
@@ -24,7 +25,8 @@ private:
     juce::TextButton ask { "Ask me" }, automatic { "Join automatically" }, never { "Never" };
     juce::ToggleButton autoUpdate { "Update automatically" }, startAtLogin { "Start Tutti when I log in" };
     juce::TextButton checkNow { "Check now" }, rollBack { "Roll back" }, logs { "Show logs" }, back { "Done" };
-    juce::TextButton chooseBackup { "Choose folder..." };
+    juce::TextButton chooseBackup { "Backups..." };
+    juce::TextButton chooseShared { "Choose folder..." }, findShared { "Find it automatically" };
     juce::Label updateStatus, notes, scriptInfo, backupInfo;
     std::unique_ptr<juce::FileChooser> chooser;
     int nameTop = 0, playTop = 0, updatesTop = 0, setupTop = 0, backupTop = 0;
@@ -45,6 +47,6 @@ private:
     std::string kind = "Idea";
     juce::TextButton idea { "Idea" }, problem { "Something's wrong" }, other { "Other" };
     juce::TextEditor text;
-    juce::TextButton send { "Send" }, back { "Back" };
+    juce::TextButton send { "Send" }, sendLogs { "Send logs" }, back { "Back" };
     juce::Label status;
 };

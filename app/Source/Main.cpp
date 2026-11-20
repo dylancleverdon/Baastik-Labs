@@ -37,6 +37,7 @@ namespace
         void stopTogether() override {}
         void setPlayMode (const std::string&) override {}
         void openSong() override {}
+        void revealSong() override {}
         void makeIdea() override {}
         void acceptIdea (const std::string&) override {}
         void rejectIdea (const std::string&) override {}
@@ -44,7 +45,7 @@ namespace
         void checkForUpdates() override {}
         void rollBack() override {}
         void setAutoUpdate (bool) override {}
-        void sendSuggestion (const std::string&, const std::string&) override {}
+        void sendSuggestion (const std::string&, const std::string&, bool) override {}
         void setStartAtLogin (bool) override {}
         void showLogs() override {}
         void openUrl (const juce::String&) override {}
@@ -53,6 +54,7 @@ namespace
         void restoreVersion (const std::string&) override {}
         void openVersionCopy (const std::string&) override {}
         void setBackupFolder (const juce::File&) override {}
+        void setSharedFolder (const juce::File&) override {}
     };
 
     tutti::MemberInfo member (const std::string& peer, const std::string& name, int colour, bool online = true)
@@ -129,7 +131,11 @@ namespace
         s.engine.p1Requests = { "p3" };
         s.engine.previewsWaiting = 2;
         s.engine.notices = { "Cara asked to be Player 1." };
+        s.engine.songFile = "/Users/dylan/Music/Tutti/Night Drive/Night Drive.als";
+        s.engine.saveToShare = { "Serum 2" };
         shoot ("3-session-player1", s);
+        s.engine.saveToShare.clear();
+        s.engine.waitingForSave = { { "Sam", "Serum 2" } };
 
         // 4. A guest with an idea to review and a Play together request.
         s.engine.role = tutti::Session::Role::guest;
@@ -157,6 +163,8 @@ namespace
         s.updates.availableNotes = "Faster joins for big songs.";
         s.updates.status = "Tutti 0.1.60 is ready: it installs when you're not in a session";
         s.updates.canRollBack = true;
+        s.engine.sharedFolder = "/Users/dylan/Library/CloudStorage/GoogleDrive-dylan/My Drive/Tutti Shared";
+        s.engine.sharedFolderFound = true;
         shoot ("5-settings", s, MainComponent::Page::settings);
         s.suggestions.queued = 1;
         shoot ("6-suggestions", s, MainComponent::Page::suggest);
@@ -226,6 +234,10 @@ public:
 
         window = std::make_unique<Window> (static_cast<AppActions&> (*this));
         createTray();
+        menus = std::make_unique<Menus> (*this);
+       #if JUCE_MAC
+        juce::MenuBarModel::setMacMainMenu (menus.get());
+       #endif
        #if JUCE_MAC
         // Dock icon clicks bring the window back (installed once launching has finished).
         juce::MessageManager::callAsync ([this] {
@@ -243,6 +255,10 @@ public:
     void shutdown() override
     {
         stopTimer();
+       #if JUCE_MAC
+        juce::MenuBarModel::setMacMainMenu (nullptr);
+       #endif
+        menus.reset();
         tray.reset();
         window.reset();
         suggestions.reset();
@@ -305,16 +321,7 @@ private:
 
         void mouseDown (const juce::MouseEvent&) override
         {
-            juce::PopupMenu menu;
-            const auto& s = app.engine->session();
-            juce::String status = s.inSession() ? juce::String (s.info().song) + (s.isPlayer1() ? " (you're Player 1)" : "")
-                                                : juce::String ("Not in a session");
-            menu.addItem ("Open Tutti", [this] { app.showWindow(); });
-            menu.addSeparator();
-            menu.addItem (status, false, false, [] {});
-            menu.addItem ("Play together", s.inSession(), false, [this] { app.playTogether(); });
-            menu.addSeparator();
-            menu.addItem ("Quit Tutti", [] { juce::JUCEApplication::getInstance()->systemRequestedQuit(); });
+            auto menu = app.sessionMenu (true);
            #if JUCE_MAC
             showDropdownMenu (menu);
            #else
@@ -324,6 +331,108 @@ private:
 
         TuttiApp& app;
     };
+
+    // The menu bar's Session and View menus (macOS) and the menu bar / tray icon's menu. On a Mac
+    // menu items only run when the app has a menu bar model, so the icon's menu needs this too.
+    struct Menus : juce::MenuBarModel
+    {
+        explicit Menus (TuttiApp& a) : app (a) {}
+        juce::StringArray getMenuBarNames() override { return { "Session", "View" }; }
+        juce::PopupMenu getMenuForIndex (int index, const juce::String&) override
+        {
+            if (index == 0)
+                return app.sessionMenu (false);
+            juce::PopupMenu m;
+            using P = MainComponent::Page;
+            auto page = [this] (P p) { return [this, p] { app.showPage (p); }; };
+            auto item = [&] (const char* text, P p, const char* key, bool enabled = true) {
+                juce::PopupMenu::Item i (text);
+                i.action = page (p);
+                i.shortcutKeyDescription = shortcut (key);
+                i.isEnabled = enabled;
+                m.addItem (std::move (i));
+            };
+            item ("Session", P::main, "1");
+            item ("Versions", P::versions, "2", app.engine->session().inSession());
+            item ("Suggestion box", P::suggest, "3");
+            item ("Settings", P::settings, ",");
+            m.addSeparator();
+            m.addItem ("Show logs", [this] { app.showLogs(); });
+            return m;
+        }
+        void menuItemSelected (int, int) override {}
+        static juce::String shortcut (const char* key)
+        {
+           #if JUCE_MAC
+            return juce::String::fromUTF8 ("\xe2\x8c\x98") + key;
+           #else
+            return juce::String ("Ctrl+") + key;
+           #endif
+        }
+        TuttiApp& app;
+    };
+
+    juce::PopupMenu sessionMenu (bool forIcon)
+    {
+        juce::PopupMenu menu;
+        const auto v = engine->view();
+        const auto& s = engine->session();
+        using R = tutti::Session::Role;
+        if (forIcon)
+        {
+            menu.addItem ("Open Tutti", [this] { showWindow(); });
+            menu.addSeparator();
+            const juce::String status = s.inSession() ? juce::String (v.session.song) + (s.isPlayer1() ? " (you're Player 1)" : "")
+                                                      : juce::String (v.role == R::joining ? "Waiting to be let in..." : "Not in a session");
+            menu.addItem (juce::PopupMenu::Item (status).setEnabled (false));
+            if (s.inSession())
+                menu.addItem (juce::PopupMenu::Item (juce::String (v.liveBound ? "Live: in sync" : "Live: " + v.liveStatus)).setEnabled (false));
+            menu.addSeparator();
+        }
+        if (! s.inSession() && v.role != R::joining)
+        {
+            menu.addItem ("Share a song...", [this] { showWindow(); window->content->chooseSong(); });
+            for (const auto& p : v.peers)
+                if (p.hosting)
+                {
+                    const auto peer = p.peer;
+                    menu.addItem ("Join " + juce::String (p.song) + " (" + juce::String (p.name) + ")", [this, peer] { join (peer); showWindow(); });
+                }
+        }
+        else if (v.role == R::joining)
+            menu.addItem ("Cancel joining", [this] { leave(); });
+        else
+        {
+            menu.addItem ("Play together", [this] { playTogether(); });
+            menu.addItem ("Stop playing together", [this] { stopTogether(); });
+            if (! s.isPlayer1())
+                menu.addItem (juce::PopupMenu::Item (v.askedForP1 ? "Asked to be Player 1..." : "Ask to be Player 1")
+                                  .setAction ([this] { requestPlayer1(); }).setEnabled (! v.askedForP1));
+            menu.addItem ("Try an idea on the selected track", [this] { makeIdea(); });
+            menu.addSeparator();
+            menu.addItem ("Open the session song in Live", [this] { openSong(); });
+            menu.addItem ("Show the song file", [this] { revealSong(); });
+            menu.addItem ("Versions...", [this] { showPage (MainComponent::Page::versions); });
+            menu.addSeparator();
+            menu.addItem ("Leave session", [this] { leave(); });
+        }
+        if (forIcon)
+        {
+            menu.addSeparator();
+            menu.addItem ("Suggestion box...", [this] { showPage (MainComponent::Page::suggest); });
+            menu.addItem ("Settings...", [this] { showPage (MainComponent::Page::settings); });
+            menu.addSeparator();
+            menu.addItem ("Quit Tutti", [] { juce::JUCEApplication::getInstance()->systemRequestedQuit(); });
+        }
+        return menu;
+    }
+
+    void showPage (MainComponent::Page p)
+    {
+        showWindow();
+        if (window != nullptr)
+            window->content->showPage (p);
+    }
 
     void createTray()
     {
@@ -356,7 +465,18 @@ private:
         {
             dirty = false;
             lastUiUpdate = t;
-            window->content->update (appState());
+            const auto st = appState();
+            window->content->update (st);
+            // Rebuild the menu bar only when what it offers changes.
+            juce::String sig;
+            sig << (int) st.engine.role << (st.engine.askedForP1 ? 1 : 0) << (int) st.engine.peers.size();
+            for (const auto& p : st.engine.peers)
+                sig << (p.hosting ? 1 : 0) << juce::String (p.song);
+            if (menus != nullptr && sig.toStdString() != menuSignature)
+            {
+                menuSignature = sig.toStdString();
+                menus->menuItemsChanged();
+            }
         }
     }
 
@@ -420,6 +540,7 @@ private:
     void stopTogether() override { engine->stopTogether(); }
     void setPlayMode (const std::string& m) override { engine->setPlayTogetherMode (m); }
     void openSong() override { engine->openSongInLive(); }
+    void revealSong() override { engine->revealSong(); }
     void makeIdea() override { engine->makeIdeaOnSelectedTrack(); }
     void acceptIdea (const std::string& t) override { engine->acceptIdea (t); }
     void rejectIdea (const std::string& t) override { engine->rejectIdea (t); }
@@ -427,10 +548,48 @@ private:
     void checkForUpdates() override { updater->checkNow(); }
     void rollBack() override { updater->rollBack(); }
     void setAutoUpdate (bool on) override { updater->setAutoUpdate (on); }
-    void sendSuggestion (const std::string& kind, const std::string& text) override
+    void sendSuggestion (const std::string& kind, const std::string& text, bool withLogs) override
     {
         const auto v = engine->view();
-        suggestions->add (kind, text, v.myName, tutti::version::string, tutti::platform::osName().toStdString(), v.liveVersion);
+        suggestions->add (kind, text, v.myName, tutti::version::string, tutti::platform::osName().toStdString(), v.liveVersion,
+                          withLogs ? collectLogs() : juce::String());
+    }
+
+    // The end of each log, newest last: Tutti's, its updater's and Live's own (which has the
+    // Remote Script's errors).
+    static juce::String tail (const juce::File& f, juce::int64 bytes)
+    {
+        juce::FileInputStream in (f);
+        if (! in.openedOk())
+            return "(couldn't read " + f.getFullPathName() + ")\n";
+        const auto size = in.getTotalLength();
+        if (size > bytes)
+            in.setPosition (size - bytes);
+        juce::MemoryBlock block;
+        in.readIntoMemoryBlock (block);
+        auto text = juce::String::createStringFromData (block.getData(), (int) block.getSize());
+        if (size > bytes)
+            text = text.fromFirstOccurrenceOf ("\n", false, false);
+        return text;
+    }
+
+    juce::String collectLogs()
+    {
+        const auto v = engine->view();
+        juce::String out;
+        out << "Tutti " << tutti::version::string << " on " << tutti::platform::osName() << ", Live " << juce::String (v.liveVersion)
+            << ", " << juce::SystemStats::getOperatingSystemName() << "\n"
+            << "Live: " << juce::String (v.liveStatus) << " | session: " << juce::String (v.session.song)
+            << " | song file: " << juce::String (v.songFile) << "\n";
+        const auto logs = tutti::platform::logsDir();
+        auto section = [&] (const juce::String& title, const juce::File& f, juce::int64 bytes) {
+            out << "\n===== " << title << " (" << f.getFullPathName() << ") =====\n";
+            out << (f.existsAsFile() ? tail (f, bytes) : juce::String ("(none)\n"));
+        };
+        section ("tutti.log", logs.getChildFile ("tutti.log"), 600 * 1024);
+        section ("updater.log", logs.getChildFile ("updater.log"), 24 * 1024);
+        section ("Live's Log.txt", tutti::platform::liveLogFile(), 400 * 1024);
+        return out;
     }
     void setStartAtLogin (bool on) override
     {
@@ -451,6 +610,7 @@ private:
     void restoreVersion (const std::string& id) override { engine->restoreVersion (id); }
     void openVersionCopy (const std::string& id) override { engine->openVersionCopy (id); }
     void setBackupFolder (const juce::File& folder) override { engine->setBackupFolder (folder); dirty = true; }
+    void setSharedFolder (const juce::File& folder) override { engine->setSharedFolder (folder); dirty = true; }
 
     theme::LookAndFeel lookAndFeel;
     std::unique_ptr<tutti::Engine> engine;
@@ -458,6 +618,8 @@ private:
     std::unique_ptr<SuggestionBox> suggestions;
     std::unique_ptr<Window> window;
     std::unique_ptr<Tray> tray;
+    std::unique_ptr<Menus> menus;
+    std::string menuSignature;
     juce::StringArray scriptInstalledIn;
     bool startAtLogin = true;
     bool dirty = true;

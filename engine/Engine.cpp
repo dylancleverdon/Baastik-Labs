@@ -92,6 +92,7 @@ namespace tutti
         if (t - lastDiscovery > (sessionPtr->inSession() ? 20.0 : 8.0))
             discover();
         pumpTransfers();
+        pumpShared();
         serveChunks();
         pollSave();
         if (sessionPtr->isPlayer1())
@@ -113,7 +114,8 @@ namespace tutti
         }
         if (! playRequest.is_null() && t - playRequestAt > 8.0)
             playRequest = nullptr;
-        if (liveLink != 0 && ! liveBound && sessionPtr->inSession() && t - lastBindAttempt > 3.0)
+        if (liveLink != 0 && ! liveBound && (sessionPtr->inSession() || (waitingForCapture && captureSentAt == 0))
+            && t - lastBindAttempt > 3.0)
             bindLive();
         // The session's idea of who we're connected to must match the links we really have.
         if (t - lastLinkCheck > 1.0)
@@ -133,6 +135,14 @@ namespace tutti
         {
             log ("asking Player 1 for the song again");
             requestSnapshot();
+        }
+        // Joining: the song opens once its file and the audio previews are here, or after 30 s
+        // with whatever has arrived. Check every second, not only when a file arrives, or a
+        // preview that never comes leaves the song stuck at "Downloading".
+        if (! joinSnapshot.is_null() && t - lastJoinCheck > 1.0)
+        {
+            lastJoinCheck = t;
+            maybeOpenJoinedSong();
         }
         if (waitingForCapture && captureSentAt > 0 && t - captureSentAt > 90.0)
             cancelStart ("Live didn't finish reading the song. Restart Live and try again.");
@@ -622,6 +632,9 @@ namespace tutti
         reloadWhenMerged = false;
         reloading = false;
         updateBy.clear();
+        mySaveNeeded.clear();
+        othersSaveNeeded.clear();
+        openedAt = 0;
     }
 
     void Engine::appMessage (const std::string& peer, const Json& message)
@@ -639,6 +652,22 @@ namespace tutti
             handleSave (peer, message);
         else if (type == "snapshot")
             handleSnapshotNotice (peer, message);
+        else if (type == "needs_save")
+        {
+            std::vector<std::string> what;
+            if (const auto& list = field (message, "what"); list.is_array())
+                for (const auto& w : list)
+                    if (w.is_string())
+                        what.push_back (w.get<std::string>());
+            if (what.empty())
+                othersSaveNeeded.erase (peer);
+            else
+            {
+                const auto name = str (message, "byName", "Someone");
+                notice (name + " added " + what.back() + ". You'll get it when " + name + " saves in Live.");
+                othersSaveNeeded[peer] = { name, what };
+            }
+        }
         else if (type == "label")
         {
             if (auto meta = loadSnapshot (str (message, "id")))
@@ -670,7 +699,7 @@ namespace tutti
     {
         // The Remote Script this app ships (remote_script/Tutti/engine.py SCRIPT_VERSION). Live loads
         // scripts only when it starts, so after an update it may still run the old one.
-        constexpr const char* kRemoteScriptVersion = "2";
+        constexpr const char* kRemoteScriptVersion = "3";
     }
 
     bool Engine::liveScriptOutdated() const
@@ -694,8 +723,33 @@ namespace tutti
             sendTo (liveLink, message);
     }
 
-    bool Engine::songOpenInLive() const
+    void Engine::openInLiveAndWait (const juce::File& file)
     {
+        docAtOpen = liveLink != 0 ? str (liveHello, "doc") : std::string();
+        openedAt = now();
+        strictMatchLogged = false;
+        log ("opening " + file.getFullPathName().toStdString() + " in Live");
+        options.openInLive (file);
+    }
+
+    bool Engine::songOpenInLive()
+    {
+        if (openedAt > 0)
+        {
+            const auto doc = str (liveHello, "doc");
+            if (liveLink != 0 && ! doc.empty() && doc != docAtOpen)
+            {
+                openedAt = 0; // Live loaded a Set since we asked: check it's ours below
+            }
+            else if (now() - openedAt < 20.0)
+                return false;
+            else if (! strictMatchLogged)
+            {
+                strictMatchLogged = true;
+                log ("Live hasn't opened another Set since Tutti asked it to; checking the open one closely");
+            }
+        }
+        const bool strict = openedAt > 0;
         const auto& fp = field (liveHello, "fingerprint");
         juce::StringArray names;
         if (const auto& list = field (fp, "tracks"); list.is_array())
@@ -713,7 +767,13 @@ namespace tutti
             auto xml = als::load (target, error);
             entry = { stamp, xml ? als::tracks (*xml) : std::vector<als::Track> {} };
         }
-        return als::matchScore (entry.second, names) >= 0.8;
+        const auto score = als::matchScore (entry.second, names);
+        if (! strict)
+            return score >= 0.8;
+        int fileTracks = 0;
+        for (const auto& t : entry.second)
+            fileTracks += (t.kind != "return" && t.kind != "master") ? 1 : 0;
+        return score >= 0.999 && integer (fp, "n") == fileTracks;
     }
 
     void Engine::bindLive()
@@ -739,7 +799,10 @@ namespace tutti
                 sendToLive (Json { { "type", "capture" } });
             }
             else
-                liveStatus = waitingForCapture ? "Waiting for Live to open the song..." : "Ready";
+                liveStatus = ! waitingForCapture ? "Ready"
+                           : (openedAt > 0 && now() - openedAt >= 20.0 ? "Live didn't open the song: check Live for a question, or open "
+                                                                              + pendingStartCopy.getFileName().toStdString() + " from Music/Tutti"
+                                                                        : "Waiting for Live to open the song...");
             return;
         }
         if (currentSong == juce::File())
@@ -749,7 +812,8 @@ namespace tutti
         }
         if (! songOpenInLive())
         {
-            liveStatus = "Open the session song in Live";
+            liveStatus = openedAt > 0 && now() - openedAt < 20.0 ? "Waiting for Live to open the song..."
+                                                                   : "Open the session song in Live";
             return;
         }
         const auto doc = liveDoc (s.replica().optimistic());
@@ -819,7 +883,7 @@ namespace tutti
             liveStatus = "In sync";
             stale.clear();
             const auto& stats = field (m, "stats");
-            log ("Live bound: " + stats.dump());
+            log ("Live bound to " + currentSong.getFullPathName().toStdString() + ": " + stats.dump());
             if (integer (stats, "new") > 0)
                 notice ("Some things in your Live weren't in the shared song, so they were shared.");
             joinedWaitingForSong = false;
@@ -907,8 +971,32 @@ namespace tutti
         return out;
     }
 
+    void Engine::noteSaveNeeded (const Ops& ops)
+    {
+        // Adding a plugin can't be copied into other people's Live while they play: it travels
+        // with a save. Say so, here and on everyone else's Tutti, instead of leaving it a mystery.
+        for (const auto& op : ops)
+        {
+            if (op.kind != Op::Kind::create || op.type != "device" || ! op.props.contains ("plugin") || op.props["plugin"].is_null())
+                continue;
+            const auto what = str (op.props, "name", "a plugin");
+            if (std::find (mySaveNeeded.begin(), mySaveNeeded.end(), what) != mySaveNeeded.end())
+                continue;
+            mySaveNeeded.push_back (what);
+            log ("added " + what + " (plugin): shared on the next save");
+            sessionPtr->broadcast (Json { { "type", "needs_save" }, { "what", mySaveNeeded }, { "byName", self.name } });
+           #if JUCE_MAC
+            notice ("You added " + what + ". Press Cmd+S in Live to share it with everyone.");
+           #else
+            notice ("You added " + what + ". Press Ctrl+S in Live to share it with everyone.");
+           #endif
+        }
+    }
+
     void Engine::submitFromLive (Ops ops)
     {
+        if (sessionPtr->inSession())
+            noteSaveNeeded (ops);
         // Local audio paths become content hashes. Hashing a big file takes a moment, so a batch
         // that needs it waits (and so does everything after it, to keep the order).
         if (! ops.empty())
@@ -1016,6 +1104,9 @@ namespace tutti
         auto set = als::load (source, error);
         if (set == nullptr)
             return false;
+        log ("sharing " + source.getFullPathName().toStdString() + " (saved "
+             + source.getLastModificationTime().toString (true, true).toStdString() + ", "
+             + std::to_string (als::tracks (*set).size()) + " tracks incl. returns and Main)");
 
         const auto song = source.getFileNameWithoutExtension().toStdString();
         auto folder = workspaceFor (song);
@@ -1065,7 +1156,7 @@ namespace tutti
                 if (missing > 0)
                     notice (std::to_string (missing) + " sample(s) in the song couldn't be found; they'll be missing for everyone.");
                 startStatus = "Opening the song in Live...";
-                options.openInLive (copy);
+                openInLiveAndWait (copy);
                 bindLive();
             });
         });
@@ -1074,6 +1165,8 @@ namespace tutti
 
     void Engine::finishStart (const Json& captured)
     {
+        log ("Live read the song: " + std::to_string (field (field (liveHello, "fingerprint"), "tracks").size())
+             + " tracks open in Live");
         waitingForCapture = false;
         captureSentAt = 0;
         Json docJson = field (captured, "doc");
@@ -1239,7 +1332,10 @@ namespace tutti
             return;
         const auto alsHash = str (joinSnapshot, "als");
         if (! contentStore.has (alsHash))
+        {
+            startStatus = "Downloading the song file...";
             return;
+        }
         int waiting = 0;
         if (const auto& files = field (joinSnapshot, "files"); files.is_array())
             for (const auto& h : files)
@@ -1253,6 +1349,8 @@ namespace tutti
         // Open as soon as every preview is here (or after 30 s with whatever has arrived).
         if (waiting > 0 && now() - number (joinSnapshot, "received_at") < 30.0)
         {
+            if (startStatus.find (std::to_string (waiting) + " audio") == std::string::npos)
+                log ("song file is here; waiting for " + std::to_string (waiting) + " audio preview(s)");
             startStatus = "Downloading the song (" + std::to_string (waiting) + " audio files to go)...";
             return;
         }
@@ -1294,14 +1392,20 @@ namespace tutti
         joinedWaitingForSong = true;
         startStatus.clear();
         notice ("Opening " + song + " in Live...");
-        options.openInLive (currentSong);
+        openInLiveAndWait (currentSong);
         bindLive();
     }
 
     void Engine::openSongInLive()
     {
         if (currentSong.existsAsFile())
-            options.openInLive (currentSong);
+            openInLiveAndWait (currentSong);
+    }
+
+    void Engine::revealSong()
+    {
+        if (currentSong.existsAsFile())
+            currentSong.revealToUser();
     }
 
     void Engine::leaveSession()
@@ -1309,7 +1413,11 @@ namespace tutti
         sessionPtr->leave (now());
     }
 
-    void Engine::approveJoin (const std::string& peer, bool allow) { sessionPtr->approveJoin (peer, allow, now()); }
+    void Engine::approveJoin (const std::string& peer, bool allow)
+    {
+        log ((allow ? "letting in " : "not letting in ") + memberName (peer));
+        sessionPtr->approveJoin (peer, allow, now());
+    }
     void Engine::answerPlayer1Request (const std::string& peer, bool allow) { sessionPtr->answerPlayer1Request (peer, allow, now()); }
     void Engine::requestPlayer1() { sessionPtr->requestPlayer1(); }
     void Engine::handOver (const std::string& peer) { sessionPtr->handOver (peer, now()); }

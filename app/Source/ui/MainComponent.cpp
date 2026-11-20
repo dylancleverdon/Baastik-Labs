@@ -21,7 +21,10 @@ MainComponent::MainComponent (AppActions& a) : actions (a)
 
     settings = std::make_unique<SettingsPage> (actions, [this] { showPage (Page::main); });
     suggestions = std::make_unique<SuggestionPage> (actions, [this] { showPage (Page::main); });
-    addChildComponent (*settings);
+    settingsView.setViewedComponent (settings.get(), false);
+    settingsView.setScrollBarsShown (true, false);
+    settingsView.setScrollBarThickness (8);
+    addChildComponent (settingsView);
     addChildComponent (*suggestions);
 
     for (auto* b : { &suggestButton, &settingsButton })
@@ -31,7 +34,23 @@ MainComponent::MainComponent (AppActions& a) : actions (a)
     }
     suggestButton.onClick = [this] { showPage (currentPage == Page::suggest ? Page::main : Page::suggest); };
     settingsButton.onClick = [this] { showPage (currentPage == Page::settings ? Page::main : Page::settings); };
+    setWantsKeyboardFocus (true);
     setSize (440, 700);
+}
+
+bool MainComponent::keyPressed (const juce::KeyPress& key)
+{
+    // Cmd (Ctrl on Windows) + 1/2/3/, : jump between screens, like the View menu says.
+    if (! key.getModifiers().isCommandDown())
+        return false;
+    switch (key.getKeyCode())
+    {
+        case '1': showPage (Page::main); return true;
+        case '2': if (state.engine.role == Session::Role::player1 || state.engine.role == Session::Role::guest) showPage (Page::versions); return true;
+        case '3': showPage (Page::suggest); return true;
+        case ',': showPage (Page::settings); return true;
+        default: return false;
+    }
 }
 
 MainComponent::~MainComponent() = default;
@@ -40,7 +59,7 @@ void MainComponent::showPage (Page p)
 {
     currentPage = p;
     viewport.setVisible (p == Page::main || p == Page::versions);
-    settings->setVisible (p == Page::settings);
+    settingsView.setVisible (p == Page::settings);
     suggestions->setVisible (p == Page::suggest);
     update (state);
 }
@@ -201,6 +220,32 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
                juce::String (e.staleCount) + (e.staleCount == 1 ? " change needs an update" : " changes need an update"),
                "Some edits (automation, plugin sounds, groups...) can't be copied live. Save in Live (Cmd+S / Ctrl+S) to share yours." });
 
+   #if JUCE_MAC
+    const juce::String saveKey = "Cmd+S";
+   #else
+    const juce::String saveKey = "Ctrl+S";
+   #endif
+    if (! e.saveToShare.empty())
+    {
+        juce::StringArray what;
+        for (const auto& w : e.saveToShare)
+            what.add (juce::String (w));
+        add ({ "save-share", Row::Style::warning, "Save to share what you added",
+               "You added " + what.joinIntoString (", ") + ". Plugins only reach the others when you save: press "
+                   + saveKey + " in Live." });
+    }
+    for (const auto& w : e.waitingForSave)
+        add ({ "wait-" + w.byName + w.what, Row::Style::card, juce::String (w.byName) + " added " + juce::String (w.what),
+               "It arrives when " + juce::String (w.byName) + " saves in Live. Then save (" + saveKey + ") or update to get it." });
+    if (e.liveBound && ! e.songFile.empty())
+    {
+        const juce::File song (juce::String (e.songFile));
+        add ({ "saving", Row::Style::card, "Saving",
+               "Press " + saveKey + " in Live as usual: it saves Tutti's copy (" + song.getFileName() + " in Music/Tutti/"
+                   + song.getParentDirectory().getFileName() + ") and Tutti shares it with everyone. Don't use Save As.",
+               {}, false, false, { { "Show the file", [&act] { act.revealSong(); } } } });
+    }
+
     // --- people
     add ({ "h-people", Row::Style::heading, "In this session" });
     for (const auto& m : e.members)
@@ -345,7 +390,8 @@ void MainComponent::resized()
     suggestButton.setBounds (footer.removeFromRight (140));
     auto body = r.reduced (14, 6);
     viewport.setBounds (body);
-    settings->setBounds (body);
+    settingsView.setBounds (body);
+    settings->setSize (body.getWidth() - 10, juce::jmax (body.getHeight(), SettingsPage::contentHeight));
     suggestions->setBounds (body);
     rows.layout (viewport.getMaximumVisibleWidth());
 }

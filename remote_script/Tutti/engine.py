@@ -15,7 +15,7 @@ import time
 from . import livemodel as lm
 from .mirror import Mirror
 
-SCRIPT_VERSION = "2"   # the app asks people to restart Live when its script is newer
+SCRIPT_VERSION = "3"   # the app asks people to restart Live when its script is newer
 PROTOCOL = 1
 APPLY_BUDGET = 400          # entity writes per tick, so a big join doesn't freeze Live
 FULL_SCAN_EVERY = 4.0       # seconds: catch changes that have no listener (warp mode, gain...)
@@ -68,6 +68,7 @@ class Engine(object):
         self._presence_state = None
         self._presence_sent = 0.0
         self.play_at = None
+        self.doc_token = new_id()  # changes whenever Live opens another Set
         self.caps = self._probe_caps()
 
     # ------------------------------------------------------------------ logging
@@ -165,6 +166,7 @@ class Engine(object):
             self.log("a different Set was opened")
             self.unbind()
             self.song = current
+            self.doc_token = new_id()
             self.caps = self._probe_caps()
             if self.bridge.connected:
                 self._on_connected()
@@ -200,6 +202,7 @@ class Engine(object):
         self.bridge.send({
             "type": "hello", "role": "live", "proto": PROTOCOL, "script": SCRIPT_VERSION,
             "live": self.live_version(), "caps": self.caps, "bound": self.bound, "session": self.session,
+            "doc": self.doc_token,
             "fingerprint": self.fingerprint(), "unsent": len(self.unsent), "plugins": self.installed_plugins(),
         })
         if self.unsent:

@@ -52,6 +52,7 @@ struct AppActions
     virtual void stopTogether() = 0;
     virtual void setPlayMode (const std::string& mode) = 0;
     virtual void openSong() = 0;
+    virtual void revealSong() = 0;
     virtual void makeIdea() = 0;
     virtual void acceptIdea (const std::string& track) = 0;
     virtual void rejectIdea (const std::string& track) = 0;
@@ -59,7 +60,7 @@ struct AppActions
     virtual void checkForUpdates() = 0;
     virtual void rollBack() = 0;
     virtual void setAutoUpdate (bool) = 0;
-    virtual void sendSuggestion (const std::string& kind, const std::string& text) = 0;
+    virtual void sendSuggestion (const std::string& kind, const std::string& text, bool withLogs) = 0;
     virtual void setStartAtLogin (bool) = 0;
     virtual void showLogs() = 0;
     virtual void openUrl (const juce::String&) = 0;
@@ -68,4 +69,5 @@ struct AppActions
     virtual void restoreVersion (const std::string& id) = 0;
     virtual void openVersionCopy (const std::string& id) = 0;
     virtual void setBackupFolder (const juce::File& folder) = 0;
+    virtual void setSharedFolder (const juce::File& folder) = 0;  // empty: stop using one
 };

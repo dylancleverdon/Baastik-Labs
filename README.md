@@ -35,9 +35,8 @@ possible (see "Plugins" below).
 - **Edit.** Anything Live lets Tutti see is shared instantly: notes, clips (Session and
   Arrangement), tracks, devices and their knobs, mixer, tempo, scenes, locators, recordings and
   samples. Solo, record-arm, your loop region and your view stay yours.
-- **Save (Cmd+S / Ctrl+S)** shares the rest: automation, groups, plugin presets and patches,
-  and timeline edits a Live version can't copy live. Everyone else gets them on their next save
-  ("Update available").
+- **Save (Cmd+S / Ctrl+S)** shares the rest: automation, groups, adding plugins, plugin presets
+  and patches, and timeline edits a Live version can't copy live. See [Saving](#saving).
 - **Player 1** wins when two people change the same thing at the same moment. Anyone can **Ask
   to be Player 1**; Player 1 clicks **Allow**. If Player 1's computer drops out, the next person
   in line takes over after about 10 seconds (with two people, the other gets a **Take over**
@@ -48,6 +47,44 @@ possible (see "Plugins" below).
 - **Ideas:** select a track and click **Try an idea**: Tutti copies it in your colour, muted for
   everyone else. Others solo it to listen; Player 1 accepts (it replaces the original) or rejects.
 - **Suggestion box:** in the app's footer. Ideas and problems go straight to the team's sheet.
+  If something went wrong, click **Send logs**: it attaches Tutti's and Live's recent logs.
+- **Menus:** on a Mac, Tutti's menu bar (Session, View) and its menu bar icon have the main
+  actions; ⌘1, ⌘2, ⌘3 and ⌘, switch between Session, Versions, Suggestion box and Settings.
+
+### Saving
+
+- **Where:** always just **Cmd+S / Ctrl+S in Live**. The song open in Live during a session is
+  Tutti's copy, `Music/Tutti/<song>/<song>.als`, and that's where Live saves it. Tutti's
+  **Saving** card shows the file. Don't use *Save As* or save anywhere else: Tutti only watches
+  its copy. If Live ever asks *where* to save, Live isn't on the session song: click **Open the
+  song** in Tutti.
+- **What happens:** Tutti notices the save and sends it to Player 1, who merges it with everyone
+  else's saves (by track). The others see **"<name> shared changes that need an update"**: they
+  save too (their own changes are merged in) or click **Update without saving**.
+- **When:** whenever you've changed something that doesn't travel live. Tutti tells you: after
+  you add a plugin it says **"Save to share what you added"**, and the others see
+  **"<name> added <plugin>: it arrives when they save"**.
+- **Recordings** don't need a save: they reach everyone within seconds (a preview first, then
+  full quality).
+
+### Google Drive (optional)
+
+A shared Google Drive folder gives the group a second way to move audio, which doesn't need the
+person who recorded it to be online, and a backup of every version:
+
+1. Whoever runs the group makes a folder called **Tutti Shared** in Google Drive and shares it
+   with everyone (Editor).
+2. Everyone installs [Google Drive for desktop](https://www.google.com/drive/download/) and signs
+   in. Friends open the shared folder in drive.google.com (**Shared with me**), then **Organize >
+   Add shortcut > My Drive**, so it shows up on their computer.
+3. That's it: Tutti finds **Tutti Shared** by itself (Settings > Shared Google Drive folder shows
+   it, or choose a folder there).
+
+Tutti then puts every recording and sample a session uses in `Tutti Shared/Tutti files` and
+every saved version, with its audio, in `Tutti Shared/Versions/<song>`. Live edits and saves
+still go directly between computers over Tailscale. Keep working in Live as usual: don't open or
+save songs inside the Drive folder (Drive syncing a song while Live writes it can corrupt it), and
+open an old version from Tutti's **Versions** instead.
 
 ### Plugins
 

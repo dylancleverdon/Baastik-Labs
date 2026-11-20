@@ -319,20 +319,49 @@ def main():
         alice.open_live(song)
         h.run(1.0)
         alice.cmd(cmd="start", als=als)
+        check(h.run(15, lambda: len(alice.opened) > 0), "Alice's Tutti opened its copy of the song in Live")
+        h.run(1.0)
+        check(alice.state()["role"] != "player1", "Tutti waits for Live to load the copy, not the Set already open")
+        alice.open_live(song)
         check(h.run(15, lambda: alice.state()["role"] == "player1"), "Alice is Player 1")
         snapshot_song = clone(alice.song)  # what the song file holds right now
+
+        print("1b. Alice and Cara share a Google Drive folder (Bob doesn't)")
+        shared = os.path.join(h.dir, "Tutti Shared")
+        os.makedirs(shared)
+        for p in (alice, cara):
+            p.cmd(cmd="shared", path=shared)
+
+        def shared_has_take():
+            files = os.path.join(shared, "Tutti files")
+            return os.path.isdir(files) and any(
+                f == "vox take 1.wav" for d in os.listdir(files) for f in os.listdir(os.path.join(files, d)))
+        check(h.run(30, shared_has_take), "Alice put the recording in the shared folder")
 
         print("2. Bob and Cara join; Alice lets them in")
         h.run(2.0)
         for guest in (bob, cara):
             check(h.run(10, lambda: any(p["hosting"] for p in guest.state()["peers"])), guest.name + " sees the session")
+            if guest is bob:
+                # Bob already has a Set open whose tracks have the same names (an Untitled Set
+                # often does): Tutti must wait for Live to open its file, not bind this one.
+                guest.open_live(clone(snapshot_song))
+                h.run(1.0)
             guest.cmd(cmd="join", peer=alice.peer_id)
             check(h.run(10, lambda: guest.peer_id in alice.state()["join_requests"]), "Alice is asked about " + guest.name)
             alice.cmd(cmd="approve", peer=guest.peer_id, allow=True)
             check(h.run(10, lambda: guest.state()["role"] == "guest"), guest.name + " is in")
             check(h.run(30, lambda: len(guest.opened) > 0), guest.name + "'s Tutti opened the song in Live")
+            if guest is bob:
+                h.run(2.0)
+                check(not guest.state()["live_bound"], "Bob's Tutti doesn't bind the Set that was already open")
             guest.open_live(clone(snapshot_song))
             check(h.run(15, lambda: guest.state()["live_bound"]), guest.name + "'s Live is in sync")
+            if guest is cara:
+                def cara_used_shared():
+                    with open(os.path.join(cara.data, "Logs", "tutti.log")) as f:
+                        return "from the shared folder (" in f.read()
+                check(h.run(20, cara_used_shared), "Cara got the full recording from the shared folder")
 
         print("3. Edits flow both ways")
         alice.song.tracks[1].name = "Sub Bass"
@@ -411,6 +440,9 @@ def main():
         check(h.run(15, lambda: bob.state()["live_bound"]), "Bob's Live is back in sync")
         bob.song.tracks[1].ui_add_device("Serum 2", class_name="PluginDevice", params=[("Cutoff", 0.5, 0.0, 1.0)])
         bob.song.tracks[1].ui_add_device("Tutti Stand-in", class_name="PluginDevice", params=[("Link", 0.424242, 0.0, 1.0)])
+        check(h.run(10, lambda: any("added Serum 2" in n for n in bob.state()["notices"])), "Bob is told to save to share Serum 2")
+        check(h.run(10, lambda: any("bob added Serum 2" in n for n in alice.state()["notices"])),
+              "Alice is told Serum 2 arrives when Bob saves")
 
         def has_standin(p):
             return any("Tutti Stand-in" in json.dumps(e["v"]) for e in p.state()["doc"]["e"] if e["t"] == "device")

@@ -21,11 +21,12 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+    bool keyPressed (const juce::KeyPress&) override;
+    void chooseSong();
 
 private:
     std::vector<Row> buildRows (const AppState&);
     std::vector<Row> buildVersionRows (const AppState&);
-    void chooseSong();
     void askForLabel();
 
     AppActions& actions;
@@ -34,6 +35,7 @@ private:
 
     juce::Viewport viewport;
     RowList rows;
+    juce::Viewport settingsView;
     std::unique_ptr<SettingsPage> settings;
     std::unique_ptr<SuggestionPage> suggestions;
     juce::TextButton suggestButton { "Suggestion box" }, settingsButton { "Settings" };

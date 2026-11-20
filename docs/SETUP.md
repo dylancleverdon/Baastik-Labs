@@ -84,6 +84,20 @@ you: your colour marks where you are in the song and the ideas you suggest.
 You're done. The [README](../README.md#use-it) explains starting and joining a session, saving,
 Player 1, Play together and ideas.
 
+## Saving, in short
+
+Save with **Cmd+S / Ctrl+S in Live**, as always. During a session Live has Tutti's copy of the
+song open (`Music/Tutti/<song>`), so that's where it saves, and Tutti shares the save with
+everyone. Never use *Save As*. If Live asks where to save, it isn't on the session song: click
+**Open the song** in Tutti.
+
+## 5. Google Drive (optional)
+
+Gives the group a shared folder for recordings and a copy of every saved version. See the
+README's [Google Drive](../README.md#google-drive-optional) section: one person makes a
+**Tutti Shared** folder and shares it, everyone installs Google Drive for desktop and adds the
+folder to **My Drive**, and Tutti finds it.
+
 ## If something's not right
 
 | What you see | What to do |
@@ -97,14 +111,20 @@ Player 1, Play together and ideas.
 | **Live isn't connected** | Live is closed, or Tutti isn't chosen as a Control Surface (step 3). |
 | Live versions don't match | Everyone updates Live to the same 12.x version. |
 | A plugin is missing on your computer | Expected when you don't own it. Whoever owns it puts **Tutti Stand-in** right after it on that track and saves; their Stand-in records whenever they play the song, and you hear that recording. See the README's [Plugins](../README.md#plugins) section. |
+| Live asks where to save | Live isn't on the session song (for example, an Untitled Set is open). Click **Open the song** in Tutti, then save with Cmd+S / Ctrl+S. |
+| Joining stays on **Downloading** | Wait 30 seconds: Tutti opens the song with whatever has arrived. If it's still stuck, both of you click **Send logs** in the Suggestion box. |
+| A friend's plugin change didn't show up | Plugins travel with saves: they save in Live, then you save (or click **Update without saving**). |
 | The suggestion box says suggestions are waiting to send | The box isn't connected to the sheet yet (see below). Your suggestions are kept and sent as soon as it is. |
-| Something else | Tutti's **Settings > Show logs** opens its log folder. Send what you see through the **Suggestion box** as a Problem. |
+| Something else | Open the **Suggestion box**, describe it, and click **Send logs**. |
 
 ## For whoever runs the group (once)
 
 - **Suggestion box:** connect it to the "suggestions sheet tutti" Google Sheet by deploying the
   small script in [`suggestions/`](../suggestions/README.md) (about two minutes in the browser).
   Until then the box keeps suggestions on each computer.
-- **Backups (optional):** in Tutti's **Settings > Backups**, choose a folder inside your Google
-  Drive folder (Google Drive for desktop). While you're Player 1, every version of the song,
-  with its audio, is copied there.
+- **Shared Google Drive folder (optional):** make a **Tutti Shared** folder in Google Drive and
+  share it with the group (see step 5). While someone is Player 1, every version of the song, with
+  its audio, is copied into its `Versions` folder; **Settings > Backups...** picks another folder.
+- **Logs from Send logs:** they're saved in a **Tutti logs** folder next to the suggestions
+  sheet, linked from its Log column, once the sheet's script is updated (see
+  [`suggestions/`](../suggestions/README.md#updating-the-script-keeps-the-same-url)).

@@ -82,7 +82,14 @@ namespace tutti
         bool updateAvailable = false;  // someone saved changes this Live doesn't have yet
         std::string updateBy;
         std::vector<Version> versions; // newest first
+        std::string songFile;          // the session song on this computer (Music/Tutti/...)
+        std::vector<std::string> saveToShare;  // things I added that only travel when I save
+        struct Waiting { std::string byName, what; };
+        std::vector<Waiting> waitingForSave;   // things others added that arrive when they save
         std::string backupFolder;
+        std::string sharedFolder;      // the group's Google Drive folder in use (chosen or found)
+        bool sharedFolderFound = false; // found by name ("Tutti Shared"), not chosen
+        int sharedPublishing = 0;      // audio files still being copied into it
     };
 
     class Engine : private Session::Listener
@@ -110,6 +117,7 @@ namespace tutti
         void handOver (const std::string& peer);
         void takeOver();
         void openSongInLive();
+        void revealSong();
         void playTogether();
         void answerPlayTogether (bool join);
         void stopTogether();
@@ -126,6 +134,9 @@ namespace tutti
         void restoreVersion (const std::string& id);     // Player 1: make an old version current
         void openVersionCopy (const std::string& id);    // open an old version as a separate copy
         void setBackupFolder (const juce::File& folder);
+        // The group's shared Google Drive folder (empty File: find "Tutti Shared" automatically).
+        void setSharedFolder (const juce::File& folder);
+        juce::File activeSharedFolder() const;
 
         EngineView view() const;
         const Session& session() const { return *sessionPtr; }
@@ -195,7 +206,8 @@ namespace tutti
         void applyLocalAndSubmit (const Ops& ops);
         Ops toLive (const Ops& ops) const;
         Json toLive (const Json& reconcileItems) const;
-        bool songOpenInLive() const;
+        bool songOpenInLive();
+        void openInLiveAndWait (const juce::File&);
 
         // --- starting and joining
         void finishStart (const Json& captured);
@@ -233,6 +245,9 @@ namespace tutti
         void reloadInto (const Json& meta);
         std::unique_ptr<juce::XmlElement> localCopyOf (const Json& meta, const juce::File& folder, juce::String& error);
         void backUp (const Json& meta);
+        void pumpShared();
+        std::string memberName (const std::string& peer) const;
+        bool fetchFromShared (const std::string& hash);
 
         // --- Tutti Stand-in (EngineStandIn.cpp)
         void handleStandIn (uint64_t linkId, const Json& message);
@@ -272,6 +287,9 @@ namespace tutti
         std::string liveStatus = "Live isn't connected";
         double lastBindAttempt = -1e9;
         std::set<std::string> stale;
+        void noteSaveNeeded (const Ops&);
+        std::vector<std::string> mySaveNeeded;
+        std::map<std::string, std::pair<std::string, std::vector<std::string>>> othersSaveNeeded; // peer -> name, what
         std::deque<Json> pendingLocalBatches; // waiting for audio files to be hashed
 
         // Session song
@@ -284,6 +302,12 @@ namespace tutti
         juce::File pendingStartCopy;
         bool waitingForCapture = false;
         double captureSentAt = 0;          // when we asked Live to read the song
+        // Opening a song: Live must actually load it (its script reports a new "doc") before we
+        // read or bind, or we'd bind whatever Set was already open (often an Untitled one).
+        std::string docAtOpen;
+        double openedAt = 0;
+        double lastJoinCheck = 0;
+        bool strictMatchLogged = false;
         double snapshotRequestedAt = 0;    // when we last asked Player 1 for the song (joining)
         int bindFailures = 0;
         bool joinedWaitingForSong = false;
@@ -300,6 +324,8 @@ namespace tutti
             int retries = 0;
             double lastProgress = 0;  // when a chunk last arrived (or the request was sent)
             bool active = false;
+            double sharedCheckedAt = -1000; // last look in the shared Drive folder
+            bool first = false;             // the song file itself: before any audio
         };
         std::map<std::string, Transfer> transfers; // key: hash + ":" + kind
         struct Outgoing
@@ -355,5 +381,13 @@ namespace tutti
         bool reloadWhenMerged = false;    // our save is being merged: reload when it comes back
         bool reloading = false;
         juce::File backupFolder;
+        juce::File sharedFolder;              // chosen in Settings
+        mutable juce::File foundSharedFolder;  // or found in Google Drive by name
+        mutable double lastSharedSearch = -1000;
+        double lastSharedPump = 0;
+        std::set<std::string> publishedShared;      // hashes known to be in the shared folder
+        std::set<std::string> publishingShared;     // being copied there now
+        std::set<std::string> fetchingShared;       // being copied from there now
+        std::set<std::string> notInShared;          // looked, not there (cleared every pump)
     };
 }

@@ -511,4 +511,22 @@ def test_hello_says_which_script_version_is_running():
     song = demo_song()
     bridge = FakeBridge()
     Engine(song, Live.Application.Application(song), Live, bridge).tick()
-    assert bridge.take("hello")[0]["script"] == "2"
+    assert bridge.take("hello")[0]["script"] == "3"
+
+
+def test_hello_names_the_open_set_so_the_app_knows_live_opened_its_file():
+    from Tutti.engine import Engine
+    from conftest import FakeBridge
+    song = demo_song()
+    app = Live.Application.Application(song)
+    bridge = FakeBridge()
+    engine = Engine(song, app, Live, bridge)
+    engine.tick()
+    first = bridge.take("hello")[0]["doc"]
+    engine.tick()
+    assert bridge.take("hello") == []          # same Set: nothing new
+    app._song = demo_song()                      # Live opens another Set
+    engine.clock = lambda: 10.0 ** 11
+    engine.tick()
+    second = bridge.take("hello")[0]["doc"]
+    assert first and second and first != second

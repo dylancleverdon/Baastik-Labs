@@ -96,6 +96,12 @@ namespace tutti
                              { "byName", self.name }, { "at", stamp().toStdString() }, { "song", currentSongName } };
         sendToLive (Json { { "type", "structure" }, { "req", ++structureRequest } });
         notice ("Sharing your save...");
+        log ("saved in Live: sharing " + saved.getFullPathName().toStdString());
+        if (! mySaveNeeded.empty())
+        {
+            mySaveNeeded.clear();
+            sessionPtr->broadcast (Json { { "type", "needs_save" }, { "what", Json::array() } });
+        }
 
         const auto id = str (pendingSave, "id");
         const auto song = currentSongName;
@@ -161,6 +167,7 @@ namespace tutti
     {
         if (! sessionPtr->isPlayer1())
             return;
+        log (memberName (from) + " saved: merging it into the shared song (" + std::to_string (field (save, "files").size()) + " files)");
         wantFile (str (save, "als"), false);
         if (const auto& files = field (save, "files"); files.is_array())
             for (const auto& h : files)
@@ -242,9 +249,9 @@ namespace tutti
 
     void Engine::handleSnapshotNotice (const std::string& from, const Json& meta)
     {
-        (void) from;
         storeSnapshot (meta);
         const auto id = str (meta, "id");
+        log ("new version from " + memberName (from) + " (saved by " + str (meta, "byName") + "): " + id);
         latestSnapshot = id;
         wantFile (str (meta, "als"), false);
         if (const auto& files = field (meta, "files"); files.is_array())
@@ -331,7 +338,7 @@ namespace tutti
         reloading = true;
         liveBound = false;
         liveStatus = "Updating your Live...";
-        options.openInLive (target);
+        openInLiveAndWait (target);
     }
 
     void Engine::updateNow()
@@ -408,9 +415,14 @@ namespace tutti
 
     void Engine::backUp (const Json& meta)
     {
-        if (backupFolder == juce::File() || ! backupFolder.isDirectory())
+        // A chosen backup folder, else the group's shared Drive folder.
+        auto root = backupFolder.isDirectory() ? backupFolder : juce::File();
+        if (root == juce::File())
+            if (const auto shared = activeSharedFolder(); shared != juce::File())
+                root = shared.getChildFile ("Versions");
+        if (root == juce::File())
             return;
-        auto dir = backupFolder.getChildFile (juce::File::createLegalFileName (juce::String (currentSongName.empty() ? "Song" : currentSongName)));
+        auto dir = root.getChildFile (juce::File::createLegalFileName (juce::String (currentSongName.empty() ? "Song" : currentSongName)));
         const auto when = friendlyTime (str (meta, "at")).replace (":", ".");
         const auto name = juce::File::createLegalFileName (when + " " + juce::String (str (meta, "byName"))
                                                            + (str (meta, "label").empty() ? juce::String() : " - " + juce::String (str (meta, "label"))));

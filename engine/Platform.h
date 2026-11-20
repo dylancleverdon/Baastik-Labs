@@ -11,6 +11,13 @@ namespace tutti::platform
     juce::File songsDir(); // the session copies Live opens (TUTTI_SONGS_DIR overrides)
     juce::File logsDir();
 
+    // Live's own log (Log.txt) for the Live version used most recently, or an empty File.
+    juce::File liveLogFile();
+
+    // Google Drive for desktop folders on this computer (My Drive and shared drives), newest
+    // first; empty if Drive for desktop isn't installed or signed in.
+    juce::Array<juce::File> googleDriveFolders();
+
     // Opens a Live Set in the Live that's running (or the default app for .als files).
     bool openInLive (const juce::File& als);
 

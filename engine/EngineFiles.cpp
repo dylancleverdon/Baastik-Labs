@@ -26,6 +26,10 @@ namespace tutti
             transfers[hash + ":preview"] = Transfer { hash, "preview" };
         if (transfers.count (hash + ":full") == 0)
             transfers[hash + ":full"] = Transfer { hash, "full" };
+        // Not audio (the song file): fetch it before any audio, or a song with many recordings
+        // sits at "Downloading the song..." until every preview has arrived.
+        if (! previewFirst)
+            transfers[hash + ":full"].first = true;
     }
 
     void Engine::pumpTransfers()
@@ -48,16 +52,31 @@ namespace tutti
                 ++active;
         }
 
-        // Previews first, then full files.
-        for (const char* kind : { "preview", "full" })
+        // The song file first, then previews, then full files.
+        for (int pass = 0; pass < 3; ++pass)
             for (auto& [key, tr] : transfers)
             {
-                if (active >= kMaxActive)
-                    return;
-                if (tr.kind != kind || tr.active || tr.retryAt > t)
+                if (active >= kMaxActive + (pass == 0 ? 1 : 0))
+                    break;
+                const bool wanted = pass == 0 ? tr.first : (pass == 1 ? tr.kind == "preview" : (tr.kind == "full" && ! tr.first));
+                if (! wanted || tr.active || tr.retryAt > t)
                     continue;
                 if (tr.kind == "preview" && contentStore.has (tr.hash))
                     continue;
+                // The group's shared Drive folder first: it doesn't need anyone online.
+                if (tr.kind == "full" && t - tr.sharedCheckedAt > 15.0)
+                {
+                    tr.sharedCheckedAt = t;
+                    if (fetchFromShared (tr.hash))
+                    {
+                        tr.active = true;
+                        tr.from = "the shared folder";
+                        tr.started = t;
+                        tr.lastProgress = t + 24 * 3600.0; // finishes (or fails) by itself
+                        ++active;
+                        continue;
+                    }
+                }
 
                 // Player 1 first (it has everything), then the others.
                 std::vector<std::string> candidates;
@@ -88,6 +107,7 @@ namespace tutti
                 tr.total = -1;
                 contentStore.partialFor (tr.hash, tr.kind).deleteFile();
                 send (pick, Json { { "type", "get" }, { "hash", tr.hash }, { "kind", tr.kind } });
+                log ("asking " + memberName (pick) + " for " + tr.hash.substr (0, 12) + " (" + tr.kind + ")");
                 ++active;
             }
     }
@@ -150,6 +170,8 @@ namespace tutti
             if (auto meta = contentStore.meta (hash))
                 out.meta = meta->toJson();
             serving.push_back (out);
+            log ("sending " + file.getFileName().toStdString() + " (" + hash.substr (0, 12) + ", " + kind + ", "
+                 + std::to_string (out.total / 1024) + " KB) to " + memberName (peer));
             return;
         }
 
@@ -160,6 +182,8 @@ namespace tutti
                 return;
             auto& tr = it->second;
             tr.active = false;
+            log (memberName (peer) + " doesn't have " + hash.substr (0, 12) + " (" + kind + ")"
+                 + (boolean (m, "retry") ? " yet" : ""));
             if (boolean (m, "no_preview"))
             {
                 transfers.erase (it); // not audio: just get the file
@@ -222,6 +246,8 @@ namespace tutti
             tr.tried.push_back (peer);
             return;
         }
+        log ("got " + hash.substr (0, 12) + " (" + kind + ") from " + memberName (peer) + ": "
+             + std::to_string (tr.total / 1024) + " KB in " + juce::String (now() - tr.started, 1).toStdString() + " s");
         transfers.erase (it);
         fileArrived (hash, kind);
     }
@@ -503,6 +529,8 @@ namespace tutti
         playMode = str (j, "play", "ask");
         if (const auto b = str (j, "backup"); ! b.empty())
             backupFolder = juce::File (juce::String (b));
+        if (const auto b = str (j, "shared"); ! b.empty())
+            sharedFolder = juce::File (juce::String (b));
         if (const auto& known = field (j, "known"); known.is_array())
             for (const auto& ip : known)
                 if (ip.is_string() && tailscale::isTailscaleAddress (ip.get<std::string>()))
@@ -519,6 +547,7 @@ namespace tutti
         j["color"] = self.color;
         j["play"] = playMode;
         j["backup"] = backupFolder.getFullPathName().toStdString();
+        j["shared"] = sharedFolder.getFullPathName().toStdString();
         j["known"] = Json (std::vector<std::string> (knownPeers.begin(), knownPeers.end()));
         file.replaceWithText (juce::String (j.dump (2)));
     }
@@ -620,7 +649,21 @@ namespace tutti
 
         v.updateAvailable = s.inSession() && ! latestSnapshot.empty() && latestSnapshot != currentSnapshot && ! reloading;
         v.updateBy = updateBy;
+        if (s.inSession())
+        {
+            v.songFile = currentSong.getFullPathName().toStdString();
+            v.saveToShare = mySaveNeeded;
+            for (const auto& [peer, entry] : othersSaveNeeded)
+                for (const auto& what : entry.second)
+                    v.waitingForSave.push_back ({ entry.first, what });
+        }
         v.backupFolder = backupFolder.getFullPathName().toStdString();
+        if (const auto shared = activeSharedFolder(); shared != juce::File())
+        {
+            v.sharedFolder = shared.getFullPathName().toStdString();
+            v.sharedFolderFound = sharedFolder == juce::File();
+            v.sharedPublishing = static_cast<int> (publishingShared.size());
+        }
         if (s.inSession())
         {
             std::vector<Json> metas;

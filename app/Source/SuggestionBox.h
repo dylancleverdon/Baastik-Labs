@@ -15,8 +15,10 @@ public:
     explicit SuggestionBox (juce::File dataDir);
     ~SuggestionBox();
 
+    // logs: Tutti's (and Live's) recent logs to attach, or empty. They're kept in a file next to
+    // the queue until sent; the sheet's script stores them in a "Tutti logs" Drive folder.
     void add (const std::string& kind, const std::string& text, const std::string& from, const std::string& version,
-              const std::string& os, const std::string& live);
+              const std::string& os, const std::string& live, const juce::String& logs = {});
     void setEndpoint (const std::string& url);
     void tick();
 
@@ -27,7 +29,7 @@ private:
     void save();
     void sendNext();
 
-    juce::File file;
+    juce::File file, logsDir;
     mutable std::mutex lock;
     tutti::Json queue = tutti::Json::array();
     std::string endpoint;

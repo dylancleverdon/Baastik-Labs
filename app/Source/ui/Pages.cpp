@@ -1,5 +1,7 @@
 #include "Pages.h"
 
+#include "Platform.h"
+
 namespace
 {
     void heading (juce::Graphics& g, const juce::String& text, int y, int width)
@@ -36,8 +38,23 @@ SettingsPage::SettingsPage (AppActions& a, std::function<void()> onDone) : actio
     ask.onClick = [this] { actions.setPlayMode ("ask"); };
     automatic.onClick = [this] { actions.setPlayMode ("auto"); };
     never.onClick = [this] { actions.setPlayMode ("never"); };
-    for (auto* b : { &ask, &automatic, &never, &checkNow, &rollBack, &logs, &back, &chooseBackup })
+    for (auto* b : { &ask, &automatic, &never, &checkNow, &rollBack, &logs, &back, &chooseBackup, &chooseShared, &findShared })
         addAndMakeVisible (b);
+    chooseShared.onClick = [this] {
+        juce::File start;
+        for (const auto& d : tutti::platform::googleDriveFolders())
+        {
+            start = d;
+            break;
+        }
+        chooser = std::make_unique<juce::FileChooser> ("Choose your group's shared Google Drive folder", start);
+        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
+                              [this] (const juce::FileChooser& fc) {
+                                  if (fc.getResult().isDirectory())
+                                      actions.setSharedFolder (fc.getResult());
+                              });
+    };
+    findShared.onClick = [this] { actions.setSharedFolder ({}); };
     chooseBackup.onClick = [this] {
         chooser = std::make_unique<juce::FileChooser> ("Where should Tutti keep a copy of every version?");
         chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
@@ -100,10 +117,23 @@ void SettingsPage::update (const AppState& s)
                             ? juce::String ("The Tutti Remote Script couldn't be installed into Live's User Library. Check that Live has been opened once on this computer.")
                             : "Remote Script installed in " + s.setup.scriptInstalledIn.joinIntoString (", "),
                         juce::dontSendNotification);
-    backupInfo.setText (s.engine.backupFolder.empty()
-                            ? juce::String ("Player 1 can keep a copy of every version (with its audio) in a folder, such as your shared Google Drive. None chosen yet.")
-                            : "Copies go to " + juce::String (s.engine.backupFolder) + " (when you're Player 1).",
-                        juce::dontSendNotification);
+    juce::String drive;
+    if (s.engine.sharedFolder.empty())
+        drive << "Not set up. Optional: make a Google Drive folder called \"Tutti Shared\" and share it with the group. "
+                 "With Google Drive for desktop on each computer, Tutti finds it and keeps recordings and every saved "
+                 "version there, so everyone gets the audio even when its owner is offline.";
+    else
+    {
+        drive << "Using " << juce::String (s.engine.sharedFolder) << (s.engine.sharedFolderFound ? " (found automatically)." : ".")
+              << " Recordings and samples go in its \"Tutti files\" folder; every saved version, with its audio, goes in \"Versions\". "
+                 "Keep working in Live as usual: don't open songs from this folder.";
+        if (s.engine.sharedPublishing > 0)
+            drive << " Copying " << s.engine.sharedPublishing << " file(s) there now.";
+    }
+    if (! s.engine.backupFolder.empty())
+        drive << " Versions also go to " << juce::String (s.engine.backupFolder) << ".";
+    backupInfo.setText (drive, juce::dontSendNotification);
+    findShared.setEnabled (! s.engine.sharedFolder.empty() && ! s.engine.sharedFolderFound);
     repaint();
 }
 
@@ -139,7 +169,7 @@ void SettingsPage::paint (juce::Graphics& g)
     }
     heading (g, "When someone presses Play together", playTop, getWidth());
     heading (g, "Updates", updatesTop, getWidth());
-    heading (g, "Backups", backupTop, getWidth());
+    heading (g, "Shared Google Drive folder", backupTop, getWidth());
     heading (g, "This computer", setupTop, getWidth());
 }
 
@@ -170,9 +200,14 @@ void SettingsPage::resized()
     y += 112 + 30 + 18;
 
     backupTop = y;
-    backupInfo.setBounds (0, y + 22, w, 36);
-    chooseBackup.setBounds (0, y + 60, 150, 30);
-    y += 60 + 30 + 18;
+    backupInfo.setBounds (0, y + 22, w, 84);
+    auto driveButtons = juce::Rectangle<int> (0, y + 108, w, 30);
+    chooseShared.setBounds (driveButtons.removeFromLeft (130));
+    driveButtons.removeFromLeft (6);
+    findShared.setBounds (driveButtons.removeFromLeft (150));
+    driveButtons.removeFromLeft (6);
+    chooseBackup.setBounds (driveButtons.removeFromLeft (juce::jmin (140, driveButtons.getWidth())));
+    y += 108 + 30 + 18;
 
     setupTop = y;
     startAtLogin.setBounds (0, y + 22, w, 26);
@@ -207,13 +242,21 @@ SuggestionPage::SuggestionPage (AppActions& a, std::function<void()> onDone) : a
         const auto t = text.getText().trim();
         if (t.isEmpty())
             return;
-        actions.sendSuggestion (kind, t.toStdString());
+        actions.sendSuggestion (kind, t.toStdString(), false);
+        text.clear();
+    };
+    // Logs: what Tutti and Live wrote down recently, so whoever fixes Tutti can see what happened.
+    sendLogs.setTooltip ("Sends what you wrote (if anything) with Tutti's and Live's recent logs.");
+    sendLogs.onClick = [this] {
+        auto t = text.getText().trim();
+        actions.sendSuggestion (t.isEmpty() ? std::string ("Problem") : kind,
+                                (t.isEmpty() ? juce::String ("Logs") : t).toStdString(), true);
         text.clear();
     };
     back.onClick = [this] { if (done) done(); };
     styleLabel (status, 13.0f, theme::dim);
     for (juce::Component* c : { (juce::Component*) &idea, (juce::Component*) &problem, (juce::Component*) &other,
-                                (juce::Component*) &text, (juce::Component*) &send, (juce::Component*) &back,
+                                (juce::Component*) &text, (juce::Component*) &send, (juce::Component*) &sendLogs, (juce::Component*) &back,
                                 (juce::Component*) &status })
         addAndMakeVisible (c);
 }
@@ -234,7 +277,7 @@ void SuggestionPage::paint (juce::Graphics& g)
     heading (g, "Suggestion box", 4, getWidth());
     g.setColour (theme::dim);
     g.setFont (theme::font (13.0f));
-    g.drawFittedText ("Ideas, problems, anything. It goes straight to the team's suggestions sheet, with your name and your Tutti and Live versions.",
+    g.drawFittedText ("Ideas, problems, anything. It goes straight to the team's suggestions sheet, with your name and your Tutti and Live versions. Something went wrong? Click Send logs so it can be fixed.",
                       0, 26, getWidth(), 40, juce::Justification::topLeft, 3);
 }
 
@@ -247,7 +290,8 @@ void SuggestionPage::resized()
     problem.setBounds (row.removeFromLeft (third).reduced (2, 0));
     other.setBounds (row.reduced (2, 0));
     text.setBounds (0, 114, w, juce::jmax (120, getHeight() - 114 - 100));
-    send.setBounds (w - 100, text.getBottom() + 10, 100, 32);
-    status.setBounds (0, text.getBottom() + 10, w - 110, 44);
+    send.setBounds (w - 90, text.getBottom() + 10, 90, 32);
+    sendLogs.setBounds (send.getX() - 118, text.getBottom() + 10, 110, 32);
+    status.setBounds (0, text.getBottom() + 10, sendLogs.getX() - 10, 60);
     back.setBounds (0, getHeight() - 34, 90, 32);
 }

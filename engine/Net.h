@@ -30,6 +30,9 @@ namespace tutti::net
         uint64_t id() const { return linkId; }
         bool outgoing() const { return isOutgoing; }
         bool closed() const { return stopping.load(); }
+        // Why it closed ("closed by the other side", "network error"...), once closed.
+        std::string closeReason() const { std::lock_guard<std::mutex> g (lock); return why; }
+        void closeBecause (const std::string& reason);
         size_t queuedBytes() const { return queued.load(); }
         juce::String remoteHost() const;
 
@@ -43,7 +46,8 @@ namespace tutti::net
         FrameFn frameFn;
         ClosedFn closedFn;
 
-        std::mutex lock;
+        mutable std::mutex lock;
+        std::string why;
         std::deque<std::string> outbox;
         juce::WaitableEvent wake;
         std::atomic<size_t> queued { 0 };

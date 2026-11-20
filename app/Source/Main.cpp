@@ -174,6 +174,7 @@ namespace
 #if JUCE_MAC
 void installReopenHandler (std::function<void()>); // MacReopen.cpp
 #endif
+std::string keepRunningInBackground(); // Background.cpp
 
 class TuttiApp : public juce::JUCEApplication, private AppActions, private juce::Timer
 {
@@ -213,6 +214,8 @@ public:
         engine = std::make_unique<tutti::Engine> (tutti::EngineOptions {});
         engine->onChange = [this] { dirty = true; };
         engine->startup();
+        if (const auto result = keepRunningInBackground(); ! result.empty())
+            engine->logLine (result);
 
         AppUpdater::Options updaterOptions;
         updaterOptions.dataDir = engine->dataDir();

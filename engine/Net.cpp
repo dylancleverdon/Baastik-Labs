@@ -63,8 +63,23 @@ namespace tutti::net
         wake.signal();
     }
 
+    void Link::closeBecause (const std::string& reason)
+    {
+        {
+            std::lock_guard<std::mutex> g (lock);
+            if (why.empty())
+                why = reason;
+        }
+        close();
+    }
+
     void Link::close()
     {
+        {
+            std::lock_guard<std::mutex> g (lock);
+            if (why.empty())
+                why = "closed by this Tutti";
+        }
         if (stopping.exchange (true))
             return;
         wake.signal();
@@ -85,20 +100,34 @@ namespace tutti::net
         {
             const int ready = io::waitReadable (handle, 200);
             if (ready < 0)
+            {
+                closeBecause ("network error while waiting");
                 break;
+            }
             if (ready == 0)
                 continue;
             const int n = io::receive (handle, buffer.data(), static_cast<int> (buffer.size()));
             if (n == -2)
                 continue;
-            if (n <= 0)
+            if (n == 0)
+            {
+                closeBecause ("closed by the other computer");
                 break;
+            }
+            if (n < 0)
+            {
+                closeBecause ("network error while reading");
+                break;
+            }
             decoder.feed (buffer.data(), static_cast<size_t> (n));
             while (auto frame = decoder.next())
                 if (frameFn)
                     frameFn (linkId, std::move (*frame));
             if (decoder.failed())
+            {
+                closeBecause ("received data Tutti couldn't read");
                 break;
+            }
         }
         close();
     }
@@ -124,7 +153,7 @@ namespace tutti::net
             // Waits while the send buffer is full; only a dead link fails.
             if (! io::sendAll (socket->getRawSocketHandle(), next.data(), static_cast<int> (next.size())))
             {
-                close();
+                closeBecause ("network error while sending");
                 return;
             }
             queued -= next.size();

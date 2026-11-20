@@ -88,6 +88,12 @@ namespace tutti
             fn();
 
         const double t = now();
+        // Tutti normally runs every 20 ms. A long gap means the computer slept or the system
+        // paused Tutti (macOS App Nap), which friends see as Tutti dropping out.
+        if (lastPumpAt > 0 && t - lastPumpAt > 2.5)
+            log ("Tutti didn't run for " + juce::String (t - lastPumpAt, 1).toStdString()
+                 + " s (the computer slept, or the system paused Tutti)");
+        lastPumpAt = t;
         sessionPtr->tick (t);
         if (t - lastDiscovery > (sessionPtr->inSession() ? 20.0 : 8.0))
             discover();
@@ -121,6 +127,25 @@ namespace tutti
         if (t - lastLinkCheck > 1.0)
         {
             lastLinkCheck = t;
+            // Who comes and goes, so a friend dropping out shows up in the logs.
+            if (sessionPtr->inSession())
+            {
+                for (const auto& m : sessionPtr->info().members)
+                {
+                    if (m.peer == self.peer)
+                        continue;
+                    auto known = lastOnline.find (m.peer);
+                    if (known == lastOnline.end() || known->second != m.online)
+                    {
+                        if (known != lastOnline.end() || ! m.online)
+                            log (m.name + (m.online ? " is back online" : " went offline")
+                                 + (peerLinks.count (m.peer) != 0 ? " (link still open)" : " (no link)"));
+                        lastOnline[m.peer] = m.online;
+                    }
+                }
+            }
+            else
+                lastOnline.clear();
             for (const auto& [peer, lid] : peerLinks)
                 if (! sessionPtr->hasLink (peer))
                 {
@@ -160,7 +185,7 @@ namespace tutti
         {
             if (! it->second.local)
                 log ("closing link " + std::to_string (linkId) + ": " + why);
-            it->second.link->close();
+            it->second.link->closeBecause (why);
         }
     }
 
@@ -272,6 +297,18 @@ namespace tutti
                     return;
                 startServers();
                 bool learned = false;
+                // What Tailscale itself says about each computer: if a friend drops out here too,
+                // it's their network (or their computer sleeping), not Tutti.
+                for (const auto& p : effective->peers)
+                {
+                    auto& was = tailscaleOnline[p.ip4];
+                    if (was != (p.online ? 1 : 2))
+                    {
+                        if (was != 0 || ! p.online)
+                            log ("Tailscale: " + p.hostName + " (" + p.ip4 + ") is " + (p.online ? "online" : "offline"));
+                        was = p.online ? 1 : 2;
+                    }
+                }
                 for (const auto& p : effective->peers)
                 {
                     learned |= knownPeers.insert (p.ip4).second;
@@ -318,6 +355,7 @@ namespace tutti
         state.local = local;
         state.addr = addr.toStdString();
         state.role = local ? "" : "peer";
+        state.openedAt = now();
         if (outgoing && ! local)
             state.tag = juce::String::toHexString (juce::Random::getSystemRandom().nextInt64()).toStdString();
         links[id] = state;
@@ -513,6 +551,10 @@ namespace tutti
             return;
         const auto state = it->second;
         links.erase (it);
+        if (! state.local)
+            log ("link " + std::to_string (linkId) + (state.peer.empty() ? std::string() : " with " + memberName (state.peer))
+                 + " (" + state.addr + ") closed after " + juce::String (now() - state.openedAt, 1).toStdString() + " s: "
+                 + state.link->closeReason());
 
         standIns.erase (linkId);
         if (state.local && linkId == liveLink)

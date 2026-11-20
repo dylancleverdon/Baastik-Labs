@@ -181,6 +181,7 @@ namespace tutti
             bool local = false;        // the Remote Script / Stand-in side
             std::string role;          // "peer", "live", "standin"
             std::string tag;           // chosen by whoever dialled; both ends learn it from the hello
+            double openedAt = 0;
         };
         bool keepNewLink (const LinkState& existing, const LinkState& added, const std::string& peer) const;
         void closeLink (uint64_t linkId, const std::string& why); // close on purpose, ignore what's still in flight
@@ -307,6 +308,9 @@ namespace tutti
         std::string docAtOpen;
         double openedAt = 0;
         double lastJoinCheck = 0;
+        double lastPumpAt = 0;                       // a long gap means Tutti was paused
+        std::map<std::string, bool> lastOnline;      // member -> online, to log changes
+        std::map<std::string, int> tailscaleOnline;  // ip -> 1 online, 2 offline (for the log)
         bool strictMatchLogged = false;
         double snapshotRequestedAt = 0;    // when we last asked Player 1 for the song (joining)
         int bindFailures = 0;

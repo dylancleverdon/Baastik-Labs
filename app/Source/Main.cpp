@@ -228,6 +228,9 @@ public:
 
         suggestions = std::make_unique<SuggestionBox> (engine->dataDir());
         suggestions->onChange = [this] { dirty = true; };
+        suggestions->log = [this] (const std::string& text) {
+            juce::MessageManager::callAsync ([this, text] { if (engine != nullptr) engine->logLine (text); });
+        };
 
         loadAppSettings();
         installRemoteScript();

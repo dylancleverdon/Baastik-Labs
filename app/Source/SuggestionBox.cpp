@@ -109,18 +109,44 @@ void SuggestionBox::sendNext()
             post["log"] = logFile.loadFileAsString().toStdString();
     }
     worker = std::make_unique<Job> ([this, item, url, post, logFile] {
+        // Post once, without following redirects. Apps Script saves the row, then answers with a
+        // redirect to where its reply waits; that reply must be fetched with GET. (On Windows,
+        // following the redirect re-sent the POST there, Google refused it, and suggestions never
+        // counted as sent.)
         int status = 0;
+        juce::StringPairArray headers;
         auto stream = juce::URL (juce::String (url))
                           .withPOSTData (juce::String (post.dump (-1, ' ', false, tutti::Json::error_handler_t::replace)))
                           .createInputStream (juce::URL::InputStreamOptions (juce::URL::ParameterHandling::inPostData)
                                                   .withExtraHeaders ("Content-Type: text/plain;charset=utf-8")
-                                                  .withConnectionTimeoutMs (20000)
-                                                  .withNumRedirectsToFollow (5)
+                                                  .withConnectionTimeoutMs (30000)
+                                                  .withNumRedirectsToFollow (0)
+                                                  .withResponseHeaders (&headers)
                                                   .withStatusCode (&status));
-        const auto body = stream != nullptr ? stream->readEntireStreamAsString() : juce::String();
-        // Apps Script answers through a redirect; any response from Google means the row is in
-        // (and a retry is harmless anyway, thanks to the id).
-        const bool ok = stream != nullptr && (status == 0 || (status >= 200 && status < 400) || body.contains ("\"ok\""));
+        auto body = stream != nullptr ? stream->readEntireStreamAsString() : juce::String();
+        juce::String location;
+        for (const auto& key : headers.getAllKeys())
+            if (key.equalsIgnoreCase ("Location"))
+                location = headers[key].upToFirstOccurrenceOf (",", false, false).trim();
+        const bool redirected = status >= 300 && status < 400 && location.isNotEmpty();
+        if (redirected)
+        {
+            int replyStatus = 0;
+            if (auto reply = juce::URL (location).createInputStream (juce::URL::InputStreamOptions (juce::URL::ParameterHandling::inAddress)
+                                                                          .withConnectionTimeoutMs (20000)
+                                                                          .withNumRedirectsToFollow (5)
+                                                                          .withStatusCode (&replyStatus)))
+                body = reply->readEntireStreamAsString();
+        }
+        // The redirect means the script ran and kept the row; a direct answer must say ok. A retry
+        // is harmless anyway, thanks to the id.
+        const bool ok = stream != nullptr && (redirected || body.contains ("\"ok\":true") || ((status == 0 || status == 200) && body.contains ("\"ok\"")));
+        if (log)
+            log ("suggestion " + item.value ("id", std::string()) + (logFile != juce::File() ? " (with logs)" : "") + ": "
+                 + (stream == nullptr ? std::string ("couldn't reach Google")
+                                      : "HTTP " + std::to_string (status) + (redirected ? " (redirect)" : "") + ", reply: "
+                                            + body.substring (0, 200).replaceCharacters ("\r\n", "  ").toStdString())
+                 + (ok ? "" : " - will retry"));
         {
             std::lock_guard<std::mutex> g (lock);
             if (ok)

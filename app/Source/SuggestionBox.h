@@ -24,6 +24,7 @@ public:
 
     SuggestionState state() const;
     std::function<void()> onChange;
+    std::function<void (const std::string&)> log; // called on the sending thread
 
 private:
     void save();

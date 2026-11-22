@@ -155,21 +155,58 @@ namespace tutti::platform
 
     juce::Array<juce::File> installRemoteScript (const juce::File& source)
     {
+        // Overwrite the files in place, one by one. Deleting the old folder first fails half-way
+        // on Windows when Live has a file open, which left Live without Tutti's __init__.py (so
+        // Tutti vanished from Live's Control Surface list). Files that are already identical are
+        // left alone; ones the new version no longer has are removed afterwards (best effort).
         juce::Array<juce::File> installed;
         if (! source.getChildFile ("__init__.py").existsAsFile())
             return installed;
         for (const auto& lib : userLibraries())
         {
             auto target = lib.getChildFile ("Remote Scripts").getChildFile ("Tutti");
-            auto staging = lib.getChildFile ("Remote Scripts").getChildFile (".Tutti-new");
-            staging.deleteRecursively();
-            if (! staging.createDirectory() || ! source.copyDirectoryTo (staging))
-                continue;
-            target.deleteRecursively();
-            if (staging.moveFileTo (target))
+            lib.getChildFile ("Remote Scripts").getChildFile (".Tutti-new").deleteRecursively(); // older Tuttis' leftovers
+            if (installRemoteScriptTo (source, target))
                 installed.add (target);
         }
         return installed;
+    }
+
+    bool installRemoteScriptTo (const juce::File& source, const juce::File& target)
+    {
+        const auto files = source.findChildFiles (juce::File::findFiles, true);
+        {
+            if (! target.createDirectory())
+                return false;
+            bool ok = true;
+            juce::StringArray wanted;
+            for (const auto& f : files)
+            {
+                if (f.getFileName().endsWith (".pyc") || f.getFullPathName().contains ("__pycache__"))
+                    continue;
+                const auto rel = f.getRelativePathFrom (source);
+                wanted.add (rel.replaceCharacter ('\\', '/'));
+                auto dest = target.getChildFile (rel);
+                if (dest.existsAsFile() && dest.getSize() == f.getSize() && dest.hasIdenticalContentTo (f))
+                    continue;
+                dest.getParentDirectory().createDirectory();
+                bool copied = false;
+                for (int attempt = 0; attempt < 5 && ! copied; ++attempt)
+                {
+                    copied = f.copyFileTo (dest);
+                    if (! copied)
+                        juce::Thread::sleep (200);
+                }
+                ok = ok && copied;
+            }
+            for (const auto& old : target.findChildFiles (juce::File::findFiles, true))
+            {
+                const auto rel = old.getRelativePathFrom (target).replaceCharacter ('\\', '/');
+                if (old.getFileName().endsWith (".pyc") || rel.contains ("__pycache__") || ! wanted.contains (rel))
+                    old.deleteFile(); // stale bytecode and removed files; fine if it fails
+            }
+            return ok && target.getChildFile ("__init__.py").existsAsFile();
+        }
     }
 
     bool setStartAtLogin (const juce::File& executable, bool enabled)

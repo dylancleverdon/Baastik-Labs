@@ -23,6 +23,7 @@ namespace tutti::platform
     // Copies the bundled Remote Script into every User Library's "Remote Scripts/Tutti".
     // Returns the folders it was installed to.
     juce::Array<juce::File> installRemoteScript (const juce::File& bundledScriptFolder);
+    bool installRemoteScriptTo (const juce::File& bundledScriptFolder, const juce::File& target);
 
     // The Remote Script shipped with the app (inside the .app on macOS, next to the .exe on Windows).
     juce::File bundledRemoteScript();

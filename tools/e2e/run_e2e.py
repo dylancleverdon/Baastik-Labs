@@ -311,6 +311,24 @@ def main():
     h = Harness(exe)
     alice, bob, cara = h.peers["alice"], h.peers["bob"], h.peers["cara"]
     try:
+        print("0. Tutti installs its Remote Script over an older one in place")
+        lib = os.path.join(h.dir, "Remote Scripts", "Tutti")
+        os.makedirs(os.path.join(lib, "__pycache__"))
+        for name, text in (("__init__.py", "old"), ("gone.py", "removed in the new version"),
+                           ("__pycache__/engine.cpython-37.pyc", "stale")):
+            with open(os.path.join(lib, name), "w") as f:
+                f.write(text)
+        src = os.path.join(ROOT, "remote_script", "Tutti")
+        alice.cmd(cmd="install_script", **{"from": src, "to": lib})
+        ev = alice.wait_event("installed")
+        check(ev and ev["ok"], "the install reports success")
+        check(open(os.path.join(lib, "__init__.py")).read() == open(os.path.join(src, "__init__.py")).read()
+              and open(os.path.join(lib, "engine.py")).read() == open(os.path.join(src, "engine.py")).read(),
+              "the new files replaced the old ones")
+        check(not os.path.exists(os.path.join(lib, "gone.py")) and
+              not os.path.exists(os.path.join(lib, "__pycache__", "engine.cpython-37.pyc")),
+              "files the new version doesn't have, and old bytecode, are gone")
+
         print("1. Alice starts a session")
         take = write_wav(os.path.join(h.dir, "vox take 1.wav"))
         song = demo_song(take)

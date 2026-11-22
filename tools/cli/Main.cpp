@@ -11,6 +11,7 @@
 
 #include <csignal>
 #include "Engine.h"
+#include "Platform.h"
 
 #include <iostream>
 #include <thread>
@@ -123,6 +124,10 @@ int main (int argc, char* argv[])
                 if (! engine.startSession (juce::File (juce::String (str (*cmd, "als"))), error))
                     emit (Json { { "event", "error" }, { "text", error.toStdString() } });
             }
+            else if (c == "install_script")
+                emit (Json { { "event", "installed" },
+                             { "ok", platform::installRemoteScriptTo (juce::File (juce::String (str (*cmd, "from"))),
+                                                                      juce::File (juce::String (str (*cmd, "to")))) } });
             else if (c == "join")
                 engine.joinSession (str (*cmd, "peer"));
             else if (c == "approve")

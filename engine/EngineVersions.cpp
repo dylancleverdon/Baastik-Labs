@@ -75,7 +75,14 @@ namespace tutti
             return;
         // Saved under another name in the session folder ("Save As" into Music/Tutti/<song>, or
         // Live asked where to save and was pointed there): that file is the session song now.
-        for (const auto& f : currentSong.getParentDirectory().findChildFiles (juce::File::findFiles, false, "*.als"))
+        // Live's Save As puts the song in a "<name> Project" folder, so look one level down too
+        // (but not in Live's Backup folders).
+        const auto sessionFolder = workspaceFor (currentSongName);
+        juce::Array<juce::File> songs = sessionFolder.findChildFiles (juce::File::findFiles, false, "*.als");
+        for (const auto& sub : sessionFolder.findChildFiles (juce::File::findDirectories, false))
+            if (sub.getFileName() != "Backup")
+                songs.addArray (sub.findChildFiles (juce::File::findFiles, false, "*.als"));
+        for (const auto& f : songs)
         {
             if (f == currentSong || f.getLastModificationTime() <= songFolderSeen)
                 continue;

@@ -12,7 +12,8 @@ except Exception:  # pragma: no cover - Live without the legacy framework
 
 
 def _make_engine(song, log, show):
-    return Engine(song, Live.Application.get_application(), Live, Bridge(log=log), log=log, show_message=show)
+    return Engine(song, Live.Application.get_application(), Live, Bridge(log=log), log=log, show_message=show,
+                  settle_first=True)
 
 
 if _FrameworkSurface is not None:

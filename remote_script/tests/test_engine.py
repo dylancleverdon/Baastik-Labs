@@ -511,7 +511,7 @@ def test_hello_says_which_script_version_is_running():
     song = demo_song()
     bridge = FakeBridge()
     Engine(song, Live.Application.Application(song), Live, bridge).tick()
-    assert bridge.take("hello")[0]["script"] == "3"
+    assert bridge.take("hello")[0]["script"] == "4"
 
 
 def test_hello_names_the_open_set_so_the_app_knows_live_opened_its_file():
@@ -526,7 +526,42 @@ def test_hello_names_the_open_set_so_the_app_knows_live_opened_its_file():
     engine.tick()
     assert bridge.take("hello") == []          # same Set: nothing new
     app._song = demo_song()                      # Live opens another Set
-    engine.clock = lambda: 10.0 ** 11
+    t = [10.0 ** 11]
+    engine.clock = lambda: t[0]
     engine.tick()
+    assert bridge.take("hello") == []           # not until the new Set has settled
+    bridge.inbox.append({"type": "bind", "session": "s1", "doc": {"e": []}})
+    engine.tick()
+    assert bridge.take("bound") == [] and not engine.bound   # a bind while Live is opening is ignored
+    for dt in (0.5, 1.0, 2.2):
+        t[0] = 10.0 ** 11 + dt
+        engine.tick()
     second = bridge.take("hello")[0]["doc"]
     assert first and second and first != second
+
+
+def test_a_set_that_is_still_changing_is_not_announced():
+    from Tutti.engine import Engine
+    from conftest import FakeBridge
+    song = demo_song()
+    app = Live.Application.Application(song)
+    bridge = FakeBridge()
+    t = [1000.0]
+    engine = Engine(song, app, Live, bridge, clock=lambda: t[0])
+    engine.tick()
+    bridge.take("hello")
+    loading = Live.Song.Song()
+    app._song = loading                           # Live starts opening a Set...
+    t[0] += 2.0
+    engine.tick()
+    for i in range(3):                            # ...and keeps adding tracks for a while
+        t[0] += 1.0
+        loading.create_midi_track(i)
+        engine.tick()
+        assert bridge.take("hello") == []
+    t[0] += 1.0
+    engine.tick()
+    t[0] += 1.0
+    engine.tick()
+    hello = bridge.take("hello")
+    assert len(hello) == 1 and hello[0]["fingerprint"]["n"] == 3

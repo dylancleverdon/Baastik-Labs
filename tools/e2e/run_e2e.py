@@ -154,7 +154,7 @@ class Peer(object):
             self.engine.shutdown()
         self.song = song
         app = Live.Application.Application(song, self.plugins)
-        self.engine = Engine(song, app, Live, Bridge(port=self.local_port), clock=time.time)
+        self.engine = Engine(song, app, Live, Bridge(port=self.local_port), clock=time.time, settle_first=True)
 
     def tick(self):
         if self.engine is not None:
@@ -335,7 +335,7 @@ def main():
         als = os.path.join(h.dir, "Night Drive.als")
         write_als(als, [("midi", "Drums"), ("midi", "Bass"), ("audio", "Vox")], [take])
         alice.open_live(song)
-        h.run(1.0)
+        check(h.run(10, lambda: alice.state().get("live_connected")), "Alice's Live is connected")
         alice.cmd(cmd="start", als=als)
         check(h.run(15, lambda: len(alice.opened) > 0), "Alice's Tutti opened its copy of the song in Live")
         h.run(1.0)
@@ -352,7 +352,7 @@ def main():
                 # Bob already has a Set open whose tracks have the same names (an Untitled Set
                 # often does): Tutti must wait for Live to open its file, not bind this one.
                 guest.open_live(clone(snapshot_song))
-                h.run(1.0)
+                check(h.run(10, lambda: guest.state().get("live_connected")), "Bob's Live is connected")
             guest.cmd(cmd="join", peer=alice.peer_id)
             check(h.run(10, lambda: guest.peer_id in alice.state()["join_requests"]), "Alice is asked about " + guest.name)
             alice.cmd(cmd="approve", peer=guest.peer_id, allow=True)
@@ -438,7 +438,8 @@ def main():
         print("4b2. Bob uses Save As into the session folder: Tutti follows the new file")
         bob_opened = len(bob.opened)
         old_file = bob.state()["song_file"]
-        new_file = os.path.join(os.path.dirname(old_file), "Night Drive v2.als")
+        os.makedirs(os.path.join(os.path.dirname(old_file), "Night Drive v2 Project"))
+        new_file = os.path.join(os.path.dirname(old_file), "Night Drive v2 Project", "Night Drive v2.als")
         tracks = [("midi" if t.has_midi_input else "audio", t.name, automation("bob-saveas") if i == 2 else "")
                   for i, t in enumerate(bob.song.tracks)]
         write_als(new_file, tracks, [])

@@ -15,11 +15,12 @@ import time
 from . import livemodel as lm
 from .mirror import Mirror
 
-SCRIPT_VERSION = "3"   # the app asks people to restart Live when its script is newer
+SCRIPT_VERSION = "4"   # the app asks people to restart Live when its script is newer
 PROTOCOL = 1
 APPLY_BUDGET = 400          # entity writes per tick, so a big join doesn't freeze Live
 FULL_SCAN_EVERY = 4.0       # seconds: catch changes that have no listener (warp mode, gain...)
 PRESENCE_EVERY = 0.25
+SETTLE = 1.5                # seconds a newly opened Set must stay unchanged before Tutti uses it
 
 
 def new_id():
@@ -39,7 +40,7 @@ def index_of(seq, obj):
 
 
 class Engine(object):
-    def __init__(self, song, application, Live, bridge, log=None, show_message=None, clock=time.time):
+    def __init__(self, song, application, Live, bridge, log=None, show_message=None, clock=time.time, settle_first=False):
         self.song = song
         self.app = application
         self.Live = Live
@@ -69,6 +70,10 @@ class Engine(object):
         self._presence_sent = 0.0
         self.play_at = None
         self.doc_token = new_id()  # changes whenever Live opens another Set
+        self._settle_since = None   # a Set was just opened: wait until it stops changing
+        self._settle_fp = None
+        if settle_first:
+            self._begin_settle()    # Live may start this script while it's still opening the Set
         self.caps = self._probe_caps()
 
     # ------------------------------------------------------------------ logging
@@ -117,7 +122,8 @@ class Engine(object):
         self._check_document()
         for event in self.bridge.poll():
             if event[0] == "connected":
-                self._on_connected()
+                if self._settle_since is None:
+                    self._on_connected()  # (otherwise once the Set has settled)
             elif event[0] == "disconnected":
                 self._show("Tutti: lost the Tutti app")
             elif event[0] == "message":
@@ -152,8 +158,47 @@ class Engine(object):
     _last_doc_check = 0.0
     _last_fingerprint = None
 
+    def _begin_settle(self):
+        """Live is opening a Set: don't tell the app about it (so it doesn't read or bind it)
+        until it has stopped changing; a half-loaded Set gets bound wrongly."""
+        self._settle_since = self.clock()
+        self._settle_fp = None
+
+    def _settled(self):
+        if self._settle_since is None:
+            return True
+        now = self.clock()
+        try:
+            current = self.app.get_document()
+            fp = (current is self.song, self.fingerprint())
+        except Exception:
+            fp = None
+        if fp != self._settle_fp or (fp is not None and not fp[0]):
+            self._settle_fp = fp
+            self._settle_since = now
+            if fp is not None and not fp[0]:
+                self._last_doc_check = 0.0  # Live moved on to yet another Set: pick it up now
+            return False
+        if now - self._settle_since < SETTLE:
+            return False
+        self._settle_since = None
+        return True
+
+    def _doc_is_current(self):
+        try:
+            return self.app.get_document() is self.song or self.app.get_document() == self.song
+        except Exception:
+            return True
+
     def _check_document(self):
         """Live may load another Set without restarting the script: notice it and start over."""
+        if self._settle_since is not None:
+            if self._settled():
+                self._last_fingerprint = self.fingerprint()
+                self._last_doc_check = self.clock()
+                if self.bridge.connected:
+                    self._on_connected()
+            return
         now = self.clock()
         if now - self._last_doc_check < 1.0:
             return
@@ -168,8 +213,7 @@ class Engine(object):
             self.song = current
             self.doc_token = new_id()
             self.caps = self._probe_caps()
-            if self.bridge.connected:
-                self._on_connected()
+            self._begin_settle()
             return
         if not self.bound and self.bridge.connected:
             fp = self.fingerprint()
@@ -250,6 +294,13 @@ class Engine(object):
 
     def _handle(self, m):
         t = m.get("type")
+        if t in ("bind", "full", "capture") and (self._settle_since is not None or not self._doc_is_current()):
+            # Live is still opening a Set: a fresh hello follows once it's ready, and the app
+            # asks again then.
+            self.log("ignoring %s: Live is still opening a Set" % t)
+            if not self._doc_is_current():
+                self._last_doc_check = 0.0
+            return
         if t == "capture":
             self.session = m.get("session")
             try:

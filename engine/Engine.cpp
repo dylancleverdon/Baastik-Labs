@@ -740,7 +740,7 @@ namespace tutti
     {
         // The Remote Script this app ships (remote_script/Tutti/engine.py SCRIPT_VERSION). Live loads
         // scripts only when it starts, so after an update it may still run the old one.
-        constexpr const char* kRemoteScriptVersion = "3";
+        constexpr const char* kRemoteScriptVersion = "4";
     }
 
     bool Engine::liveScriptOutdated() const
@@ -766,7 +766,9 @@ namespace tutti
 
     void Engine::openInLiveAndWait (const juce::File& file)
     {
-        docAtOpen = liveLink != 0 ? str (liveHello, "doc") : std::string();
+        // Live not connected yet: its first report could be the Set it already had open, so that
+        // one only counts if it matches the song exactly; a later, different one counts as ours.
+        docAtOpen = liveLink != 0 ? str (liveHello, "doc") : std::string ("?");
         openedAt = now();
         strictMatchLogged = false;
         log ("opening " + file.getFullPathName().toStdString() + " in Live");
@@ -778,9 +780,15 @@ namespace tutti
         if (openedAt > 0)
         {
             const auto doc = str (liveHello, "doc");
-            if (liveLink != 0 && ! doc.empty() && doc != docAtOpen)
+            if (docAtOpen == "?" && liveLink != 0 && ! doc.empty())
+                docAtOpen = "?" + doc; // the first Set Live reported after we asked
+            if (liveLink != 0 && ! doc.empty() && doc != docAtOpen && "?" + doc != docAtOpen)
             {
                 openedAt = 0; // Live loaded a Set since we asked: check it's ours below
+            }
+            else if (liveLink != 0 && "?" + doc == docAtOpen)
+            {
+                // fall through to the exact check below (openedAt stays set: strict)
             }
             else if (now() - openedAt < 20.0)
                 return false;

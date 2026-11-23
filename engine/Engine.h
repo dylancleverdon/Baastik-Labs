@@ -365,6 +365,8 @@ namespace tutti
 
         // Save lane
         juce::int64 songStamp = 0;        // size ^ mtime of the session song we last saw
+        juce::Time songFolderSeen;        // newest .als in the session folder we've looked at
+        std::map<std::string, juce::int64> tuttiWrote; // song files Tutti itself wrote (path -> stamp)
         double songChangedAt = 0;
         juce::int64 ignoreStamp = 0;      // our own writes to the song file
         double lastSavePoll = 0;

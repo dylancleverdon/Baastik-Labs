@@ -273,6 +273,9 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
     std::vector<Row::Action> buttons { { "Play together", [&act] { act.playTogether(); }, true },
                                        { "Stop", [&act] { act.stopTogether(); } } };
     add ({ "play", Row::Style::primary, {}, {}, {}, false, false, buttons });
+    if (! iAmP1 && ! e.updateAvailable)
+        add ({ "refresh", Row::Style::quiet, {}, {}, {}, false, false,
+               { { "Reload the latest saved version", [&act] { act.updateNow(); } } } });
     if (! iAmP1)
         add ({ "ask-p1", Row::Style::quiet, {}, {}, {}, false, false,
                { { e.askedForP1 ? "Asked to be Player 1..." : "Ask to be Player 1", [&act] { act.requestPlayer1(); } } } });

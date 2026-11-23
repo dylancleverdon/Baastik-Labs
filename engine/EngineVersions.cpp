@@ -73,6 +73,24 @@ namespace tutti
         lastSavePoll = t;
         if (! sessionPtr->inSession() || ! liveBound || reloading || ! currentSong.existsAsFile())
             return;
+        // Saved under another name in the session folder ("Save As" into Music/Tutti/<song>, or
+        // Live asked where to save and was pointed there): that file is the session song now.
+        for (const auto& f : currentSong.getParentDirectory().findChildFiles (juce::File::findFiles, false, "*.als"))
+        {
+            if (f == currentSong || f.getLastModificationTime() <= songFolderSeen)
+                continue;
+            songFolderSeen = juce::jmax (songFolderSeen, f.getLastModificationTime());
+            if (tuttiWrote.count (f.getFullPathName().toStdString()) != 0
+                && tuttiWrote[f.getFullPathName().toStdString()] == fileStamp (f))
+                continue; // one of ours
+            log ("the song was saved as " + f.getFileName().toStdString() + ": using that file from now on");
+            notice ("Saved as " + f.getFileName().toStdString() + ": Tutti shares that file from now on.");
+            currentSong = f;
+            songStamp = 0;
+            ignoreStamp = 0;
+            songChangedAt = 0;
+            break;
+        }
         const auto s = fileStamp (currentSong);
         if (s != songStamp)
         {
@@ -332,6 +350,8 @@ namespace tutti
         currentNotes = field (meta, "notes");
         currentSnapshot = str (meta, "id");
         songStamp = ignoreStamp = fileStamp (target);
+        tuttiWrote[target.getFullPathName().toStdString()] = songStamp;
+        songFolderSeen = juce::jmax (songFolderSeen, target.getLastModificationTime());
         songChangedAt = 0;
         updateBy.clear();
         reloadWhenMerged = false;

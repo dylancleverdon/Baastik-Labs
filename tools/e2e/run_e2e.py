@@ -435,6 +435,19 @@ def main():
         check("bob-drums" in merged_xml and "cara-bass" in merged_xml, "the merge kept Bob's and Cara's changes")
         check(len(cara.state()["notices"]) > 0, "Cara was told what happened")
 
+        print("4b2. Bob uses Save As into the session folder: Tutti follows the new file")
+        bob_opened = len(bob.opened)
+        old_file = bob.state()["song_file"]
+        new_file = os.path.join(os.path.dirname(old_file), "Night Drive v2.als")
+        tracks = [("midi" if t.has_midi_input else "audio", t.name, automation("bob-saveas") if i == 2 else "")
+                  for i, t in enumerate(bob.song.tracks)]
+        write_als(new_file, tracks, [])
+        check(h.run(15, lambda: bob.state()["song_file"] == new_file), "Bob's Tutti now shares Night Drive v2.als")
+        check(h.run(20, lambda: alice.state()["update_available"]), "and Alice is told there's an update")
+        if h.run(5, lambda: len(bob.opened) > bob_opened):  # merged with others' saves: his Live reloads
+            bob.open_live(clone(bob.song))
+        check(h.run(15, lambda: bob.state()["live_bound"]), "Bob's Live is in sync after the Save As")
+
         print("4c. Bob owns a plugin Alice doesn't: the Stand-in shares his recording")
         bob.plugins = ("Serum 2",)
         bob.open_live(bob.song)  # restart Bob's script so it reports his plugins

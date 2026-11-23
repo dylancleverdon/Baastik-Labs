@@ -1288,6 +1288,8 @@ namespace tutti
         currentNotes = field (captured, "notes");
         currentSnapshot = latestSnapshot = snapshotId;
         songStamp = ignoreStamp = currentSong.getSize() ^ (currentSong.getLastModificationTime().toMilliseconds() << 8);
+        songFolderSeen = juce::Time::getCurrentTime();
+        tuttiWrote[currentSong.getFullPathName().toStdString()] = songStamp;
         sessionPtr->start (sessionId, currentSongName, std::move (*doc), 0, snapshotId, now());
         liveBound = true;
         liveStatus = "In sync";
@@ -1445,6 +1447,8 @@ namespace tutti
         currentNotes = field (joinSnapshot, "notes");
         currentSnapshot = latestSnapshot = str (joinSnapshot, "id");
         songStamp = ignoreStamp = currentSong.getSize() ^ (currentSong.getLastModificationTime().toMilliseconds() << 8);
+        songFolderSeen = juce::Time::getCurrentTime();
+        tuttiWrote[currentSong.getFullPathName().toStdString()] = songStamp;
         joinSnapshot = nullptr;
         joinedWaitingForSong = true;
         startStatus.clear();

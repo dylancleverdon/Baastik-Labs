@@ -39,7 +39,23 @@ namespace tutti
         if (clonefile (from.getFullPathName().toRawUTF8(), to.getFullPathName().toRawUTF8(), 0) == 0)
             return true;
        #endif
-        return from.copyFileTo (to);
+        if (from.copyFileTo (to))
+            return true;
+        // Windows: CopyFile can't read a file another program still has open for writing (Live,
+        // just after a recording). Reading it as a stream shares access, so it works.
+        to.deleteFile();
+        {
+            juce::FileInputStream in (from);
+            juce::FileOutputStream out (to);
+            if (! in.openedOk() || ! out.openedOk())
+                return false;
+            if (out.writeFromInputStream (in, -1) != in.getTotalLength())
+                return false;
+            out.flush();
+            if (out.getStatus().failed())
+                return false;
+        }
+        return to.getSize() == from.getSize();
     }
 
     namespace
@@ -161,10 +177,30 @@ namespace tutti
             writeMeta (m);
         }
         auto target = fileFor (*hash);
-        if (! target.existsAsFile() && ! cloneOrCopy (file, target))
+        if (! target.existsAsFile())
         {
-            error = "couldn't copy " + file.getFullPathName() + " into Tutti's store";
-            return std::nullopt;
+            // Copy, then check the copy is exactly what was hashed (the file may still have been
+            // changing), and only then put it in place.
+            auto tmp = base.getChildFile ("partial").getChildFile (juce::String (*hash) + ".add.part");
+            if (! cloneOrCopy (file, tmp))
+            {
+                tmp.deleteFile();
+                error = "couldn't copy " + file.getFullPathName() + " into Tutti's store";
+                return std::nullopt;
+            }
+            if (sha256 (tmp) != *hash)
+            {
+                tmp.deleteFile();
+                error = file.getFullPathName() + " changed while it was being copied";
+                return std::nullopt;
+            }
+            target.getParentDirectory().createDirectory();
+            if (! tmp.moveFileTo (target))
+            {
+                tmp.deleteFile();
+                error = "couldn't move " + file.getFileName() + " into Tutti's store";
+                return std::nullopt;
+            }
         }
         return hash;
     }

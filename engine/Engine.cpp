@@ -1085,8 +1085,24 @@ namespace tutti
                     preparing.insert (key);
                     ready = false;
                     juce::Thread::launch ([this, path, key] {
+                        // Live may still be finishing the file (a recording that just stopped):
+                        // wait until it stops changing, and retry for a while if it can't be read.
                         juce::String error;
-                        auto h = contentStore.add (path, error);
+                        std::optional<std::string> h;
+                        for (int attempt = 0; attempt < 12 && ! h; ++attempt)
+                        {
+                            if (attempt > 0)
+                                juce::Thread::sleep (2500);
+                            for (int settle = 0; settle < 40; ++settle)
+                            {
+                                const auto size = path.getSize();
+                                const auto modified = path.getLastModificationTime();
+                                juce::Thread::sleep (250);
+                                if (size == path.getSize() && modified == path.getLastModificationTime())
+                                    break;
+                            }
+                            h = contentStore.add (path, error);
+                        }
                         if (h)
                             audio::ensurePreview (contentStore, *h, error);
                         const auto hash = h.value_or (std::string());

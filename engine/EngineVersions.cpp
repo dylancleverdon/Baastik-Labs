@@ -332,8 +332,18 @@ namespace tutti
             latestSnapshot = str (meta, "id");
             return;
         }
+        if (liveIsBusy())
+        {
+            // Never pull the song out from under someone who's playing or recording.
+            if (pendingReload.is_null())
+                notice ("The update loads when you stop playing.");
+            pendingReload = meta;
+            return;
+        }
+        pendingReload = nullptr;
         juce::String error;
         auto folder = currentSong.getParentDirectory();
+        makeLiveProject (folder);
         auto set = localCopyOf (meta, folder, error);
         if (set == nullptr)
         {
@@ -366,6 +376,12 @@ namespace tutti
         liveBound = false;
         liveStatus = "Updating your Live...";
         openInLiveAndWait (target);
+    }
+
+    bool Engine::liveIsBusy() const
+    {
+        auto it = presence.find (self.peer);
+        return liveBound && it != presence.end() && (it->second.playing || it->second.recording);
     }
 
     void Engine::updateNow()

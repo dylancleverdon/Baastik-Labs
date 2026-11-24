@@ -107,6 +107,11 @@ namespace tutti
             lastStandInUpdate = t;
             updateStandIns();
         }
+        if (! pendingReload.is_null() && ! reloading && ! liveIsBusy())
+        {
+            auto meta = std::exchange (pendingReload, nullptr);
+            reloadInto (meta);
+        }
         if (reloadWhenMerged && ! reloading)
             if (auto meta = loadSnapshot (latestSnapshot); meta && contentStore.has (str (*meta, "als")))
                 reloadInto (*meta);
@@ -675,6 +680,7 @@ namespace tutti
         updateBy.clear();
         mySaveNeeded.clear();
         othersSaveNeeded.clear();
+        pendingReload = nullptr;
         openedAt = 0;
     }
 
@@ -1146,6 +1152,16 @@ namespace tutti
 
     // ================================================================== starting a session
 
+    void Engine::makeLiveProject (const juce::File& folder)
+    {
+        // Live treats a folder with an "Ableton Project Info" folder as a Project: Cmd+S saves
+        // the song in place and recordings go to its Samples/Recorded. Without it Live treats
+        // the song as unsaved, records into a temporary project and asks where to save (Save As
+        // then makes a new "<name> Project" folder Tutti doesn't watch).
+        folder.createDirectory();
+        folder.getChildFile ("Ableton Project Info").createDirectory();
+    }
+
     juce::File Engine::workspaceFor (const std::string& song) const
     {
         auto name = juce::File::createLegalFileName (juce::String (song));
@@ -1206,7 +1222,7 @@ namespace tutti
                 audio::describe (contentStore, *hash);
                 als::rewrite (ref, contentStore.fileFor (*hash), folder);
             }
-            folder.createDirectory();
+            makeLiveProject (folder);
             const bool saved = copy == source || als::save (*shared, copy);
             post ([this, saved, missing, missingNames, copy] {
                 if (missing > 0)
@@ -1432,7 +1448,7 @@ namespace tutti
         }
         const auto song = str (joinSnapshot, "song", "Song");
         auto folder = workspaceFor (song);
-        folder.createDirectory();
+        makeLiveProject (folder);
         auto target = folder.getChildFile (juce::String (str (joinSnapshot, "file", song + ".als")));
         for (auto& ref : als::fileRefs (*set))
         {

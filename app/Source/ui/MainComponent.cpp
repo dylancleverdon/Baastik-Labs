@@ -209,12 +209,27 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
         add ({ "takeover", Row::Style::warning, "Player 1 isn't responding",
                "If they're not coming back, you can take over so everyone keeps working.", {}, false, false,
                { { "Take over", [&act] { act.takeOver(); }, true } } });
-    if (e.updateAvailable)
-        add ({ "update", Row::Style::warning,
-               juce::String (e.updateBy.empty() ? "Someone" : e.updateBy) + " shared changes that need an update",
-               "Save in Live (Cmd+S / Ctrl+S) to get them: your own changes are merged in. Updating without saving drops "
-               "your unsaved automation and plugin changes.", {}, false, false,
-               { { "Update without saving", [&act] { act.updateNow(); } } } });
+   #if JUCE_MAC
+    const juce::String key = "Cmd+S";
+   #else
+    const juce::String key = "Ctrl+S";
+   #endif
+    if (e.updateWhenStopped)
+        add ({ "update", Row::Style::card, "An update is ready",
+               "It loads as soon as you stop playing, so nothing is interrupted." });
+    else if (e.updateAvailable)
+    {
+        const juce::String who (e.updateBy.empty() ? "Someone" : e.updateBy);
+        if (! e.saveToShare.empty())
+            add ({ "update", Row::Style::warning, who + " saved changes",
+                   "Save first (" + key + " in Live) so what you added isn't lost: your changes and theirs are combined.", {}, false, false,
+                   { { "Get them without saving", [&act] { act.updateNow(); } } } });
+        else
+            add ({ "update", Row::Style::warning, who + " saved changes",
+                   "Get them now. If you changed automation or plugin settings since your last save, press " + key
+                       + " in Live instead: your changes and theirs are combined.", {}, false, false,
+                   { { "Get the changes", [&act] { act.updateNow(); }, true } } });
+    }
     if (e.staleCount > 0)
         add ({ "stale", Row::Style::warning,
                juce::String (e.staleCount) + (e.staleCount == 1 ? " change needs an update" : " changes need an update"),

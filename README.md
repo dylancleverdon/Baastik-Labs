@@ -53,19 +53,22 @@ possible (see "Plugins" below).
 
 ### Saving
 
-- **Where:** always just **Cmd+S / Ctrl+S in Live**. The song open in Live during a session is
-  Tutti's copy, `Music/Tutti/<song>/<song>.als`, and that's where Live saves it. Tutti's
-  **Saving** card shows the file. Don't use *Save As* or save anywhere else: Tutti only watches
-  its copy. If Live ever asks *where* to save, Live isn't on the session song: click **Open the
-  song** in Tutti.
-- **What happens:** Tutti notices the save and sends it to Player 1, who merges it with everyone
-  else's saves (by track). The others see **"<name> shared changes that need an update"**: they
-  save too (their own changes are merged in) or click **Update without saving**.
-- **When:** whenever you've changed something that doesn't travel live. Tutti tells you: after
-  you add a plugin it says **"Save to share what you added"**, and the others see
-  **"<name> added <plugin>: it arrives when they save"**.
-- **Recordings** don't need a save: they reach everyone within seconds (a preview first, then
-  full quality).
+- **Where:** always just **Cmd+S / Ctrl+S in Live**. During a session Live has Tutti's copy
+  open, `Music/Tutti/<song>/<song>.als`, which Tutti sets up as a Live Project, so Live saves
+  it in place and records into its `Samples/Recorded` folder. Don't use *Save As*. (If you do
+  and save inside that folder, Tutti follows the new file.)
+- **What it shares:** what doesn't travel live: adding plugins, plugin presets, automation,
+  groups. Notes, clips, recordings, tracks and knobs already reach everyone without a save.
+- **What happens:** Tutti sends your save to Player 1, who combines it with anyone else's
+  (track by track) into the new version of the song.
+- **Getting others' saves:** you see **"<name> saved changes"**. Click **Get the changes**, or
+  save yourself first if you've changed automation or plugin settings (yours are combined in).
+  Tutti then reopens the song in Live (it alternates between `<song>.als` and
+  `<song> (Tutti).als`, because Live can't reload a file it has open). It never does this while
+  you're playing or recording: the update waits until you stop.
+- **Reminders:** after you add a plugin Tutti says **"Save to share what you added"**, and the
+  others see **"<name> added <plugin>"**. Anyone who isn't Player 1 can also click **Reload the
+  latest saved version** at any time.
 
 ### Your copy of each song
 

@@ -644,6 +644,7 @@ namespace tutti
         if (s.inSession())
         {
             v.songFile = currentSong.getFullPathName().toStdString();
+            v.updateWhenStopped = ! pendingReload.is_null();
             v.saveToShare = mySaveNeeded;
             for (const auto& [peer, entry] : othersSaveNeeded)
                 for (const auto& what : entry.second)

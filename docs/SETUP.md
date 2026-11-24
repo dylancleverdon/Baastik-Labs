@@ -87,9 +87,9 @@ Player 1, Play together and ideas.
 ## Saving, in short
 
 Save with **Cmd+S / Ctrl+S in Live**, as always. During a session Live has Tutti's copy of the
-song open (`Music/Tutti/<song>`), so that's where it saves, and Tutti shares the save with
-everyone. Never use *Save As*. If Live asks where to save, it isn't on the session song: click
-**Open the song** in Tutti.
+song open (`Music/Tutti/<song>`, set up as a Live Project), so that's where it saves, and Tutti
+shares the save with everyone. When someone else saves, click **Get the changes**. Tutti never
+reloads the song while you're playing or recording.
 
 ## If something's not right
 

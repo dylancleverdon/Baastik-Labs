@@ -83,6 +83,7 @@ namespace tutti
         std::string updateBy;
         std::vector<Version> versions; // newest first
         std::string songFile;          // the session song on this computer (Music/Tutti/...)
+        bool updateWhenStopped = false; // an update is waiting for Live to stop playing
         std::vector<std::string> saveToShare;  // things I added that only travel when I save
         struct Waiting { std::string byName, what; };
         std::vector<Waiting> waitingForSave;   // things others added that arrive when they save
@@ -202,6 +203,9 @@ namespace tutti
         Ops toLive (const Ops& ops) const;
         Json toLive (const Json& reconcileItems) const;
         bool songOpenInLive();
+        static void makeLiveProject (const juce::File& folder);
+        bool liveIsBusy() const;     // playing or recording: don't reload the song now
+        Json pendingReload;          // an update waiting for Live to stop
         void openInLiveAndWait (const juce::File&);
 
         // --- starting and joining

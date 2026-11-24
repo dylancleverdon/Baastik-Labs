@@ -342,6 +342,8 @@ def main():
         check(alice.state()["role"] != "player1", "Tutti waits for Live to load the copy, not the Set already open")
         alice.open_live(song)
         check(h.run(15, lambda: alice.state()["role"] == "player1"), "Alice is Player 1")
+        check(os.path.isdir(os.path.join(os.path.dirname(alice.state()["song_file"]), "Ableton Project Info")),
+              "Tutti's copy is a Live Project (so Live saves in place and records into it)")
         snapshot_song = clone(alice.song)  # what the song file holds right now
 
         print("2. Bob and Cara join; Alice lets them in")

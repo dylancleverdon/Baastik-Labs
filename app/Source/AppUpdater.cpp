@@ -150,13 +150,28 @@ namespace
         backup.deleteRecursively();
         if (to.exists())
         {
-            if (! to.moveFileTo (backup) && ! to.copyFileTo (backup))
+            if (! to.moveFileTo (backup) && ! (from.isDirectory() ? to.copyDirectoryTo (backup) : to.copyFileTo (backup)))
                 return false;
         }
         to.getParentDirectory().createDirectory();
-        if (from.isDirectory())
-            return from.moveFileTo (to) || from.copyDirectoryTo (to);
-        return from.moveFileTo (to) || from.copyFileTo (to);
+        // A freshly downloaded program can be briefly locked (Windows Defender scans it): retry.
+        for (int attempt = 0; attempt < 8; ++attempt)
+        {
+            if (attempt > 0)
+                juce::Thread::sleep (500);
+            if (from.isDirectory() ? (from.moveFileTo (to) || from.copyDirectoryTo (to))
+                                   : (from.moveFileTo (to) || from.copyFileTo (to)))
+                return true;
+        }
+        // Couldn't put the new one in: put the old one back, so Tutti is never left missing
+        // (that's what made it look uninstalled after an update).
+        if (backup.exists())
+        {
+            to.deleteRecursively();
+            if (! backup.moveFileTo (to))
+                (backup.isDirectory() ? backup.copyDirectoryTo (to) : backup.copyFileTo (to));
+        }
+        return false;
     }
 
     // Puts every file of `from` at the same place inside `to`, moving each file it replaces into
@@ -440,6 +455,9 @@ bool AppUpdater::swapIn (const juce::File& payload, const juce::File& previous)
                                    : replace (from, item.destination, backup);
         if (! ok)
         {
+            logLine ("couldn't install " + item.name.toStdString() + " at " + item.destination.getFullPathName().toStdString()
+                     + "; putting everything back"
+                     + (item.destination.exists() ? std::string() : std::string (" (WARNING: it's missing)")));
             for (auto it = done.rbegin(); it != done.rend(); ++it)
             {
                 const auto kept = previous.getChildFile (it->item.name);

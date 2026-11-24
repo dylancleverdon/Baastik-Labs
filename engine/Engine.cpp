@@ -804,7 +804,7 @@ namespace tutti
     {
         // The Remote Script this app ships (remote_script/Tutti/engine.py SCRIPT_VERSION). Live loads
         // scripts only when it starts, so after an update it may still run the old one.
-        constexpr const char* kRemoteScriptVersion = "7";
+        constexpr const char* kRemoteScriptVersion = "8";
     }
 
     bool Engine::liveScriptOutdated() const

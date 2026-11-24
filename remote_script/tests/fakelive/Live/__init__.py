@@ -227,6 +227,12 @@ class MidiNoteSpecification(object):
 _next_note_id = [1]
 
 
+class WarpMarker(object):
+    def __init__(self, sample_time=0.0, beat_time=0.0):
+        self.sample_time = float(sample_time)
+        self.beat_time = float(beat_time)
+
+
 class FakeClip(_Listenable):
     _props = ("name", "color", "muted", "looping", "loop_start", "loop_end", "start_marker", "end_marker",
               "notes", "warping", "warp_mode", "gain", "pitch_coarse", "pitch_fine", "is_recording",
@@ -241,6 +247,32 @@ class FakeClip(_Listenable):
             is_midi_clip=is_midi, is_audio_clip=not is_midi, file_path=file_path,
             _start_time=start_time, _length=length, is_arrangement_clip=arrangement,
             canonical_parent=parent, _notes={})
+        # Audio from a song file has its real markers (120 bpm here: half a second per beat).
+        self.__dict__["_warp_markers"] = [] if is_midi else [WarpMarker(0.0, 0.0), WarpMarker(length * 0.5, length)]
+
+    @property
+    def warp_markers(self):
+        if self.is_midi_clip:
+            raise RuntimeError("MIDI clips have no warp markers")
+        return tuple(sorted(self._warp_markers, key=lambda m: m.beat_time))
+
+    def add_warp_marker(self, marker):
+        _guard()
+        if isinstance(marker, dict):
+            marker = WarpMarker(marker["sample_time"], marker["beat_time"])
+        if any(abs(m.beat_time - marker.beat_time) < 1e-6 for m in self._warp_markers):
+            raise RuntimeError("There is already a warp marker at this position")
+        self._warp_markers.append(WarpMarker(marker.sample_time, marker.beat_time))
+
+    def remove_warp_marker(self, beat_time):
+        _guard()
+        if len(self._warp_markers) <= 1:
+            raise RuntimeError("Cannot remove the last warp marker")
+        self.__dict__["_warp_markers"] = [m for m in self._warp_markers if abs(m.beat_time - beat_time) > 1e-6]
+
+    def _guess_tempo(self):
+        """What Live does with a clip made from a file: guesses the tempo (often wrongly)."""
+        self.__dict__["_warp_markers"] = [WarpMarker(0.0, 0.0), WarpMarker(self._length * 0.37, self._length)]
 
     name = _prop("name")
     color = _prop("color")
@@ -368,7 +400,9 @@ class ClipSlot(_Listenable):
 
             def create_audio_clip(path):
                 _guard()
-                self.__dict__["_clip"] = FakeClip(8.0, False, file_path=path, parent=self)
+                clip = FakeClip(8.0, False, file_path=path, parent=self)
+                clip._guess_tempo()
+                self.__dict__["_clip"] = clip
                 self._notify("has_clip")
             return create_audio_clip
         return _Listenable.__getattr__(self, name)
@@ -464,7 +498,9 @@ class FakeTrack(_Listenable, _Data):
         if name == "create_audio_clip":
             def create_audio_clip(file_path, position):
                 _guard()
-                return self._add_arrangement_clip(FakeClip(8.0, False, position, file_path, True, parent=self))
+                clip = FakeClip(8.0, False, position, file_path, True, parent=self)
+                clip._guess_tempo()
+                return self._add_arrangement_clip(clip)
             return create_audio_clip
         if name in ("duplicate_clip_to_arrangement", "delete_clip"):
             if not FEATURES["duplicate_to_arrangement"]:
@@ -792,7 +828,8 @@ def _get_application():
 
 # Module-style namespaces, the way the real API is organised.
 Application = types.SimpleNamespace(get_application=_get_application, Application=FakeApplication)
-Clip = types.SimpleNamespace(Clip=FakeClip, MidiNoteSpecification=MidiNoteSpecification, MidiNote=MidiNote)
+Clip = types.SimpleNamespace(Clip=FakeClip, MidiNoteSpecification=MidiNoteSpecification, MidiNote=MidiNote,
+                             WarpMarker=WarpMarker)
 Song = types.SimpleNamespace(Song=FakeSong)
 Track = types.SimpleNamespace(Track=FakeTrack)
 Device = types.SimpleNamespace(Device=FakeDevice)

@@ -70,7 +70,7 @@ by whoever creates the entity (the Remote Script for Live objects). The root is 
 | device | track / chain | `cls`, `name`, `pos`, `on`, `p<i>` (parameter values), `plugin` (descriptor for plugins), `preset` (index, for plugins that list presets in Live) |
 | chain | device | `pos`, `name`, `color`, `mute`, `vol`, `pan` |
 | scene | song | `pos`, `name`, `color`, `tempo` |
-| clip | track | `where` (arr/session), `start`, `len` (arrangement), `scene` (session), `name`, `color`, `muted`, `loop`, `ls`, `le`, `sm`, `em`, audio: `file` (sha256), `warp`, `wmode`, `gain`, `pc`, `pf` |
+| clip | track | `where` (arr/session), `start`, `len` (arrangement), `scene` (session), `name`, `color`, `muted`, `loop`, `ls`, `le`, `sm`, `em`, audio: `file` (sha256), `warp`, `wmode`, `wm` (warp markers: [beat, seconds]), `gain`, `pc`, `pf` |
 | note | clip | `p` pitch, `t` start, `d` duration, `v` velocity, `m` mute, `pr` probability, `vd`, `rv` |
 | cue | song | `time`, `name` |
 

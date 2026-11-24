@@ -198,16 +198,84 @@ def read_clip(clip, where):
         props["gain"] = num(safe(lambda: clip.gain, 0.0))
         props["pc"] = safe(lambda: clip.pitch_coarse, 0)
         props["pf"] = num(safe(lambda: clip.pitch_fine, 0.0))
+        markers = read_warp_markers(clip)
+        if markers:
+            props["wm"] = markers
     return props
 
 
-def write_clip(clip, props):
+# Warp markers: [[beat_time, sample_time (seconds in the file)], ...]. A clip Live builds from a
+# file gets its own guessed markers (Live estimates the tempo), so when Tutti has to rebuild a
+# clip (a preview swapped for the full file, a clip moved) or create one someone else recorded,
+# it puts the real markers back. Without this the audio played at odd tempos.
+MAX_WARP_MARKERS = 512
+
+
+def read_warp_markers(clip):
+    markers = safe(lambda: list(clip.warp_markers), [])
+    out = []
+    for m in markers[:MAX_WARP_MARKERS]:
+        beat = safe(lambda: m.beat_time, None)
+        sample = safe(lambda: m.sample_time, None)
+        if beat is not None and sample is not None:
+            out.append([num(beat), num(sample)])
+    return out
+
+
+def _new_warp_marker(Live, beat, sample):
+    cls = getattr(getattr(Live, "Clip", None), "WarpMarker", None)
+    if cls is not None:
+        for make in (lambda: cls(sample_time=sample, beat_time=beat), lambda: cls(sample, beat)):
+            try:
+                return make()
+            except Exception:
+                pass
+    return {"beat_time": beat, "sample_time": sample}
+
+
+def write_warp_markers(clip, wanted, Live=None):
+    """Makes the clip's warp markers exactly `wanted`. Returns False if Live wouldn't."""
+    if not wanted or not has(clip, "warp_markers") or not has(clip, "add_warp_marker"):
+        return True
+    wanted = [(float(b), float(s)) for b, s in wanted]
+
+    def matches(a, b):
+        return abs(a[0] - b[0]) < 1e-4 and abs(a[1] - b[1]) < 1e-4
+
+    current = [tuple(m) for m in read_warp_markers(clip)]
+    if len(current) == len(wanted) and all(matches(a, b) for a, b in zip(current, wanted)):
+        return True
+    failed = []
+    for m in wanted:                       # add the real ones first (Live keeps at least one)
+        if not any(matches(m, c) for c in current):
+            try:
+                clip.add_warp_marker(_new_warp_marker(Live, m[0], m[1]))
+            except Exception:
+                failed.append(m)
+    for c in current:                      # then drop Live's guesses
+        if not any(matches(c, m) for m in wanted):
+            try:
+                clip.remove_warp_marker(c[0])
+            except Exception:
+                pass
+    for m in failed:                       # one that clashed with a guess at the same beat
+        try:
+            clip.add_warp_marker(_new_warp_marker(Live, m[0], m[1]))
+        except Exception:
+            pass
+    now = [tuple(m) for m in read_warp_markers(clip)]
+    return len(now) == len(wanted) and all(matches(a, b) for a, b in zip(now, wanted))
+
+
+def write_clip(clip, props, Live=None):
     """Sets everything except position/length/file (those need the clip recreated)."""
     for key, attr in CLIP_SETTERS:
         if key in props and props[key] is not None:
             value = props[key]
             if not same(safe(lambda: getattr(clip, attr)), value):
                 setattr(clip, attr, value)
+    if props.get("wm") and not safe(lambda: clip.is_midi_clip, True):
+        write_warp_markers(clip, props["wm"], Live)
     _write_markers(clip, props)
 
 

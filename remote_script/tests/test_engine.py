@@ -71,6 +71,7 @@ def copy_track(t, nt):
             nc = nt.ui_draw_arrangement_clip(c.start_time, c.length)
         else:
             nc = nt.ui_record_audio_clip(c.start_time, c.file_path, c.length)
+            nc.__dict__["_warp_markers"] = [Live.Clip.WarpMarker(m.sample_time, m.beat_time) for m in c.warp_markers]
         nc.name = c.name
         for n in c._notes.values():
             nc.ui_add_note(n.pitch, n.start_time, n.duration, n.velocity)
@@ -511,7 +512,7 @@ def test_hello_says_which_script_version_is_running():
     song = demo_song()
     bridge = FakeBridge()
     Engine(song, Live.Application.Application(song), Live, bridge).tick()
-    assert bridge.take("hello")[0]["script"] == "7"
+    assert bridge.take("hello")[0]["script"] == "8"
 
 
 def test_hello_names_the_open_set_so_the_app_knows_live_opened_its_file():
@@ -617,3 +618,41 @@ def test_writing_automation_is_reported_so_it_gets_saved():
     assert len(sent) == 1 and len(sent[0]["ids"]) == 2
     a.tick()
     assert a.bridge.take("automation") == []
+
+
+def test_swapping_in_the_full_file_keeps_the_warp_markers():
+    a, song_a, b, song_b, _ = joined_pair()
+    hub = Hub([a, b])
+    take = song_a.tracks[2].ui_record_audio_clip(48.0, "/a/take3.wav")
+    real = [Live.Clip.WarpMarker(0.0, 0.0), Live.Clip.WarpMarker(1.93, 4.0), Live.Clip.WarpMarker(4.1, 8.0)]
+    take.__dict__["_warp_markers"] = list(real)
+    a.tick()
+    ops = a.bridge.ops()
+    create = [o for o in ops if o["k"] == "c" and o["t"] == "clip"][0]
+    assert create["v"]["wm"] == [[0.0, 0.0], [4.0, 1.93], [8.0, 4.1]]
+    create["v"]["path"] = "/b/previews/take3.wav"
+    b.bridge.inbox.append({"type": "apply", "ops": [create]})
+    b.tick()
+    clip = [c for c in song_b.tracks[2].arrangement_clips if c.start_time == 48.0][0]
+    marks = [(m.beat_time, m.sample_time) for m in clip.warp_markers]
+    assert marks == [(0.0, 0.0), (4.0, 1.93), (8.0, 4.1)]   # not Live's guess
+    b.bridge.inbox.append({"type": "swap_file", "id": create["id"], "path": "/b/store/take3.wav"})
+    b.tick()
+    clip = [c for c in song_b.tracks[2].arrangement_clips if c.start_time == 48.0][0]
+    assert clip.file_path == "/b/store/take3.wav"
+    assert [(m.beat_time, m.sample_time) for m in clip.warp_markers] == [(0.0, 0.0), (4.0, 1.93), (8.0, 4.1)]
+    b.tick()
+    assert b.bridge.ops() == [] and not b.stale
+
+
+def test_a_song_opened_from_the_file_keeps_its_markers_when_previews_are_swapped():
+    # The joiner opened the song with previews: Live loaded the real markers from the file.
+    a, song_a, b, song_b, _ = joined_pair()
+    vox = song_b.tracks[2].arrangement_clips[0]
+    vox.__dict__["_warp_markers"] = [Live.Clip.WarpMarker(0.0, 0.0), Live.Clip.WarpMarker(3.3, 8.0)]
+    eid = b.id_of(vox)
+    b.bridge.inbox.append({"type": "swap_file", "id": eid, "path": "/b/store/vox.wav"})
+    b.tick()
+    clip = song_b.tracks[2].arrangement_clips[0]
+    assert clip.file_path == "/b/store/vox.wav"
+    assert [(m.beat_time, m.sample_time) for m in clip.warp_markers] == [(0.0, 0.0), (8.0, 3.3)]

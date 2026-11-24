@@ -396,7 +396,9 @@ def main():
 
         print("4. Bob records; the others get a preview, then the full take")
         take2 = write_wav(os.path.join(h.dir, "bob take.wav"), seconds=2.0)
-        bob.song.tracks[2].ui_record_audio_clip(16.0, take2, 4.0)
+        bob_take = bob.song.tracks[2].ui_record_audio_clip(16.0, take2, 4.0)
+        bob_take.__dict__["_warp_markers"] = [Live.Clip.WarpMarker(0.0, 0.0), Live.Clip.WarpMarker(1.1, 2.0),
+                                              Live.Clip.WarpMarker(2.0, 4.0)]  # warped by hand
 
         def has_take(p, full):
             clips = [c for c in p.song.tracks[2].arrangement_clips if c.start_time == 16.0]
@@ -406,6 +408,12 @@ def main():
             return (not full) or ("(preview)" not in path and path.endswith("bob take.wav"))
         check(h.run(20, lambda: has_take(alice, False) and has_take(cara, False)), "the take appears for Alice and Cara")
         check(h.run(30, lambda: has_take(alice, True) and has_take(cara, True)), "and is swapped to full quality")
+
+        def markers(p):
+            clip = [c for c in p.song.tracks[2].arrangement_clips if c.start_time == 16.0][0]
+            return [(round(m.beat_time, 3), round(m.sample_time, 3)) for m in clip.warp_markers]
+        check(markers(alice) == markers(bob) and markers(cara) == markers(bob),
+              "with Bob's warp markers, not Live's tempo guess")
 
         print("4b. Saving shares what Live can't sync live; saves are merged by track")
 

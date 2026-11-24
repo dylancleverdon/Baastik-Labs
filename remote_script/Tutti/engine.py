@@ -15,7 +15,7 @@ import time
 from . import livemodel as lm
 from .mirror import Mirror
 
-SCRIPT_VERSION = "7"   # the app asks people to restart Live when its script is newer
+SCRIPT_VERSION = "8"   # the app asks people to restart Live when its script is newer
 PROTOCOL = 1
 APPLY_BUDGET = 400          # entity writes per tick, so a big join doesn't freeze Live
 FULL_SCAN_EVERY = 4.0       # seconds: catch changes that have no listener (warp mode, gain...)
@@ -1215,7 +1215,7 @@ class Engine(object):
         elif "path" in props and full.get("path") and lm.safe(lambda: clip.file_path) != full.get("path"):
             self._recreate_clip(eid)
             return
-        lm.write_clip(clip, props)
+        lm.write_clip(clip, props, self.Live)
 
     def _recreate_clip(self, eid):
         """Moves a clip or changes its audio file: Live's API can't, so make a new one in place."""
@@ -1228,6 +1228,9 @@ class Engine(object):
         if props.get("where") == "a" and not (lm.has(track, "delete_clip")):
             self._mark_stale(eid, "moving clips needs an Update in this Live")
             return
+        # The clip in Live has the real warp markers (from the song file); the rebuilt one gets
+        # Live's tempo guess, so keep these to put back.
+        markers = lm.read_warp_markers(old) if not lm.safe(lambda: old.is_midi_clip, True) else []
         self.live.pop(eid, None)
         self.idx.pop(key_of(old), None)
         self.notes.pop(eid, None)
@@ -1243,6 +1246,12 @@ class Engine(object):
             self.log("couldn't remove the old clip: %r" % (e,))
         if not self._realize(eid, recurse=False):
             self._mark_stale(eid, "couldn't rebuild the clip")
+            return
+        new = self.live.get(eid)
+        if markers and new is not None:
+            lm.safe(lambda: setattr(new, "warping", True) if props.get("warp", True) else None)
+            if not lm.write_warp_markers(new, markers, self.Live):
+                self._mark_stale(eid, "couldn't restore the clip's warp markers")
 
     def _write_note_props(self, cid, clip, wanted):
         """wanted: {Live note id: props}. Applies only notes that differ."""

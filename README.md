@@ -60,9 +60,20 @@ possible (see "Plugins" below).
     stopped).
   - **Recent:** the last few things that happened (saves, joins, new audio, plugins).
   - **Getting saves by itself:** when someone saves, Tutti loads the new version once you
-    stop playing. If you have plugin changes that aren't shared yet, it saves yours first so
-    both are combined. Automation you changed but didn't save is replaced, so save after
-    automation edits (or turn this off in Settings).
+    stop playing. If you've changed anything since your last save, it saves yours first so
+    both are combined (turn this off in Settings).
+- **Working side by side:**
+  - **Undo my last change:** undoes your own recent edits for everyone, never other people's
+    (anything someone changed since stays theirs).
+  - **Messages and pings:** **Message...** sends a line to everyone; **Ping my spot** sends
+    where you are, and the others get a **Go to** button for it.
+  - **Plugins in this song:** which plugins the song uses, in which format, and who has them.
+  - **Track lock** (Settings, off by default, Player 1 sets it for the session): an edit to a
+    track someone else has selected is undone straight away and they're told who's on it.
+  - **Save a complete copy:** the song and all its audio in `Music/Tutti/Complete copies`,
+    ready to open without Tutti; offered when a session ends.
+  - **Automation is safe:** writing automation counts as "not shared yet" and is saved for you,
+    and getting others' saves first saves your own edits (so they're combined, not replaced).
 - **Suggestion box:** in the app's footer. Ideas and problems go straight to the team's sheet.
   If something went wrong, click **Send logs**: it attaches Tutti's and Live's recent logs.
 - **Menus:** on a Mac, Tutti's menu bar (Session, View) and its menu bar icon have the main

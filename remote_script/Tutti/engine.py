@@ -15,7 +15,7 @@ import time
 from . import livemodel as lm
 from .mirror import Mirror
 
-SCRIPT_VERSION = "6"   # the app asks people to restart Live when its script is newer
+SCRIPT_VERSION = "7"   # the app asks people to restart Live when its script is newer
 PROTOCOL = 1
 APPLY_BUDGET = 400          # entity writes per tick, so a big join doesn't freeze Live
 FULL_SCAN_EVERY = 4.0       # seconds: catch changes that have no listener (warp mode, gain...)
@@ -80,6 +80,7 @@ class Engine(object):
         self._presence_state = None
         self._presence_sent = 0.0
         self.play_at = None
+        self._automation = set()   # entities whose automation was written or switched on/off
         self.doc_token = new_id()  # changes whenever Live opens another Set
         self._settle_since = None   # a Set was just opened: wait until it stops changing
         self._settle_fp = None
@@ -145,7 +146,9 @@ class Engine(object):
 
         if self.bound:
             try:
+                mine = set(self._automation)
                 self._run_queue()
+                self._automation = mine  # others' edits we just applied don't count as ours
                 self._process_dirty()
                 now = self.clock()
                 if now - self._last_full_scan > FULL_SCAN_EVERY:
@@ -156,6 +159,10 @@ class Engine(object):
             except Exception as e:
                 self.log("tick error: %r" % (e,))
             self._flush_ops()
+            if self._automation and self.bridge.connected:
+                # Automation only travels with a save: tell the app so it can save for the person.
+                self.bridge.send({"type": "automation", "ids": sorted(self._automation)})
+                self._automation = set()
         self._play_together()
         try:
             self.bridge.flush()
@@ -462,23 +469,34 @@ class Engine(object):
         if etype == "track":
             mixer = obj.mixer_device
             mark = self._marker(eid, "props")
+            auto = self._automation_marker(eid)
             self._listen(mixer.volume, "value", mark)
             self._listen(mixer.panning, "value", mark)
+            self._listen(mixer.volume, "automation_state", auto)
+            self._listen(mixer.panning, "automation_state", auto)
             self._listen(mixer, "sends", mark)
             for send in lm.safe(lambda: list(mixer.sends), []):
                 self._listen(send, "value", mark)
+                self._listen(send, "automation_state", auto)
             for slot in lm.safe(lambda: list(obj.clip_slots), []):
                 self._listen(slot, "has_clip", self._marker(eid, "clips"))
         elif etype == "device":
             mark = self._marker(eid, "props")
+            auto = self._automation_marker(eid)
             for p in lm.safe(lambda: list(obj.parameters), []):
                 self._listen(p, "value", mark)
+                self._listen(p, "automation_state", auto)
             if lm.is_plugin(obj) and lm.has(obj, "selected_preset_index"):
                 self._listen(obj, "selected_preset_index", mark)
             if lm.safe(lambda: obj.can_have_chains, False):
                 self._listen(obj, "chains", self._marker(eid, "devices"))
         elif etype == "clip":
             self._listen(obj, "is_recording", self._marker(self.mirror.parent(eid), "clips"))
+
+    def _automation_marker(self, eid):
+        def mark():
+            self._automation.add(eid)
+        return mark
 
     def _marker(self, eid, what):
         def mark():

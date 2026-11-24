@@ -134,6 +134,11 @@ namespace tutti
         {
             lastLinkCheck = t;
             trackMembers();
+            if (sessionPtr->inSession() && sessionPtr->isPlayer1() && sessionLock != lockTracks)
+            {
+                sessionLock = lockTracks; // the lock follows Player 1's setting
+                sessionPtr->broadcast (Json { { "type", "lock" }, { "on", sessionLock } });
+            }
             autoRejoinIfDue();
             if (sessionPtr->inSession() && currentSong.existsAsFile() && currentSong != lastSongFile)
             {
@@ -391,7 +396,8 @@ namespace tutti
                              { "epoch", s.info().epoch }, { "members", s.info().members.size() } };
         return Json { { "type", "hello" }, { "proto", protocol::kProtocolVersion }, { "peer", self.peer },
                       { "name", self.name }, { "color", self.color }, { "os", self.os }, { "app", self.app },
-                      { "live", self.live }, { "addr", self.addr }, { "session", summary } };
+                      { "live", self.live }, { "addr", self.addr }, { "session", summary },
+                      { "plugin_formats", liveHello.is_object() ? field (liveHello, "plugin_formats") : Json (nullptr) } };
     }
 
     void Engine::sendHello (LinkState& state)
@@ -459,6 +465,7 @@ namespace tutti
                     sessionPtr->updateSelf (self);
                     sendToLive (Json { { "type", "welcome" }, { "peer", self.peer }, { "name", self.name } });
                     bindLive();
+                    broadcastStatus(); // friends learn which plugins this Live has
                 }
                 else if (state.role == "standin")
                     handleStandIn (linkId, frame.json);
@@ -702,9 +709,14 @@ namespace tutti
         reloadWhenMerged = false;
         reloading = false;
         updateBy.clear();
+        if (auto meta = loadSnapshot (latestSnapshot.empty() ? currentSnapshot : latestSnapshot))
+            copyOfferMeta = *meta; // offer a complete copy of what we just worked on
         mySaveNeeded.clear();
         myPluginChanges.clear();
         pluginProblems.clear();
+        undoStack.clear();
+        sessionLock = false;
+        editedSinceSave = false;
         othersSaveNeeded.clear();
         pendingReload = nullptr;
         openedAt = 0;
@@ -725,6 +737,25 @@ namespace tutti
             handleSave (peer, message);
         else if (type == "snapshot")
             handleSnapshotNotice (peer, message);
+        else if (type == "chat")
+        {
+            addMessage (str (message, "byName", "Someone"), str (message, "text"), {}, 0);
+            addActivity (str (message, "byName", "Someone") + ": " + str (message, "text"));
+        }
+        else if (type == "ping")
+        {
+            addMessage (str (message, "byName", "Someone"), "Look at " + str (message, "where"), str (message, "track"),
+                        number (message, "time"));
+            notice (str (message, "byName", "Someone") + " wants you to look at " + str (message, "where") + ".");
+        }
+        else if (type == "lock")
+        {
+            if (peer == sessionPtr->info().p1 && sessionLock != boolean (message, "on"))
+            {
+                sessionLock = boolean (message, "on");
+                addActivity (sessionLock ? "Track lock on: nobody edits a track someone else is on" : "Track lock off");
+            }
+        }
         else if (type == "needs_save")
         {
             std::vector<std::string> what;
@@ -773,7 +804,7 @@ namespace tutti
     {
         // The Remote Script this app ships (remote_script/Tutti/engine.py SCRIPT_VERSION). Live loads
         // scripts only when it starts, so after an update it may still run the old one.
-        constexpr const char* kRemoteScriptVersion = "6";
+        constexpr const char* kRemoteScriptVersion = "7";
     }
 
     bool Engine::liveScriptOutdated() const
@@ -959,6 +990,7 @@ namespace tutti
                     if (auto f = currentSong.getSiblingFile (name); f != currentSong)
                         f.deleteFile();
                 notice ("Your Live is up to date.");
+                editedSinceSave = false;
             }
             liveBound = true;
             bindFailures = 0;
@@ -1003,6 +1035,26 @@ namespace tutti
         else if (type == "log")
         {
             log ("live: " + str (m, "text"));
+        }
+        else if (type == "automation" && sessionPtr->inSession())
+        {
+            // Automation only travels with a save: count it as not shared yet, so Tutti saves
+            // for the person and never replaces it with someone else's version.
+            const auto doc = sessionPtr->replica().optimistic();
+            if (const auto& ids = field (m, "ids"); ids.is_array())
+                for (const auto& id : ids)
+                    if (id.is_string())
+                    {
+                        const auto track = trackName (trackOf (doc, id.get<std::string>()));
+                        const auto what = "automation on " + (track.empty() ? std::string ("the song") : track);
+                        pluginChangedAt = now();
+                        editedSinceSave = true;
+                        if (std::find (myPluginChanges.begin(), myPluginChanges.end(), what) == myPluginChanges.end())
+                        {
+                            myPluginChanges.push_back (what);
+                            log ("wrote " + what + ": shared on the next save");
+                        }
+                    }
         }
     }
 
@@ -1080,6 +1132,9 @@ namespace tutti
     {
         if (sessionPtr->inSession())
         {
+            if (! ops.empty())
+                editedSinceSave = true;
+            blockedByLock (ops);
             noteSaveNeeded (ops);
             // A plugin's own settings (its patch) only travel with a save: note the change so
             // Tutti can save for the person once they stop tweaking.
@@ -1182,7 +1237,10 @@ namespace tutti
             if (! ready)
                 break;
             if (auto parsed = opsFromJson (front); parsed && ! parsed->empty())
+            {
+                recordUndo (*parsed);
                 sessionPtr->submitLocal (std::move (*parsed), now());
+            }
             pendingLocalBatches.pop_front();
         }
     }
@@ -1477,7 +1535,7 @@ namespace tutti
                     ++waiting;
             }
         // Open as soon as every preview is here (or after 30 s with whatever has arrived).
-        if (waiting > 0 && now() - number (joinSnapshot, "received_at") < 30.0)
+        if (waiting > 0 && now() - number (joinSnapshot, "received_at") < 8.0)
         {
             if (startStatus.find (std::to_string (waiting) + " audio") == std::string::npos)
                 log ("song file is here; waiting for " + std::to_string (waiting) + " audio preview(s)");

@@ -462,7 +462,12 @@ def main():
 
         print("4b3. Alice gets Bob's save by herself")
         opened_before = len(alice.opened)
+        presses = len(alice.save_presses)
         alice.cmd(cmd="auto_get", on=True)
+        # Alice edited since her last save, so her Tutti saves hers first (nothing is replaced)...
+        check(h.run(20, lambda: len(alice.save_presses) > presses), "Alice's Tutti saves her changes first")
+        save(alice, 0, "alice-before-update")  # what Live does when Save is pressed
+        # ...and the combined version then loads by itself.
         check(h.run(20, lambda: len(alice.opened) > opened_before), "Alice's Tutti loads the new version without a click")
         alice.open_live(clone(alice.song))
         check(h.run(15, lambda: alice.state()["live_bound"] and not alice.state()["update_available"]),
@@ -481,8 +486,12 @@ def main():
         presses = len(bob.save_presses)
         check(h.run(20, lambda: len(bob.save_presses) > presses), "Bob's Tutti saves for him once he stops tweaking")
         check(not bob.save_presses[-1]["front"], "without pulling Live to the front")
+        bob_opened = len(bob.opened)
         save(bob, 1, "bob-serum")  # what Live does when Save is pressed
         check(h.run(20, lambda: not bob.state().get("save_to_share")), "and Bob's plugin is shared")
+        if h.run(5, lambda: len(bob.opened) > bob_opened):  # combined with Alice's save: his Live reloads
+            bob.open_live(clone(bob.song))
+            check(h.run(15, lambda: bob.state()["live_bound"]), "Bob's Live is in sync with the combined version")
 
         def has_standin(p):
             return any("Tutti Stand-in" in json.dumps(e["v"]) for e in p.state()["doc"]["e"] if e["t"] == "device")
@@ -512,6 +521,26 @@ def main():
         check(h.run(15, stale), "it's marked out of date once Bob changes the notes")
         bob_si.close()
         alice_si.close()
+
+        print("4d. Track lock (Player 1's setting) and undoing your own change")
+        alice.cmd(cmd="lock", on=True)
+        bob.song.view.selected_track = bob.song.tracks[0]  # Bob is working on the first track
+        h.run(2.0)
+        first = cara.song.tracks[0].name
+        cara.song.tracks[0].name = "Cara was here"
+        check(h.run(10, lambda: cara.song.tracks[0].name == first), "Cara's edit to the track Bob is on is undone")
+        check(alice.song.tracks[0].name == first, "and never reached anyone")
+        alice.cmd(cmd="lock", on=False)
+        h.run(2.0)
+        second = cara.song.tracks[1].name
+        cara.song.tracks[1].name = second + " (Cara)"
+        check(h.run(10, lambda: alice.song.tracks[1].name == second + " (Cara)"), "with the lock off, her edit is shared")
+        h.run(2.0)
+        cara.cmd(cmd="undo")
+        check(h.run(10, lambda: alice.song.tracks[1].name == second and cara.song.tracks[1].name == second),
+              "Cara undoes her own change, for everyone")
+        cara.cmd(cmd="chat", text="nice")
+        check(h.run(10, lambda: any("cara: nice" in a for a in alice.state().get("activity", []))), "messages arrive")
 
         print("5. Cara asks to be Player 1; Alice says yes")
         cara.cmd(cmd="request_p1")

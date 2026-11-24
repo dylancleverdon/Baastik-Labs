@@ -64,6 +64,20 @@ namespace tutti
         const double t = now();
         if (t - updateSeenAt < 3.0 || liveIsBusy())
             return;
+        if (editedSinceSave)
+        {
+            // You've changed things since your last save (maybe automation, which Tutti can't
+            // see): save yours first, which combines both, rather than replacing your work.
+            if (! options.pressSaveInLive || ! autoSave || t - lastAutoSaveTry < 5.0)
+                return; // without that, the person chooses (the update card)
+            lastAutoSaveTry = t;
+            if (options.pressSaveInLive (false) == saveKeyPressed)
+            {
+                log ("saved to combine my changes with the new version");
+                updateSeenAt = t + 30.0;
+            }
+            return;
+        }
         updateSeenAt = t + 30.0; // don't retry this every second if loading fails
         log ("getting the latest version by itself");
         updateNow();

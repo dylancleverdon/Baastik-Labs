@@ -511,7 +511,7 @@ def test_hello_says_which_script_version_is_running():
     song = demo_song()
     bridge = FakeBridge()
     Engine(song, Live.Application.Application(song), Live, bridge).tick()
-    assert bridge.take("hello")[0]["script"] == "6"
+    assert bridge.take("hello")[0]["script"] == "7"
 
 
 def test_hello_names_the_open_set_so_the_app_knows_live_opened_its_file():
@@ -605,3 +605,15 @@ def test_jumping_to_a_friend_selects_their_track_and_bar():
     b.tick()
     assert song_b.view.selected_track is song_b.tracks[1]
     assert song_b.current_song_time == 32.0
+
+
+def test_writing_automation_is_reported_so_it_gets_saved():
+    a, song_a, b, song_b, _ = joined_pair()
+    a.bridge.take("automation")
+    song_a.tracks[1].devices[0].parameters[1].ui_write_automation()
+    song_a.tracks[1].mixer_device.volume.ui_write_automation()
+    a.tick()
+    sent = a.bridge.take("automation")
+    assert len(sent) == 1 and len(sent[0]["ids"]) == 2
+    a.tick()
+    assert a.bridge.take("automation") == []

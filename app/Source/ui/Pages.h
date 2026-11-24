@@ -12,7 +12,7 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
     void mouseUp (const juce::MouseEvent&) override;
-    static constexpr int contentHeight = 880;
+    static constexpr int contentHeight = 910;
 
 private:
     juce::Rectangle<int> swatchArea (int index) const;
@@ -26,6 +26,7 @@ private:
     juce::ToggleButton autoUpdate { "Update automatically" }, startAtLogin { "Start Tutti when I log in" };
     juce::ToggleButton autoSave { "Save for me after plugin changes" };
     juce::ToggleButton autoGet { "Get others' saves automatically (not while playing)" };
+    juce::ToggleButton lockTracks { "Lock the track someone is on (Player 1 sets it for the session)" };
     juce::TextButton forgetTrusted { "Forget trusted friends" };
     juce::Label trustedInfo;
     juce::TextButton allowSave { "Allow Tutti to press Save..." };

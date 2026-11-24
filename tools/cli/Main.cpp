@@ -43,7 +43,7 @@ namespace
                       { "doc", engine.session().replica().confirmed().toJson() }, { "seq", engine.session().replica().seq() },
                       { "song_file", engine.songFile().getFullPathName().toStdString() },
                       { "update_available", v.updateAvailable }, { "versions", v.versions.size() },
-                      { "save_to_share", v.saveToShare } };
+                      { "save_to_share", v.saveToShare }, { "activity", v.activity } };
     }
 
     void emit (const Json& j)
@@ -133,6 +133,12 @@ int main (int argc, char* argv[])
             }
             else if (c == "trust")
                 engine.trustAndLetIn (str (*cmd, "peer"));
+            else if (c == "lock")
+                engine.setLockTracks (boolean (*cmd, "on", true));
+            else if (c == "undo")
+                engine.undoMine();
+            else if (c == "chat")
+                engine.sendMessage (str (*cmd, "text"));
             else if (c == "auto_get")
                 engine.setAutoGet (boolean (*cmd, "on", true));
             else if (c == "install_script")

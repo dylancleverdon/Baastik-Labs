@@ -122,6 +122,7 @@ namespace tutti
         sendToLive (Json { { "type", "structure" }, { "req", ++structureRequest } });
         notice ("Sharing your save...");
         log ("saved in Live: sharing " + saved.getFullPathName().toStdString());
+        editedSinceSave = false;
         myPluginChanges.clear();
         if (! mySaveNeeded.empty())
         {
@@ -275,8 +276,12 @@ namespace tutti
 
     void Engine::handleSnapshotNotice (const std::string& from, const Json& meta)
     {
-        storeSnapshot (meta);
         const auto id = str (meta, "id");
+        // The same version can arrive twice (over two links, or relayed): handle it once, or
+        // Live would reopen the song twice.
+        if (id.empty() || ! handledSnapshots.insert (id).second)
+            return;
+        storeSnapshot (meta);
         log ("new version from " + memberName (from) + " (saved by " + str (meta, "byName") + "): " + id);
         latestSnapshot = id;
         wantFile (str (meta, "als"), false);
@@ -552,18 +557,33 @@ namespace tutti
         const auto when = friendlyTime (str (meta, "at")).replace (":", ".");
         const auto name = juce::File::createLegalFileName (when + " " + juce::String (str (meta, "byName"))
                                                            + (str (meta, "label").empty() ? juce::String() : " - " + juce::String (str (meta, "label"))));
-        juce::Thread::launch ([this, meta, dir, name] {
+        writeCompleteCopy (meta, dir, name, false);
+    }
+
+    // The song with all its audio copied next to it: opens in Live without Tutti.
+    void Engine::writeCompleteCopy (const Json& meta, const juce::File& dir, const juce::String& name, bool reveal)
+    {
+        juce::Thread::launch ([this, meta, dir, name, reveal] {
             juce::String error;
             auto set = als::load (contentStore.fileFor (str (meta, "als")), error);
             if (set == nullptr)
+            {
+                post ([this, error] { notice ("Couldn't make the copy: " + error.toStdString()); });
                 return;
+            }
+            dir.createDirectory();
+            dir.getChildFile ("Ableton Project Info").createDirectory();
             auto samples = dir.getChildFile ("Samples");
             samples.createDirectory();
+            int missing = 0;
             for (auto& ref : als::fileRefs (*set))
             {
                 const auto hash = hashOfStorePath (juce::File (ref.path.replaceCharacter ('\\', '/')));
                 if (hash.empty() || ! contentStore.has (hash))
+                {
+                    missing += hash.empty() ? 0 : 1;
                     continue;
+                }
                 auto source = contentStore.fileFor (hash);
                 auto target = samples.getChildFile (source.getFileName());
                 if (target.existsAsFile() && target.getSize() != source.getSize())
@@ -572,7 +592,19 @@ namespace tutti
                     source.copyFileTo (target);
                 als::rewrite (ref, target, dir);
             }
-            als::save (*set, dir.getChildFile (name + ".als"));
+            const auto file = dir.getChildFile (name + ".als");
+            const bool ok = als::save (*set, file);
+            if (reveal)
+                post ([this, ok, file, missing] {
+                    if (! ok)
+                    {
+                        notice ("Couldn't write the copy.");
+                        return;
+                    }
+                    notice ("Saved a complete copy: " + file.getFullPathName().toStdString()
+                            + (missing > 0 ? " (" + std::to_string (missing) + " audio file(s) hadn't arrived yet)" : ""));
+                    file.revealToUser();
+                });
         });
     }
 }

@@ -47,6 +47,13 @@ namespace
         void continueLastSession() override {}
         void jumpTo (const std::string&) override {}
         void dismissPluginProblems() override {}
+        void setLockTracks (bool) override {}
+        void undoMine() override {}
+        void sendMessage (const std::string&) override {}
+        void pingMySpot() override {}
+        void jumpToSpot (const std::string&, double) override {}
+        void saveCompleteCopy() override {}
+        void dismissCopyOffer() override {}
         void makeIdea() override {}
         void acceptIdea (const std::string&) override {}
         void rejectIdea (const std::string&) override {}
@@ -122,6 +129,7 @@ namespace
         cara.name = "Cara";
         s.engine.peers = { sam, cara };
         s.engine.notices = { "Tailscale connected" };
+        s.engine.copyOffer = "Night Drive";
         s.engine.continueSong = "/Users/dylan/Music/Tutti/Night Drive/Night Drive.als";
         s.engine.continueName = "Night Drive";
         shoot ("2-home", s);
@@ -147,6 +155,9 @@ namespace
         s.engine.canSaveForYou = true;
         s.engine.autoSave = true;
         s.engine.activity = { "21:04  Sam saved", "21:02  New audio on Vox", "20:58  Cara joined" };
+        s.engine.messages = { { "21:05", "Sam", "Look at Vox, bar 33", "t3", 128.0 }, { "21:03", "You", "love that bass", "", 0 } };
+        s.engine.undoSteps = 3;
+        s.engine.pluginTable = { "Serum 2 (VST3): you, Sam | missing for Cara", "Valhalla Room (VST3): you, Sam, Cara" };
         s.engine.pluginProblems = { "Serum 2: the song uses VST3, you have AU (install the VST3 version and turn on VST3 in Live's Plug-Ins settings)" };
         shoot ("3-session-player1", s);
         s.engine.saveToShare.clear();
@@ -436,6 +447,10 @@ private:
             menu.addItem ("Try an idea on the selected track", [this] { makeIdea(); });
             menu.addSeparator();
             menu.addItem ("Save & share", [this] { saveAndShare(); });
+            menu.addItem ("Undo my last change", [this] { undoMine(); });
+            menu.addItem ("Ping my spot", [this] { pingMySpot(); });
+            menu.addItem ("Message...", [this] { showPage (MainComponent::Page::main); window->content->askForMessage(); });
+            menu.addItem ("Save a complete copy", [this] { saveCompleteCopy(); });
             menu.addItem ("Open the session song in Live", [this] { openSong(); });
             menu.addItem ("Show the song file", [this] { revealSong(); });
             menu.addItem ("Versions...", [this] { showPage (MainComponent::Page::versions); });
@@ -575,6 +590,13 @@ private:
     void continueLastSession() override { engine->continueLastSession(); dirty = true; }
     void jumpTo (const std::string& peer) override { engine->jumpTo (peer); dirty = true; }
     void dismissPluginProblems() override { engine->dismissPluginProblems(); dirty = true; }
+    void setLockTracks (bool on) override { engine->setLockTracks (on); dirty = true; }
+    void undoMine() override { engine->undoMine(); dirty = true; }
+    void sendMessage (const std::string& text) override { engine->sendMessage (text); dirty = true; }
+    void pingMySpot() override { engine->pingMySpot(); dirty = true; }
+    void jumpToSpot (const std::string& track, double time) override { engine->jumpToSpot (track, time); }
+    void saveCompleteCopy() override { engine->saveCompleteCopy(); dirty = true; }
+    void dismissCopyOffer() override { engine->dismissCopyOffer(); dirty = true; }
     void allowSaving() override
     {
         if (! allowedToPressKeys (true))

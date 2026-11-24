@@ -23,6 +23,7 @@ public:
     void resized() override;
     bool keyPressed (const juce::KeyPress&) override;
     void chooseSong();
+    void askForMessage();
 
 private:
     std::vector<Row> buildRows (const AppState&);

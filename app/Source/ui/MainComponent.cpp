@@ -117,6 +117,13 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
         else
             add ({ "live", Row::Style::good, "Live " + juce::String (e.liveVersion) + " connected", juce::String (e.liveStatus) });
 
+        if (! e.copyOffer.empty())
+            add ({ "copy", Row::Style::card, "Keep a complete copy of " + juce::String (e.copyOffer) + "?",
+                   "The song and all its audio in one folder (Music/Tutti/Complete copies), ready to open in Live without Tutti.",
+                   {}, false, false,
+                   { { "No thanks", [&act] { act.dismissCopyOffer(); } },
+                     { "Save a complete copy", [&act] { act.saveCompleteCopy(); }, true } } });
+
         // --- start
         add ({ "h-start", Row::Style::heading, "Start a session" });
         if (e.startStatus.empty())
@@ -318,6 +325,32 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
         add (r);
     }
 
+    // --- messages
+    add ({ "h-messages", Row::Style::heading, "Messages" });
+    for (size_t i = 0; i < e.messages.size() && i < 5; ++i)
+    {
+        const auto& m = e.messages[i];
+        std::vector<Row::Action> go;
+        if (! m.track.empty())
+        {
+            const auto track = m.track;
+            const auto time = m.time;
+            go.push_back ({ "Go to", [&act, track, time] { act.jumpToSpot (track, time); } });
+        }
+        add ({ "msg-" + std::to_string (i), Row::Style::card, juce::String (m.who) + ": " + juce::String (m.text),
+               juce::String (m.when), {}, false, false, go });
+    }
+    add ({ "msg-actions", Row::Style::quiet, {}, {}, {}, false, false,
+           { { "Message...", [this] { askForMessage(); } }, { "Ping my spot", [&act] { act.pingMySpot(); } } } });
+
+    if (! e.pluginTable.empty())
+    {
+        juce::StringArray lines;
+        for (const auto& l : e.pluginTable)
+            lines.add (juce::String (l));
+        add ({ "plugin-table", Row::Style::card, "Plugins in this song", lines.joinIntoString ("\n") });
+    }
+
     // --- recent activity
     if (! e.activity.empty())
     {
@@ -356,6 +389,11 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
         add ({ "idea-" + idea.track, Row::Style::card, juce::String (idea.byName) + "'s idea for " + juce::String (idea.origName),
                "Solo \"" + juce::String (idea.name) + "\" in Live to hear it. Player 1 decides.", {}, false, false, ideaActions });
     }
+    if (e.undoSteps > 0)
+        add ({ "undo", Row::Style::quiet, {}, {}, {}, false, false,
+               { { "Undo my last change", [&act] { act.undoMine(); } } } });
+    add ({ "copy-now", Row::Style::quiet, {}, {}, {}, false, false,
+           { { "Save a complete copy", [&act] { act.saveCompleteCopy(); } } } });
     add ({ "make-idea", Row::Style::quiet, {}, {}, {}, false, false,
            { { "Try an idea on the selected track", [&act] { act.makeIdea(); } } } });
     add ({ "versions", Row::Style::quiet, {}, {}, {}, false, false,
@@ -389,6 +427,22 @@ std::vector<Row> MainComponent::buildVersionRows (const AppState& s)
                      { { "Name the latest version...", [this] { askForLabel(); } } } });
     out.push_back ({ "back", Row::Style::quiet, {}, {}, {}, false, false, { { "Back", [this] { showPage (Page::main); } } } });
     return out;
+}
+
+void MainComponent::askForMessage()
+{
+    labelPrompt = std::make_unique<juce::AlertWindow> ("Message everyone", "", juce::MessageBoxIconType::NoIcon);
+    labelPrompt->addTextEditor ("text", {}, {});
+    labelPrompt->addButton ("Send", 1, juce::KeyPress (juce::KeyPress::returnKey));
+    labelPrompt->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    labelPrompt->enterModalState (true, juce::ModalCallbackFunction::create ([this] (int result) {
+        if (result == 1 && labelPrompt != nullptr)
+        {
+            const auto text = labelPrompt->getTextEditorContents ("text").trim();
+            if (text.isNotEmpty())
+                actions.sendMessage (text.toStdString());
+        }
+    }), false);
 }
 
 void MainComponent::askForLabel()

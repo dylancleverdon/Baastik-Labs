@@ -3,6 +3,7 @@
 #include "Net.h"
 #include "tutti/AudioFiles.h"
 #include "tutti/Session.h"
+#include "tutti/Als.h"
 #include "tutti/Store.h"
 #include "tutti/Tailscale.h"
 
@@ -101,6 +102,17 @@ namespace tutti
         std::vector<std::string> trusted;       // names of people let in without asking
         std::string continueSong;      // the last session's song file here, to continue it
         std::string continueName;
+        bool lockTracks = false;       // the session's track lock (Player 1's setting)
+        bool canChangeLock = false;    // I'm Player 1 (or not in a session)
+        int undoSteps = 0;             // my own changes I can undo
+        struct Message
+        {
+            std::string when, who, text, track;  // track: a ping's track (entity id), else empty
+            double time = 0;                     // a ping's position in beats
+        };
+        std::vector<Message> messages;  // newest first
+        std::vector<std::string> pluginTable;  // "Serum 2 (VST3): you, Wilson | missing: Sam"
+        std::string copyOffer;         // song we can save a complete copy of (after a session)
         std::vector<std::string> saveToShare;  // things I added that only travel when I save
         struct Waiting { std::string byName, what; };
         std::vector<Waiting> waitingForSave;   // things others added that arrive when they save
@@ -141,6 +153,13 @@ namespace tutti
         void continueLastSession();
         void jumpTo (const std::string& peer);          // your Live to their track and bar
         void dismissPluginProblems() { pluginProblems.clear(); }
+        void setLockTracks (bool);
+        void undoMine();
+        void sendMessage (const std::string& text);
+        void pingMySpot();
+        void jumpToSpot (const std::string& track, double time);
+        void saveCompleteCopy();
+        void dismissCopyOffer() { copyOfferMeta = nullptr; }
         void playTogether();
         void answerPlayTogether (bool join);
         void stopTogether();
@@ -320,6 +339,34 @@ namespace tutti
         void trackMembers();
         void addActivity (const std::string& text);
         void checkPlugins (const juce::XmlElement& set);
+        // round 3
+        std::string trackOf (const Doc& doc, const std::string& id) const;
+        bool blockedByLock (Ops& ops);          // removes edits to tracks others are on; puts Live back
+        void recordUndo (const Ops& ops);       // before submitting my own edits
+        void addMessage (const std::string& who, const std::string& text, const std::string& track, double time);
+        void writeCompleteCopy (const Json& meta, const juce::File& dir, const juce::String& name, bool reveal);
+        std::vector<std::string> buildPluginTable() const;
+        bool lockTracks = false, sessionLock = false;
+        bool editedSinceSave = false;
+        std::set<std::string> handledSnapshots;
+        double lastLockNotice = 0;
+        struct UndoStep
+        {
+            double at = 0;
+            Ops inverse;                                     // run in order to undo
+            std::vector<std::pair<std::string, Json>> mine;  // (id, props I set): skip if changed since
+        };
+        std::deque<UndoStep> undoStack;
+        struct MessageEntry
+        {
+            juce::Time when;
+            std::string who, text, track;
+            double time = 0;
+        };
+        std::deque<MessageEntry> messageLog;
+        Json copyOfferMeta;                      // the last version of the session we just left
+        mutable juce::int64 pluginTableStamp = 0;
+        mutable std::vector<als::PluginRef> songPlugins;
         bool autoGet = true;
         double updateSeenAt = 0, lastRejoinTry = 0;
         std::deque<std::pair<juce::Time, std::string>> activityLog;

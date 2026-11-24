@@ -62,6 +62,13 @@ struct AppActions
     virtual void continueLastSession() = 0;
     virtual void jumpTo (const std::string& peer) = 0;
     virtual void dismissPluginProblems() = 0;
+    virtual void setLockTracks (bool) = 0;
+    virtual void undoMine() = 0;
+    virtual void sendMessage (const std::string& text) = 0;
+    virtual void pingMySpot() = 0;
+    virtual void jumpToSpot (const std::string& track, double time) = 0;
+    virtual void saveCompleteCopy() = 0;
+    virtual void dismissCopyOffer() = 0;
     virtual void makeIdea() = 0;
     virtual void acceptIdea (const std::string& track) = 0;
     virtual void rejectIdea (const std::string& track) = 0;

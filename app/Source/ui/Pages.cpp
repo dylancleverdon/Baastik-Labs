@@ -51,6 +51,8 @@ SettingsPage::SettingsPage (AppActions& a, std::function<void()> onDone) : actio
     autoUpdate.onClick = [this] { actions.setAutoUpdate (autoUpdate.getToggleState()); };
     autoSave.onClick = [this] { actions.setAutoSave (autoSave.getToggleState()); };
     autoGet.onClick = [this] { actions.setAutoGet (autoGet.getToggleState()); };
+    lockTracks.onClick = [this] { actions.setLockTracks (lockTracks.getToggleState()); };
+    addAndMakeVisible (lockTracks);
     forgetTrusted.onClick = [this] { actions.forgetTrusted(); };
     addAndMakeVisible (autoGet);
     addChildComponent (forgetTrusted);
@@ -96,6 +98,8 @@ void SettingsPage::update (const AppState& s)
     startAtLogin.setToggleState (s.setup.startAtLogin, juce::dontSendNotification);
     autoSave.setToggleState (s.engine.autoSave, juce::dontSendNotification);
     autoGet.setToggleState (s.engine.autoGet, juce::dontSendNotification);
+    lockTracks.setToggleState (s.engine.lockTracks, juce::dontSendNotification);
+    lockTracks.setEnabled (s.engine.canChangeLock);
     {
         juce::StringArray names;
         for (const auto& n : s.engine.trusted)
@@ -203,11 +207,12 @@ void SettingsPage::resized()
     startAtLogin.setBounds (0, y + 22, w, 26);
     autoSave.setBounds (0, y + 50, w, 26);
     autoGet.setBounds (0, y + 78, w, 26);
-    trustedInfo.setBounds (0, y + 108, w - 180, 36);
-    forgetTrusted.setBounds (w - 170, y + 108, 170, 30);
-    scriptInfo.setBounds (0, y + 150, w, 36);
-    logs.setBounds (0, y + 190, 120, 30);
-    allowSave.setBounds (128, y + 190, 210, 30);
+    lockTracks.setBounds (0, y + 106, w, 26);
+    trustedInfo.setBounds (0, y + 136, w - 180, 36);
+    forgetTrusted.setBounds (w - 170, y + 136, 170, 30);
+    scriptInfo.setBounds (0, y + 178, w, 36);
+    logs.setBounds (0, y + 218, 120, 30);
+    allowSave.setBounds (128, y + 218, 210, 30);
 
     back.setBounds (w - 100, getHeight() - 34, 100, 32);
 }

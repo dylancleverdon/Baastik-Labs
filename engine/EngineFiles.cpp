@@ -10,7 +10,7 @@ namespace tutti
     {
         constexpr int64_t kChunk = 256 * 1024;
         constexpr size_t kMaxQueued = 4u * 1024u * 1024u;
-        constexpr int kMaxActive = 3;
+        constexpr int kMaxActive = 6;
 
         // Live's track colour indices for Tutti's eight member colours.
         constexpr int kLiveColours[] = { 13, 26, 16, 1, 24, 4, 9, 21 };
@@ -524,6 +524,7 @@ namespace tutti
         playMode = str (j, "play", "ask");
         autoSave = boolean (j, "autosave", true);
         autoGet = boolean (j, "autoget", true);
+        lockTracks = boolean (j, "lock", false);
         if (const auto& t = field (j, "trusted"); t.is_object())
             for (const auto& [peer, name] : t.items())
                 if (name.is_string())
@@ -556,6 +557,7 @@ namespace tutti
         j["play"] = playMode;
         j["autosave"] = autoSave;
         j["autoget"] = autoGet;
+        j["lock"] = lockTracks;
         Json trusted = Json::object();
         for (const auto& [peer, name] : trustedPeers)
             trusted[peer] = name;
@@ -679,6 +681,15 @@ namespace tutti
         v.autoSave = autoSave;
         v.saveNeedsPermission = saveNeedsPermission;
         v.autoGet = autoGet;
+        v.lockTracks = s.inSession() ? sessionLock : lockTracks;
+        v.canChangeLock = ! s.inSession() || s.isPlayer1();
+        v.undoSteps = static_cast<int> (undoStack.size());
+        for (const auto& m : messageLog)
+            if (v.messages.size() < 8)
+                v.messages.push_back ({ m.when.formatted ("%H:%M").toStdString(), m.who, m.text, m.track, m.time });
+        v.pluginTable = buildPluginTable();
+        if (! s.inSession() && copyOfferMeta.is_object())
+            v.copyOffer = str (copyOfferMeta, "song", "the song");
         for (const auto& [when, text] : activityLog)
             if (v.activity.size() < 6)
                 v.activity.push_back ((when.formatted ("%H:%M") + "  " + juce::String (text)).toStdString());

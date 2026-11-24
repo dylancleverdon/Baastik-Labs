@@ -113,12 +113,17 @@ class _Data(object):
 # ---------------------------------------------------------------- parameters and devices
 
 class FakeDeviceParameter(_Listenable):
-    _props = ("value", "name")
+    _props = ("value", "name", "automation_state")
 
     def __init__(self, name, value=0.0, min=0.0, max=1.0, is_quantized=False):
         _Listenable.__init__(self)
         self.__dict__.update(_name=name, _value=value, min=min, max=max, is_quantized=is_quantized,
-                             is_enabled=True, original_name=name)
+                             is_enabled=True, original_name=name, automation_state=0)
+
+    def ui_write_automation(self):
+        """What drawing or recording automation for this parameter does."""
+        self.__dict__["automation_state"] = 1
+        self._notify("automation_state")
 
     name = _prop("name", readonly=True)
 

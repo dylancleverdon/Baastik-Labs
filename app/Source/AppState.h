@@ -53,6 +53,9 @@ struct AppActions
     virtual void setPlayMode (const std::string& mode) = 0;
     virtual void openSong() = 0;
     virtual void revealSong() = 0;
+    virtual void saveAndShare() = 0;
+    virtual void setAutoSave (bool) = 0;
+    virtual void allowSaving() = 0;   // macOS: ask for the permission to press Save in Live
     virtual void makeIdea() = 0;
     virtual void acceptIdea (const std::string& track) = 0;
     virtual void rejectIdea (const std::string& track) = 0;

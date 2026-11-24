@@ -67,7 +67,7 @@ by whoever creates the entity (the Remote Script for Live objects). The root is 
 | --- | --- | --- |
 | song | - | `tempo`, `sig_n`, `sig_d`, `swing` |
 | track | song | `kind` (midi/audio/return/master/group), `pos`, `name`, `color`, `mute`, `vol`, `pan`, `send<i>` |
-| device | track / chain | `cls`, `name`, `pos`, `on`, `p<i>` (parameter values), `plugin` (descriptor for plugins) |
+| device | track / chain | `cls`, `name`, `pos`, `on`, `p<i>` (parameter values), `plugin` (descriptor for plugins), `preset` (index, for plugins that list presets in Live) |
 | chain | device | `pos`, `name`, `color`, `mute`, `vol`, `pan` |
 | scene | song | `pos`, `name`, `color`, `tempo` |
 | clip | track | `where` (arr/session), `start`, `len` (arrangement), `scene` (session), `name`, `color`, `muted`, `loop`, `ls`, `le`, `sm`, `em`, audio: `file` (sha256), `warp`, `wmode`, `gain`, `pc`, `pf` |

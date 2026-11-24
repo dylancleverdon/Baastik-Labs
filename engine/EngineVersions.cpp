@@ -122,6 +122,7 @@ namespace tutti
         sendToLive (Json { { "type", "structure" }, { "req", ++structureRequest } });
         notice ("Sharing your save...");
         log ("saved in Live: sharing " + saved.getFullPathName().toStdString());
+        myPluginChanges.clear();
         if (! mySaveNeeded.empty())
         {
             mySaveNeeded.clear();
@@ -376,6 +377,88 @@ namespace tutti
         liveBound = false;
         liveStatus = "Updating your Live...";
         openInLiveAndWait (target);
+    }
+
+    // ================================================================== saving for the person
+
+    void Engine::saveAndShare()
+    {
+        if (! sessionPtr->inSession() || ! liveBound)
+        {
+            notice ("Join or start a session first.");
+            return;
+        }
+        if (! options.pressSaveInLive)
+            return;
+        switch (options.pressSaveInLive (true))
+        {
+            case saveKeyPressed:
+                saveNeedsPermission = false;
+                log ("pressed Save in Live");
+                notice ("Saving in Live...");
+                break;
+            case saveKeyNeedsPermission:
+                saveNeedsPermission = true;
+               #if JUCE_MAC
+                notice ("Allow Tutti in System Settings > Privacy & Security > Accessibility so it can press Save in Live. "
+                        "Until then, press Cmd+S in Live.");
+               #else
+                notice ("Tutti isn't allowed to press Save in Live. Press Ctrl+S in Live.");
+               #endif
+                break;
+            case saveKeyBusy:
+                notice ("Let go of the keys and mouse, then try again (or press Cmd+S / Ctrl+S in Live).");
+                break;
+            case saveKeyNoLive:
+                notice ("Live isn't open.");
+                break;
+            default:
+               #if JUCE_MAC
+                notice ("Couldn't press Save in Live. Press Cmd+S in Live.");
+               #else
+                notice ("Couldn't press Save in Live. Press Ctrl+S in Live.");
+               #endif
+                break;
+        }
+    }
+
+    void Engine::setAutoSave (bool on)
+    {
+        autoSave = on;
+        saveSettings();
+    }
+
+    void Engine::autoSaveIfDue()
+    {
+        // After a plugin was added or changed, save once the person has stopped tweaking for a
+        // few seconds, isn't playing or recording, and is working in Live (Tutti never pulls
+        // Live to the front by itself).
+        if (! autoSave || ! options.pressSaveInLive || ! sessionPtr->inSession() || ! liveBound || reloading
+            || ! pendingSave.is_null() || (mySaveNeeded.empty() && myPluginChanges.empty()))
+            return;
+        const double t = now();
+        if (t - pluginChangedAt < 8.0 || t - lastAutoSaveTry < 5.0 || liveIsBusy())
+            return;
+        lastAutoSaveTry = t;
+        switch (options.pressSaveInLive (false))
+        {
+            case saveKeyPressed:
+                saveNeedsPermission = false;
+                log ("saved automatically after plugin changes");
+                notice ("Saved your plugin changes so everyone gets them.");
+                break;
+            case saveKeyNeedsPermission:
+                saveNeedsPermission = true;
+                if (! permissionNoticeShown)
+                {
+                    permissionNoticeShown = true;
+                    notice ("Tutti can save for you after plugin changes: allow it in Settings.");
+                }
+                lastAutoSaveTry = t + 55.0; // ask Live again in a minute
+                break;
+            default:
+                break; // Live not in front, keys held...: try again shortly
+        }
     }
 
     bool Engine::liveIsBusy() const

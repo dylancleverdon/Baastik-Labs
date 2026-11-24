@@ -15,7 +15,7 @@ import time
 from . import livemodel as lm
 from .mirror import Mirror
 
-SCRIPT_VERSION = "4"   # the app asks people to restart Live when its script is newer
+SCRIPT_VERSION = "5"   # the app asks people to restart Live when its script is newer
 PROTOCOL = 1
 APPLY_BUDGET = 400          # entity writes per tick, so a big join doesn't freeze Live
 FULL_SCAN_EVERY = 4.0       # seconds: catch changes that have no listener (warp mode, gain...)
@@ -444,6 +444,8 @@ class Engine(object):
             mark = self._marker(eid, "props")
             for p in lm.safe(lambda: list(obj.parameters), []):
                 self._listen(p, "value", mark)
+            if lm.is_plugin(obj) and lm.has(obj, "selected_preset_index"):
+                self._listen(obj, "selected_preset_index", mark)
             if lm.safe(lambda: obj.can_have_chains, False):
                 self._listen(obj, "chains", self._marker(eid, "devices"))
         elif etype == "clip":

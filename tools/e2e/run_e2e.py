@@ -99,6 +99,7 @@ class Peer(object):
                                      text=True, bufsize=1)
         self.events = queue.Queue()
         self.opened = []
+        self.save_presses = []
         threading.Thread(target=self._read, daemon=True).start()
         ready = self.wait_event("ready", 20)
         self.peer_id = ready["peer"]
@@ -113,6 +114,8 @@ class Peer(object):
                 continue
             if ev.get("event") == "open":
                 self.opened.append(ev["path"])
+            if ev.get("event") == "press_save":
+                self.save_presses.append(ev)
             self.events.put(ev)
 
     def cmd(self, **kw):
@@ -460,6 +463,11 @@ def main():
         check(h.run(10, lambda: any("added Serum 2" in n for n in bob.state()["notices"])), "Bob is told to save to share Serum 2")
         check(h.run(10, lambda: any("bob added Serum 2" in n for n in alice.state()["notices"])),
               "Alice is told Serum 2 arrives when Bob saves")
+        presses = len(bob.save_presses)
+        check(h.run(20, lambda: len(bob.save_presses) > presses), "Bob's Tutti saves for him once he stops tweaking")
+        check(not bob.save_presses[-1]["front"], "without pulling Live to the front")
+        save(bob, 1, "bob-serum")  # what Live does when Save is pressed
+        check(h.run(20, lambda: not bob.state().get("save_to_share")), "and Bob's plugin is shared")
 
         def has_standin(p):
             return any("Tutti Stand-in" in json.dumps(e["v"]) for e in p.state()["doc"]["e"] if e["t"] == "device")

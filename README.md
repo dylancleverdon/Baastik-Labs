@@ -66,7 +66,13 @@ possible (see "Plugins" below).
   Tutti then reopens the song in Live (it alternates between `<song>.als` and
   `<song> (Tutti).als`, because Live can't reload a file it has open). It never does this while
   you're playing or recording: the update waits until you stop.
-- **Reminders:** after you add a plugin Tutti says **"Save to share what you added"**, and the
+- **Save & share:** Tutti can press Save in Live for you (the **Save & share now** button, also
+  in the menus), and by default it does so by itself a few seconds after you add or tweak a
+  plugin, while Live is in front and not playing. A save carries each plugin's whole current
+  sound (a Serum patch included), so nobody needs the preset file. On a Mac this needs a
+  one-time permission (macOS asks; or **Settings > Allow Tutti to press Save...**). Turn it off
+  in **Settings > Save for me after plugin changes**.
+- **Reminders:** after you add or change a plugin Tutti shows **"Not shared yet"**, and the
   others see **"<name> added <plugin>"**. Anyone who isn't Player 1 can also click **Reload the
   latest saved version** at any time.
 
@@ -81,7 +87,10 @@ version to a folder such as an external drive while you're Player 1.
 
 ### Plugins
 
-Live's API can't read a plugin's internal patch, so plugin sounds travel with saves. Everyone
+Live's API can't read a plugin's internal patch, so plugin sounds travel with saves (which Tutti
+can make for you, see [Saving](#saving)). Plugins that list their presets inside Live switch
+presets live for everyone; knobs Live shows for a plugin move live too. Use the same plugin
+format on Mac and Windows (VST3 on both). Everyone
 should own the plugins a song uses; for plugins only some people own, Tutti's Stand-in plugin
 plays a shared recording of that track for the people who don't.
 

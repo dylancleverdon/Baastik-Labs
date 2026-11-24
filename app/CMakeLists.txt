@@ -31,6 +31,7 @@ target_compile_definitions(Tutti PRIVATE
 
 if(APPLE)
     target_link_libraries(Tutti PRIVATE "-framework CoreServices") # Dock icon clicks (MacReopen.cpp)
+    target_link_libraries(Tutti PRIVATE "-framework ApplicationServices") # pressing Save in Live (LiveSave.cpp)
 endif()
 
 target_link_libraries(Tutti PRIVATE

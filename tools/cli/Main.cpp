@@ -42,7 +42,8 @@ namespace
                       { "notices", v.notices }, { "ideas", ideas }, { "can_take_over", v.canTakeOver },
                       { "doc", engine.session().replica().confirmed().toJson() }, { "seq", engine.session().replica().seq() },
                       { "song_file", engine.songFile().getFullPathName().toStdString() },
-                      { "update_available", v.updateAvailable }, { "versions", v.versions.size() } };
+                      { "update_available", v.updateAvailable }, { "versions", v.versions.size() },
+                      { "save_to_share", v.saveToShare } };
     }
 
     void emit (const Json& j)
@@ -78,6 +79,12 @@ int main (int argc, char* argv[])
     options.openInLive = [] (const juce::File& f) {
         emit (Json { { "event", "open" }, { "path", f.getFullPathName().toStdString() } });
         return true;
+    };
+
+    // The end-to-end test plays Live: it saves the song when Tutti "presses" Save.
+    options.pressSaveInLive = [] (bool bringToFront) {
+        emit (Json { { "event", "press_save" }, { "front", bringToFront } });
+        return static_cast<int> (saveKeyPressed);
     };
 
     Engine engine (options);

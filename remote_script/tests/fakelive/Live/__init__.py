@@ -135,9 +135,9 @@ class FakeDeviceParameter(_Listenable):
 
 
 class FakeDevice(_Listenable):
-    _props = ("name", "parameters", "is_active")
+    _props = ("name", "parameters", "is_active", "selected_preset_index")
 
-    def __init__(self, name, class_name=None, params=None):
+    def __init__(self, name, class_name=None, params=None, presets=None):
         _Listenable.__init__(self)
         params = params if params is not None else [("Dry/Wet", 0.5, 0.0, 1.0), ("Decay", 0.3, 0.0, 1.0)]
         parameters = [FakeDeviceParameter("Device On", 1.0, 0.0, 1.0, True)]
@@ -145,8 +145,23 @@ class FakeDevice(_Listenable):
         self.__dict__.update(_name=name, class_name=class_name or name.replace(" ", ""),
                              class_display_name=name, _parameters=parameters, can_have_chains=False,
                              chains=[], type=2, _is_active=True)
+        if presets is not None:   # plugins that list presets inside Live
+            self.__dict__.update(presets=list(presets), _selected_preset_index=0)
 
     name = _prop("name")
+
+    @property
+    def selected_preset_index(self):
+        if "presets" not in self.__dict__:
+            raise AttributeError("selected_preset_index")
+        return self._selected_preset_index
+
+    @selected_preset_index.setter
+    def selected_preset_index(self, v):
+        _guard()
+        if not 0 <= int(v) < len(self.presets):
+            raise RuntimeError("Invalid preset index")
+        self._set("selected_preset_index", int(v))
     parameters = _prop("parameters", readonly=True)
     is_active = _prop("is_active", readonly=True)
 
@@ -490,8 +505,8 @@ class FakeTrack(_Listenable, _Data):
         return _Listenable.__getattr__(self, name)
 
     # --- test helpers: what a person does in Live's UI
-    def ui_add_device(self, name, index=None, params=None, class_name=None):
-        device = FakeDevice(name, class_name, params)
+    def ui_add_device(self, name, index=None, params=None, class_name=None, presets=None):
+        device = FakeDevice(name, class_name, params, presets)
         devices = list(self._devices)
         devices.insert(len(devices) if index is None else index, device)
         self.__dict__["_devices"] = devices

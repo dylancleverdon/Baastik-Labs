@@ -63,7 +63,7 @@ def copy_track(t, nt):
     nt.mixer_device.volume.value = t.mixer_device.volume.value
     nt.mixer_device.panning.value = t.mixer_device.panning.value
     for d in t.devices:
-        nd = nt.ui_add_device(d.name, params=[], class_name=d.class_name)
+        nd = nt.ui_add_device(d.name, params=[], class_name=d.class_name, presets=d.__dict__.get("presets"))
         nd.__dict__["_parameters"] = [Live.DeviceParameter.DeviceParameter(p.name, p.value, p.min, p.max)
                                       for p in d.parameters]
     for c in (t.arrangement_clips if t.kind not in Live.NO_ARRANGEMENT else []):
@@ -511,7 +511,7 @@ def test_hello_says_which_script_version_is_running():
     song = demo_song()
     bridge = FakeBridge()
     Engine(song, Live.Application.Application(song), Live, bridge).tick()
-    assert bridge.take("hello")[0]["script"] == "4"
+    assert bridge.take("hello")[0]["script"] == "5"
 
 
 def test_hello_names_the_open_set_so_the_app_knows_live_opened_its_file():
@@ -565,3 +565,23 @@ def test_a_set_that_is_still_changing_is_not_announced():
     engine.tick()
     hello = bridge.take("hello")
     assert len(hello) == 1 and hello[0]["fingerprint"]["n"] == 3
+
+
+def test_plugin_presets_listed_in_live_switch_live():
+    song = demo_song()
+    song.tracks[1].ui_add_device("Wavestation", class_name="AuPluginDevice", params=[("Cutoff", 0.5, 0.0, 1.0)],
+                                 presets=["Init", "Pad", "Bass"])
+    a, song_a, _, _ = make_engine(song)
+    doc, path_map, notes_map = capture(a)
+    b, song_b, _, _ = make_engine(clone_song(song_a))
+    b.bridge.inbox.append({"type": "bind", "doc": doc, "map": path_map, "notes": notes_map, "session": "s1"})
+    b.tick()
+    assert b.bridge.take("bound")
+    hub = Hub([a, b])
+    song_a.tracks[1].devices[-1]._set("selected_preset_index", 2)   # someone picks "Bass" in Live
+    hub.pump()
+    assert song_b.tracks[1].devices[-1].selected_preset_index == 2
+    song_b.tracks[1].devices[-1]._set("selected_preset_index", 1)
+    hub.pump()
+    assert song_a.tracks[1].devices[-1].selected_preset_index == 1
+    assert not a.stale and not b.stale

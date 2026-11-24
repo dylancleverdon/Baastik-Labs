@@ -13,6 +13,9 @@
 
 namespace tutti
 {
+    // What pressSaveInLive did.
+    enum SaveKeyResult { saveKeyPressed = 0, saveKeyNeedsPermission, saveKeyNoLive, saveKeyNotInFront, saveKeyBusy, saveKeyFailed };
+
     struct EngineOptions
     {
         juce::File dataDir;
@@ -23,6 +26,10 @@ namespace tutti
         juce::StringArray extraPeers;  // "host:port" to probe besides Tailscale peers
         bool useTailscale = true;
         std::function<bool (const juce::File&)> openInLive; // defaults to platform::openInLive
+        // Presses Save (Cmd+S / Ctrl+S) in Live for the person. bringToFront: they clicked a
+        // button, so Live may be brought forward; otherwise only if Live is already in front.
+        // Empty: this Tutti can't (the headless peer).
+        std::function<int (bool bringToFront)> pressSaveInLive;
         juce::String appVersion;
         juce::String os;
         juce::String name;             // default display name (else Tailscale's or the computer's)
@@ -84,6 +91,9 @@ namespace tutti
         std::vector<Version> versions; // newest first
         std::string songFile;          // the session song on this computer (Music/Tutti/...)
         bool updateWhenStopped = false; // an update is waiting for Live to stop playing
+        bool canSaveForYou = false;    // Tutti can press Save in Live (the app, not the headless peer)
+        bool autoSave = true;          // save by itself after plugin changes
+        bool saveNeedsPermission = false; // macOS hasn't allowed Tutti to press keys yet
         std::vector<std::string> saveToShare;  // things I added that only travel when I save
         struct Waiting { std::string byName, what; };
         std::vector<Waiting> waitingForSave;   // things others added that arrive when they save
@@ -116,6 +126,8 @@ namespace tutti
         void takeOver();
         void openSongInLive();
         void revealSong();
+        void saveAndShare();          // presses Save in Live; the save is then shared as usual
+        void setAutoSave (bool);
         void playTogether();
         void answerPlayTogether (bool join);
         void stopTogether();
@@ -286,6 +298,10 @@ namespace tutti
         std::set<std::string> stale;
         void noteSaveNeeded (const Ops&);
         std::vector<std::string> mySaveNeeded;
+        std::vector<std::string> myPluginChanges;   // plugins whose settings I changed since my last save
+        double pluginChangedAt = 0, lastAutoSaveTry = 0;
+        bool autoSave = true, saveNeedsPermission = false, permissionNoticeShown = false;
+        void autoSaveIfDue();
         std::map<std::string, std::pair<std::string, std::vector<std::string>>> othersSaveNeeded; // peer -> name, what
         std::deque<Json> pendingLocalBatches; // waiting for audio files to be hashed
 

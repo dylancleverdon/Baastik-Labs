@@ -107,6 +107,7 @@ namespace tutti
             lastStandInUpdate = t;
             updateStandIns();
         }
+        autoSaveIfDue();
         if (! pendingReload.is_null() && ! reloading && ! liveIsBusy())
         {
             auto meta = std::exchange (pendingReload, nullptr);
@@ -679,6 +680,7 @@ namespace tutti
         reloading = false;
         updateBy.clear();
         mySaveNeeded.clear();
+        myPluginChanges.clear();
         othersSaveNeeded.clear();
         pendingReload = nullptr;
         openedAt = 0;
@@ -746,7 +748,7 @@ namespace tutti
     {
         // The Remote Script this app ships (remote_script/Tutti/engine.py SCRIPT_VERSION). Live loads
         // scripts only when it starts, so after an update it may still run the old one.
-        constexpr const char* kRemoteScriptVersion = "4";
+        constexpr const char* kRemoteScriptVersion = "5";
     }
 
     bool Engine::liveScriptOutdated() const
@@ -1038,6 +1040,7 @@ namespace tutti
             if (std::find (mySaveNeeded.begin(), mySaveNeeded.end(), what) != mySaveNeeded.end())
                 continue;
             mySaveNeeded.push_back (what);
+            pluginChangedAt = now();
             log ("added " + what + " (plugin): shared on the next save");
             sessionPtr->broadcast (Json { { "type", "needs_save" }, { "what", mySaveNeeded }, { "byName", self.name } });
            #if JUCE_MAC
@@ -1051,7 +1054,25 @@ namespace tutti
     void Engine::submitFromLive (Ops ops)
     {
         if (sessionPtr->inSession())
+        {
             noteSaveNeeded (ops);
+            // A plugin's own settings (its patch) only travel with a save: note the change so
+            // Tutti can save for the person once they stop tweaking.
+            const auto& doc = sessionPtr->replica().optimistic();
+            for (const auto& op : ops)
+                if (op.kind == Op::Kind::set)
+                    if (const auto* e = doc.find (op.id); e != nullptr && e->type == "device" && e->props.contains ("plugin")
+                                                         && ! e->props["plugin"].is_null())
+                    {
+                        const auto name = str (e->props, "name", "a plugin") + " settings";
+                        pluginChangedAt = now();
+                        if (std::find (myPluginChanges.begin(), myPluginChanges.end(), name) == myPluginChanges.end())
+                        {
+                            myPluginChanges.push_back (name);
+                            log ("changed " + name + ": shared on the next save");
+                        }
+                    }
+        }
         // Local audio paths become content hashes. Hashing a big file takes a moment, so a batch
         // that needs it waits (and so does everything after it, to keep the order).
         if (! ops.empty())

@@ -170,6 +170,14 @@ jobs:
             codesign --force --deep --sign - "$item"
             codesign --verify --deep --strict "$item"
           done
+          # Re-sign the app with a designated requirement that names its bundle id instead of
+          # this build's hash, so macOS keeps Tutti's Accessibility permission (used to press
+          # Save in Live) across updates.
+          codesign --force --sign - --identifier com.baastiklabs.tutti \
+            --requirements '=designated => identifier "com.baastiklabs.tutti"' "$PAYLOAD/Tutti.app"
+          codesign --verify --deep --strict "$PAYLOAD/Tutti.app"
+          codesign -d -r- "$PAYLOAD/Tutti.app" 2>&1 | grep -q 'identifier "com.baastiklabs.tutti"' \
+            || { echo "the app's designated requirement isn't the bundle id"; exit 1; }
           ls -la "$PAYLOAD"
 
       - name: Package (installer + update zip)

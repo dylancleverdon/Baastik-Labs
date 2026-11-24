@@ -522,6 +522,7 @@ namespace tutti
             self.name = juce::SystemStats::getComputerName().toStdString();
         self.color = static_cast<int> (integer (j, "color", static_cast<int64_t> (std::hash<std::string> {} (self.peer) % 8)));
         playMode = str (j, "play", "ask");
+        autoSave = boolean (j, "autosave", true);
         if (const auto b = str (j, "backup"); ! b.empty())
             backupFolder = juce::File (juce::String (b));
         if (const auto& known = field (j, "known"); known.is_array())
@@ -539,6 +540,7 @@ namespace tutti
         j["name"] = self.name;
         j["color"] = self.color;
         j["play"] = playMode;
+        j["autosave"] = autoSave;
         j["backup"] = backupFolder.getFullPathName().toStdString();
         j["known"] = Json (std::vector<std::string> (knownPeers.begin(), knownPeers.end()));
         file.replaceWithText (juce::String (j.dump (2)));
@@ -646,11 +648,15 @@ namespace tutti
             v.songFile = currentSong.getFullPathName().toStdString();
             v.updateWhenStopped = ! pendingReload.is_null();
             v.saveToShare = mySaveNeeded;
+            v.saveToShare.insert (v.saveToShare.end(), myPluginChanges.begin(), myPluginChanges.end());
             for (const auto& [peer, entry] : othersSaveNeeded)
                 for (const auto& what : entry.second)
                     v.waitingForSave.push_back ({ entry.first, what });
         }
         v.backupFolder = backupFolder.getFullPathName().toStdString();
+        v.canSaveForYou = static_cast<bool> (options.pressSaveInLive);
+        v.autoSave = autoSave;
+        v.saveNeedsPermission = saveNeedsPermission;
         if (s.inSession())
         {
             std::vector<Json> metas;

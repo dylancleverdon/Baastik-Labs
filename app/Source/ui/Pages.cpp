@@ -49,6 +49,10 @@ SettingsPage::SettingsPage (AppActions& a, std::function<void()> onDone) : actio
     };
 
     autoUpdate.onClick = [this] { actions.setAutoUpdate (autoUpdate.getToggleState()); };
+    autoSave.onClick = [this] { actions.setAutoSave (autoSave.getToggleState()); };
+    allowSave.onClick = [this] { actions.allowSaving(); };
+    addAndMakeVisible (autoSave);
+    addChildComponent (allowSave);
     startAtLogin.onClick = [this] { actions.setStartAtLogin (startAtLogin.getToggleState()); };
     addAndMakeVisible (autoUpdate);
     addAndMakeVisible (startAtLogin);
@@ -84,6 +88,9 @@ void SettingsPage::update (const AppState& s)
     radio (never, s.engine.playTogetherMode == "never");
     autoUpdate.setToggleState (s.updates.autoUpdate, juce::dontSendNotification);
     startAtLogin.setToggleState (s.setup.startAtLogin, juce::dontSendNotification);
+    autoSave.setToggleState (s.engine.autoSave, juce::dontSendNotification);
+    autoSave.setVisible (s.engine.canSaveForYou);
+    allowSave.setVisible (s.engine.canSaveForYou && s.engine.saveNeedsPermission);
     rollBack.setEnabled (s.updates.canRollBack && ! s.updates.busy);
     checkNow.setEnabled (! s.updates.busy);
 
@@ -178,8 +185,10 @@ void SettingsPage::resized()
 
     setupTop = y;
     startAtLogin.setBounds (0, y + 22, w, 26);
-    scriptInfo.setBounds (0, y + 52, w, 36);
-    logs.setBounds (0, y + 92, 120, 30);
+    autoSave.setBounds (0, y + 50, w, 26);
+    scriptInfo.setBounds (0, y + 82, w, 36);
+    logs.setBounds (0, y + 122, 120, 30);
+    allowSave.setBounds (128, y + 122, 210, 30);
 
     back.setBounds (w - 100, getHeight() - 34, 100, 32);
 }

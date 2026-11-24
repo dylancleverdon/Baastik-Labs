@@ -221,9 +221,14 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
     {
         const juce::String who (e.updateBy.empty() ? "Someone" : e.updateBy);
         if (! e.saveToShare.empty())
+        {
+            std::vector<Row::Action> actions { { "Get them without saving", [&act] { act.updateNow(); } } };
+            if (e.canSaveForYou)
+                actions.push_back ({ "Save & get them", [&act] { act.saveAndShare(); }, true });
             add ({ "update", Row::Style::warning, who + " saved changes",
-                   "Save first (" + key + " in Live) so what you added isn't lost: your changes and theirs are combined.", {}, false, false,
-                   { { "Get them without saving", [&act] { act.updateNow(); } } } });
+                   "Save first (" + key + " in Live) so your plugin changes aren't lost: yours and theirs are combined.", {}, false, false,
+                   actions });
+        }
         else
             add ({ "update", Row::Style::warning, who + " saved changes",
                    "Get them now. If you changed automation or plugin settings since your last save, press " + key
@@ -245,9 +250,15 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
         juce::StringArray what;
         for (const auto& w : e.saveToShare)
             what.add (juce::String (w));
-        add ({ "save-share", Row::Style::warning, "Save to share what you added",
-               "You added " + what.joinIntoString (", ") + ". Plugins only reach the others when you save: press "
-                   + saveKey + " in Live." });
+        std::vector<Row::Action> saveNow;
+        if (e.canSaveForYou)
+            saveNow.push_back ({ "Save & share now", [&act] { act.saveAndShare(); }, true });
+        add ({ "save-share", Row::Style::warning, "Not shared yet: " + what.joinIntoString (", "),
+               "Plugins and their sounds only reach the others with a save. "
+                   + juce::String (e.canSaveForYou && e.autoSave && ! e.saveNeedsPermission
+                                       ? "Tutti saves for you a few seconds after you stop tweaking (while Live is in front and not playing)."
+                                       : "Press " + saveKey + " in Live."),
+               {}, false, false, saveNow });
     }
     for (const auto& w : e.waitingForSave)
         add ({ "wait-" + w.byName + w.what, Row::Style::card, juce::String (w.byName) + " added " + juce::String (w.what),
@@ -258,7 +269,10 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
         add ({ "saving", Row::Style::card, "Saving",
                "Press " + saveKey + " in Live as usual: it saves Tutti's copy (" + song.getFileName() + " in Music/Tutti/"
                    + song.getParentDirectory().getFileName() + ") and Tutti shares it with everyone. Don't use Save As.",
-               {}, false, false, { { "Show the file", [&act] { act.revealSong(); } } } });
+               {}, false, false,
+               e.canSaveForYou ? std::vector<Row::Action> { { "Show the file", [&act] { act.revealSong(); } },
+                                                            { "Save & share now", [&act] { act.saveAndShare(); } } }
+                               : std::vector<Row::Action> { { "Show the file", [&act] { act.revealSong(); } } } });
     }
 
     // --- people

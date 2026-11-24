@@ -38,6 +38,9 @@ namespace
         void setPlayMode (const std::string&) override {}
         void openSong() override {}
         void revealSong() override {}
+        void saveAndShare() override {}
+        void setAutoSave (bool) override {}
+        void allowSaving() override {}
         void makeIdea() override {}
         void acceptIdea (const std::string&) override {}
         void rejectIdea (const std::string&) override {}
@@ -132,6 +135,8 @@ namespace
         s.engine.notices = { "Cara asked to be Player 1." };
         s.engine.songFile = "/Users/dylan/Music/Tutti/Night Drive/Night Drive.als";
         s.engine.saveToShare = { "Serum 2" };
+        s.engine.canSaveForYou = true;
+        s.engine.autoSave = true;
         shoot ("3-session-player1", s);
         s.engine.saveToShare.clear();
         s.engine.waitingForSave = { { "Sam", "Serum 2" } };
@@ -172,6 +177,8 @@ namespace
 void installReopenHandler (std::function<void()>); // MacReopen.cpp
 #endif
 std::string keepRunningInBackground(); // Background.cpp
+int pressSaveInLive (bool bringToFront); // LiveSave.cpp
+bool allowedToPressKeys (bool askIfNot); // LiveSave.cpp
 
 class TuttiApp : public juce::JUCEApplication, private AppActions, private juce::Timer
 {
@@ -208,7 +215,11 @@ public:
         }
 
         AppUpdater::cleanUpAfterUpdate();
-        engine = std::make_unique<tutti::Engine> (tutti::EngineOptions {});
+        tutti::EngineOptions engineOptions;
+       #if JUCE_MAC || JUCE_WINDOWS
+        engineOptions.pressSaveInLive = [] (bool bringToFront) { return pressSaveInLive (bringToFront); };
+       #endif
+        engine = std::make_unique<tutti::Engine> (engineOptions);
         engine->onChange = [this] { dirty = true; };
         engine->startup();
         if (const auto result = keepRunningInBackground(); ! result.empty())
@@ -413,6 +424,7 @@ private:
                                   .setAction ([this] { requestPlayer1(); }).setEnabled (! v.askedForP1));
             menu.addItem ("Try an idea on the selected track", [this] { makeIdea(); });
             menu.addSeparator();
+            menu.addItem ("Save & share", [this] { saveAndShare(); });
             menu.addItem ("Open the session song in Live", [this] { openSong(); });
             menu.addItem ("Show the song file", [this] { revealSong(); });
             menu.addItem ("Versions...", [this] { showPage (MainComponent::Page::versions); });
@@ -544,6 +556,14 @@ private:
     void setPlayMode (const std::string& m) override { engine->setPlayTogetherMode (m); }
     void openSong() override { engine->openSongInLive(); }
     void revealSong() override { engine->revealSong(); }
+    void saveAndShare() override { engine->saveAndShare(); dirty = true; }
+    void setAutoSave (bool on) override { engine->setAutoSave (on); dirty = true; }
+    void allowSaving() override
+    {
+        if (! allowedToPressKeys (true))
+            juce::URL ("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility").launchInDefaultBrowser();
+        dirty = true;
+    }
     void makeIdea() override { engine->makeIdeaOnSelectedTrack(); }
     void acceptIdea (const std::string& t) override { engine->acceptIdea (t); }
     void rejectIdea (const std::string& t) override { engine->rejectIdea (t); }

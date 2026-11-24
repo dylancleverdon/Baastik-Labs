@@ -134,6 +134,12 @@ def read_device(device):
         props["disp"] = display
     if is_plugin(device):
         props["plugin"] = device.name
+        # Plugins that list their presets inside Live (many AU/VST2 ones) switch them live.
+        presets = safe(lambda: list(device.presets), [])
+        if presets:
+            index = safe(lambda: int(device.selected_preset_index), -1)
+            if 0 <= index < len(presets):
+                props["preset"] = index
     for i, p in enumerate(device.parameters):
         props["p%d" % i] = num(p.value)
     return props
@@ -147,6 +153,10 @@ def write_device(device, props):
         if key == "name":
             if device.name != value:
                 device.name = value
+        elif key == "preset":
+            presets = safe(lambda: list(device.presets), [])
+            if 0 <= int(value) < len(presets) and safe(lambda: int(device.selected_preset_index), -1) != int(value):
+                device.selected_preset_index = int(value)
         elif key.startswith("p") and key[1:].isdigit():
             index = int(key[1:])
             if index < len(params):

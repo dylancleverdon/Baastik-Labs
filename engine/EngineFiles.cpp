@@ -523,6 +523,20 @@ namespace tutti
         self.color = static_cast<int> (integer (j, "color", static_cast<int64_t> (std::hash<std::string> {} (self.peer) % 8)));
         playMode = str (j, "play", "ask");
         autoSave = boolean (j, "autosave", true);
+        autoGet = boolean (j, "autoget", true);
+        if (const auto& t = field (j, "trusted"); t.is_object())
+            for (const auto& [peer, name] : t.items())
+                if (name.is_string())
+                    trustedPeers[peer] = name.get<std::string>();
+        if (const auto& last = field (j, "last"); last.is_object())
+        {
+            lastSessionId = str (last, "session");
+            lastHost = str (last, "host");
+            lastSong = str (last, "song");
+            rejoinWanted = boolean (last, "rejoin");
+            if (const auto f = str (last, "file"); ! f.empty())
+                lastSongFile = juce::File (juce::String (f));
+        }
         if (const auto b = str (j, "backup"); ! b.empty())
             backupFolder = juce::File (juce::String (b));
         if (const auto& known = field (j, "known"); known.is_array())
@@ -541,6 +555,13 @@ namespace tutti
         j["color"] = self.color;
         j["play"] = playMode;
         j["autosave"] = autoSave;
+        j["autoget"] = autoGet;
+        Json trusted = Json::object();
+        for (const auto& [peer, name] : trustedPeers)
+            trusted[peer] = name;
+        j["trusted"] = trusted;
+        j["last"] = Json { { "session", lastSessionId }, { "host", lastHost }, { "song", lastSong }, { "rejoin", rejoinWanted },
+                           { "file", lastSongFile.getFullPathName().toStdString() } };
         j["backup"] = backupFolder.getFullPathName().toStdString();
         j["known"] = Json (std::vector<std::string> (knownPeers.begin(), knownPeers.end()));
         file.replaceWithText (juce::String (j.dump (2)));
@@ -657,6 +678,18 @@ namespace tutti
         v.canSaveForYou = static_cast<bool> (options.pressSaveInLive);
         v.autoSave = autoSave;
         v.saveNeedsPermission = saveNeedsPermission;
+        v.autoGet = autoGet;
+        for (const auto& [when, text] : activityLog)
+            if (v.activity.size() < 6)
+                v.activity.push_back ((when.formatted ("%H:%M") + "  " + juce::String (text)).toStdString());
+        v.pluginProblems = pluginProblems;
+        for (const auto& [peer, name] : trustedPeers)
+            v.trusted.push_back (name);
+        if (! s.inSession() && lastSongFile.existsAsFile())
+        {
+            v.continueSong = lastSongFile.getFullPathName().toStdString();
+            v.continueName = lastSong.empty() ? lastSongFile.getFileNameWithoutExtension().toStdString() : lastSong;
+        }
         if (s.inSession())
         {
             std::vector<Json> metas;

@@ -332,6 +332,9 @@ def main():
               not os.path.exists(os.path.join(lib, "__pycache__", "engine.cpython-37.pyc")),
               "files the new version doesn't have, and old bytecode, are gone")
 
+        for p in (alice, bob, cara):
+            p.cmd(cmd="auto_get", on=False)  # turned on for one step below
+
         print("1. Alice starts a session")
         take = write_wav(os.path.join(h.dir, "vox take 1.wav"))
         song = demo_song(take)
@@ -360,7 +363,10 @@ def main():
                 check(h.run(10, lambda: guest.state().get("live_connected")), "Bob's Live is connected")
             guest.cmd(cmd="join", peer=alice.peer_id)
             check(h.run(10, lambda: guest.peer_id in alice.state()["join_requests"]), "Alice is asked about " + guest.name)
-            alice.cmd(cmd="approve", peer=guest.peer_id, allow=True)
+            if guest is cara:
+                alice.cmd(cmd="trust", peer=guest.peer_id)  # "Always let in"
+            else:
+                alice.cmd(cmd="approve", peer=guest.peer_id, allow=True)
             check(h.run(10, lambda: guest.state()["role"] == "guest"), guest.name + " is in")
             check(h.run(30, lambda: len(guest.opened) > 0), guest.name + "'s Tutti opened the song in Live")
             if guest is bob:
@@ -453,6 +459,15 @@ def main():
         if h.run(5, lambda: len(bob.opened) > bob_opened):  # merged with others' saves: his Live reloads
             bob.open_live(clone(bob.song))
         check(h.run(15, lambda: bob.state()["live_bound"]), "Bob's Live is in sync after the Save As")
+
+        print("4b3. Alice gets Bob's save by herself")
+        opened_before = len(alice.opened)
+        alice.cmd(cmd="auto_get", on=True)
+        check(h.run(20, lambda: len(alice.opened) > opened_before), "Alice's Tutti loads the new version without a click")
+        alice.open_live(clone(alice.song))
+        check(h.run(15, lambda: alice.state()["live_bound"] and not alice.state()["update_available"]),
+              "and Alice is in sync with it")
+        alice.cmd(cmd="auto_get", on=False)
 
         print("4c. Bob owns a plugin Alice doesn't: the Stand-in shares his recording")
         bob.plugins = ("Serum 2",)

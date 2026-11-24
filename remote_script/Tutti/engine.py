@@ -15,12 +15,23 @@ import time
 from . import livemodel as lm
 from .mirror import Mirror
 
-SCRIPT_VERSION = "5"   # the app asks people to restart Live when its script is newer
+SCRIPT_VERSION = "6"   # the app asks people to restart Live when its script is newer
 PROTOCOL = 1
 APPLY_BUDGET = 400          # entity writes per tick, so a big join doesn't freeze Live
 FULL_SCAN_EVERY = 4.0       # seconds: catch changes that have no listener (warp mode, gain...)
 PRESENCE_EVERY = 0.25
 SETTLE = 1.5                # seconds a newly opened Set must stay unchanged before Tutti uses it
+
+
+def _format_of(folder):
+    name = (folder or "").lower()
+    if "vst3" in name:
+        return "VST3"
+    if "audio unit" in name or name in ("au", "audiounits"):
+        return "AU"
+    if "vst" in name:
+        return "VST"
+    return ""
 
 
 def new_id():
@@ -228,25 +239,36 @@ class Engine(object):
         if self._plugins is not None:
             return self._plugins
         names = set()
+        formats = {}
         try:
-            stack = [(self.app.browser.plugins, 0)]
+            stack = [(self.app.browser.plugins, 0, "")]
             while stack and len(names) < 5000:
-                item, depth = stack.pop()
+                item, depth, fmt = stack.pop()
                 for child in item.children:
                     if getattr(child, "is_folder", False) or (len(child.children) > 0 and depth < 5):
-                        stack.append((child, depth + 1))
+                        # The top folders are the formats ("VST3", "VST", "Audio Units").
+                        stack.append((child, depth + 1, fmt or _format_of(child.name)))
                     elif getattr(child, "is_loadable", True):
                         names.add(child.name)
+                        formats.setdefault(child.name, set()).add(fmt or "?")
         except Exception:
             pass
         self._plugins = sorted(names)
+        self._plugin_formats = dict((k, sorted(v)) for k, v in formats.items())
         return self._plugins
+
+    _plugin_formats = None
+
+    def plugin_formats(self):
+        """{plugin name: ["VST3", "AU", ...]} for the plugins Live knows here."""
+        self.installed_plugins()
+        return self._plugin_formats or {}
 
     def _on_connected(self):
         self.bridge.send({
             "type": "hello", "role": "live", "proto": PROTOCOL, "script": SCRIPT_VERSION,
             "live": self.live_version(), "caps": self.caps, "bound": self.bound, "session": self.session,
-            "doc": self.doc_token,
+            "doc": self.doc_token, "plugin_formats": self.plugin_formats(),
             "fingerprint": self.fingerprint(), "unsent": len(self.unsent), "plugins": self.installed_plugins(),
         })
         if self.unsent:
@@ -333,6 +355,13 @@ class Engine(object):
         elif t == "structure":
             path_map, notes_map = self.structure_map()
             self.bridge.send({"type": "structure", "map": path_map, "notes": notes_map, "req": m.get("req")})
+        elif t == "goto":
+            # Jump to where a friend is: select their track and, when stopped, move the playhead.
+            obj = self.live.get(m.get("track"))
+            if obj is not None and self.mirror.type_of(m.get("track")) == "track":
+                lm.safe(lambda: setattr(self.song.view, "selected_track", obj))
+            if not lm.safe(lambda: self.song.is_playing, False):
+                lm.safe(lambda: setattr(self.song, "current_song_time", max(0.0, float(m.get("time") or 0.0))))
         elif t == "play_at":
             self.play_at = (float(m.get("pos", 0.0)), float(m.get("at", 0.0)))
         elif t == "stop_play":

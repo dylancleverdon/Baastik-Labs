@@ -206,6 +206,29 @@ namespace tutti::als
         return names;
     }
 
+    std::vector<PluginRef> pluginRefs (const juce::XmlElement& root)
+    {
+        std::vector<PluginRef> out;
+        std::function<void (const juce::XmlElement&)> walk = [&] (const juce::XmlElement& e) {
+            const auto tag = e.getTagName();
+            if (tag.endsWith ("PluginInfo"))
+            {
+                auto name = childValue (e, "Name");
+                if (name.isEmpty())
+                    name = childValue (e, "PlugName");
+                const juce::String format = tag.startsWith ("Vst3") ? "VST3" : tag.startsWith ("Au") ? "AU" : "VST";
+                PluginRef ref { name, format };
+                if (name.isNotEmpty() && std::find (out.begin(), out.end(), ref) == out.end())
+                    out.push_back (ref);
+                return;
+            }
+            for (auto* c : e.getChildIterator())
+                walk (*c);
+        };
+        walk (root);
+        return out;
+    }
+
     double matchScore (const std::vector<Track>& fileTracks, const juce::StringArray& liveTrackNames)
     {
         juce::StringArray fileNames;

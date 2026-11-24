@@ -50,6 +50,12 @@ SettingsPage::SettingsPage (AppActions& a, std::function<void()> onDone) : actio
 
     autoUpdate.onClick = [this] { actions.setAutoUpdate (autoUpdate.getToggleState()); };
     autoSave.onClick = [this] { actions.setAutoSave (autoSave.getToggleState()); };
+    autoGet.onClick = [this] { actions.setAutoGet (autoGet.getToggleState()); };
+    forgetTrusted.onClick = [this] { actions.forgetTrusted(); };
+    addAndMakeVisible (autoGet);
+    addChildComponent (forgetTrusted);
+    styleLabel (trustedInfo, 13.0f, theme::dim);
+    addAndMakeVisible (trustedInfo);
     allowSave.onClick = [this] { actions.allowSaving(); };
     addAndMakeVisible (autoSave);
     addChildComponent (allowSave);
@@ -89,6 +95,16 @@ void SettingsPage::update (const AppState& s)
     autoUpdate.setToggleState (s.updates.autoUpdate, juce::dontSendNotification);
     startAtLogin.setToggleState (s.setup.startAtLogin, juce::dontSendNotification);
     autoSave.setToggleState (s.engine.autoSave, juce::dontSendNotification);
+    autoGet.setToggleState (s.engine.autoGet, juce::dontSendNotification);
+    {
+        juce::StringArray names;
+        for (const auto& n : s.engine.trusted)
+            names.add (juce::String (n));
+        trustedInfo.setText (names.isEmpty() ? juce::String ("Nobody is trusted yet: use \"Always let in\" when someone asks to join.")
+                                             : "Let in without asking: " + names.joinIntoString (", "),
+                             juce::dontSendNotification);
+        forgetTrusted.setVisible (! names.isEmpty());
+    }
     autoSave.setVisible (s.engine.canSaveForYou);
     allowSave.setVisible (s.engine.canSaveForYou && s.engine.saveNeedsPermission);
     rollBack.setEnabled (s.updates.canRollBack && ! s.updates.busy);
@@ -186,9 +202,12 @@ void SettingsPage::resized()
     setupTop = y;
     startAtLogin.setBounds (0, y + 22, w, 26);
     autoSave.setBounds (0, y + 50, w, 26);
-    scriptInfo.setBounds (0, y + 82, w, 36);
-    logs.setBounds (0, y + 122, 120, 30);
-    allowSave.setBounds (128, y + 122, 210, 30);
+    autoGet.setBounds (0, y + 78, w, 26);
+    trustedInfo.setBounds (0, y + 108, w - 180, 36);
+    forgetTrusted.setBounds (w - 170, y + 108, 170, 30);
+    scriptInfo.setBounds (0, y + 150, w, 36);
+    logs.setBounds (0, y + 190, 120, 30);
+    allowSave.setBounds (128, y + 190, 210, 30);
 
     back.setBounds (w - 100, getHeight() - 34, 100, 32);
 }

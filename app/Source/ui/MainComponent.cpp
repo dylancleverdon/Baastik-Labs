@@ -120,8 +120,12 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
         // --- start
         add ({ "h-start", Row::Style::heading, "Start a session" });
         if (e.startStatus.empty())
-            add ({ "start", Row::Style::primary, {}, {}, {}, false, false,
-                   { { "Share a song...", [this] { chooseSong(); }, true } } });
+        {
+            std::vector<Row::Action> start { { "Share a song...", [this] { chooseSong(); }, true } };
+            if (! e.continueSong.empty())
+                start.insert (start.begin(), { "Continue " + juce::String (e.continueName), [&act] { act.continueLastSession(); } });
+            add ({ "start", Row::Style::primary, {}, {}, {}, false, false, start });
+        }
         else
             add ({ "start", Row::Style::card, juce::String (e.startStatus), "This can take a minute for big songs." });
 
@@ -195,6 +199,7 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
     for (const auto& peer : e.joinRequests)
         add ({ "jr-" + peer, Row::Style::warning, nameOf (peer) + " wants to join", {}, {}, false, false,
                { { "Not now", [&act, peer] { act.approveJoin (peer, false); } },
+                 { "Always let in", [&act, peer] { act.trustAndLetIn (peer); } },
                  { "Let in", [&act, peer] { act.approveJoin (peer, true); }, true } } });
     for (const auto& peer : e.p1Requests)
         add ({ "pr-" + peer, Row::Style::warning, nameOf (peer) + " asks to be Player 1",
@@ -275,6 +280,16 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
                                : std::vector<Row::Action> { { "Show the file", [&act] { act.revealSong(); } } } });
     }
 
+    if (! e.pluginProblems.empty())
+    {
+        juce::StringArray lines;
+        for (const auto& p : e.pluginProblems)
+            lines.add (juce::String (p));
+        add ({ "plugins", Row::Style::warning, "Plugins that won't load here",
+               lines.joinIntoString ("\n") + "\nEveryone else still hears them; the Tutti Stand-in can share a recording of those tracks.",
+               {}, false, false, { { "OK", [&act] { act.dismissPluginProblems(); } } } });
+    }
+
     // --- people
     add ({ "h-people", Row::Style::heading, "In this session" });
     for (const auto& m : e.members)
@@ -290,12 +305,27 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
                        + (m.recording ? "  " + theme::recDot() + " rec" : (m.playing ? "  " + theme::play() : juce::String()));
         else
             r.detail = "here";
+        if (! m.isMe && m.info.online && ! m.trackName.empty())
+        {
+            const auto peer = m.info.peer;
+            r.actions.push_back ({ "Go to", [&act, peer] { act.jumpTo (peer); } });
+        }
         if (iAmP1 && ! m.isMe && m.info.online && ! e.handingOver)
         {
             const auto peer = m.info.peer;
             r.actions.push_back ({ "Make Player 1", [&act, peer] { act.handOver (peer); } });
         }
         add (r);
+    }
+
+    // --- recent activity
+    if (! e.activity.empty())
+    {
+        add ({ "h-recent", Row::Style::heading, "Recent" });
+        juce::StringArray lines;
+        for (const auto& a : e.activity)
+            lines.add (juce::String (a));
+        add ({ "recent", Row::Style::text, lines.joinIntoString ("\n") });
     }
 
     // --- together

@@ -41,6 +41,12 @@ namespace
         void saveAndShare() override {}
         void setAutoSave (bool) override {}
         void allowSaving() override {}
+        void setAutoGet (bool) override {}
+        void trustAndLetIn (const std::string&) override {}
+        void forgetTrusted() override {}
+        void continueLastSession() override {}
+        void jumpTo (const std::string&) override {}
+        void dismissPluginProblems() override {}
         void makeIdea() override {}
         void acceptIdea (const std::string&) override {}
         void rejectIdea (const std::string&) override {}
@@ -116,7 +122,10 @@ namespace
         cara.name = "Cara";
         s.engine.peers = { sam, cara };
         s.engine.notices = { "Tailscale connected" };
+        s.engine.continueSong = "/Users/dylan/Music/Tutti/Night Drive/Night Drive.als";
+        s.engine.continueName = "Night Drive";
         shoot ("2-home", s);
+        s.engine.continueSong.clear();
 
         // 3. In a session as Player 1, with someone asking to join and someone asking for Player 1.
         s.engine.role = tutti::Session::Role::player1;
@@ -137,6 +146,8 @@ namespace
         s.engine.saveToShare = { "Serum 2" };
         s.engine.canSaveForYou = true;
         s.engine.autoSave = true;
+        s.engine.activity = { "21:04  Sam saved", "21:02  New audio on Vox", "20:58  Cara joined" };
+        s.engine.pluginProblems = { "Serum 2: the song uses VST3, you have AU (install the VST3 version and turn on VST3 in Live's Plug-Ins settings)" };
         shoot ("3-session-player1", s);
         s.engine.saveToShare.clear();
         s.engine.waitingForSave = { { "Sam", "Serum 2" } };
@@ -558,6 +569,12 @@ private:
     void revealSong() override { engine->revealSong(); }
     void saveAndShare() override { engine->saveAndShare(); dirty = true; }
     void setAutoSave (bool on) override { engine->setAutoSave (on); dirty = true; }
+    void setAutoGet (bool on) override { engine->setAutoGet (on); dirty = true; }
+    void trustAndLetIn (const std::string& peer) override { engine->trustAndLetIn (peer); dirty = true; }
+    void forgetTrusted() override { engine->forgetTrusted(); dirty = true; }
+    void continueLastSession() override { engine->continueLastSession(); dirty = true; }
+    void jumpTo (const std::string& peer) override { engine->jumpTo (peer); dirty = true; }
+    void dismissPluginProblems() override { engine->dismissPluginProblems(); dirty = true; }
     void allowSaving() override
     {
         if (! allowedToPressKeys (true))

@@ -511,7 +511,7 @@ def test_hello_says_which_script_version_is_running():
     song = demo_song()
     bridge = FakeBridge()
     Engine(song, Live.Application.Application(song), Live, bridge).tick()
-    assert bridge.take("hello")[0]["script"] == "5"
+    assert bridge.take("hello")[0]["script"] == "6"
 
 
 def test_hello_names_the_open_set_so_the_app_knows_live_opened_its_file():
@@ -585,3 +585,23 @@ def test_plugin_presets_listed_in_live_switch_live():
     hub.pump()
     assert song_a.tracks[1].devices[-1].selected_preset_index == 1
     assert not a.stale and not b.stale
+
+
+def test_hello_lists_plugin_formats_installed_here():
+    from Tutti.engine import Engine
+    from conftest import FakeBridge
+    song = demo_song()
+    bridge = FakeBridge()
+    Engine(song, Live.Application.Application(song, ("Serum 2",)), Live, bridge).tick()
+    hello = bridge.take("hello")[0]
+    assert hello["plugins"] == ["Serum 2"]
+    assert hello["plugin_formats"] == {"Serum 2": ["VST3"]}
+
+
+def test_jumping_to_a_friend_selects_their_track_and_bar():
+    a, song_a, b, song_b, _ = joined_pair()
+    bass = [eid for eid, obj in b.live.items() if obj is song_b.tracks[1]][0]
+    b.bridge.inbox.append({"type": "goto", "track": bass, "time": 32.0})
+    b.tick()
+    assert song_b.view.selected_track is song_b.tracks[1]
+    assert song_b.current_song_time == 32.0

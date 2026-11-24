@@ -56,6 +56,12 @@ struct AppActions
     virtual void saveAndShare() = 0;
     virtual void setAutoSave (bool) = 0;
     virtual void allowSaving() = 0;   // macOS: ask for the permission to press Save in Live
+    virtual void setAutoGet (bool) = 0;
+    virtual void trustAndLetIn (const std::string& peer) = 0;
+    virtual void forgetTrusted() = 0;
+    virtual void continueLastSession() = 0;
+    virtual void jumpTo (const std::string& peer) = 0;
+    virtual void dismissPluginProblems() = 0;
     virtual void makeIdea() = 0;
     virtual void acceptIdea (const std::string& track) = 0;
     virtual void rejectIdea (const std::string& track) = 0;

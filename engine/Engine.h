@@ -6,6 +6,7 @@
 #include "tutti/Store.h"
 #include "tutti/Tailscale.h"
 
+#include <deque>
 #include <functional>
 #include <map>
 #include <mutex>
@@ -94,6 +95,12 @@ namespace tutti
         bool canSaveForYou = false;    // Tutti can press Save in Live (the app, not the headless peer)
         bool autoSave = true;          // save by itself after plugin changes
         bool saveNeedsPermission = false; // macOS hasn't allowed Tutti to press keys yet
+        bool autoGet = true;           // load others' saves by itself when it's safe
+        std::vector<std::string> activity;      // "21:04  Wilson saved", newest first
+        std::vector<std::string> pluginProblems; // plugins this song uses that this computer lacks
+        std::vector<std::string> trusted;       // names of people let in without asking
+        std::string continueSong;      // the last session's song file here, to continue it
+        std::string continueName;
         std::vector<std::string> saveToShare;  // things I added that only travel when I save
         struct Waiting { std::string byName, what; };
         std::vector<Waiting> waitingForSave;   // things others added that arrive when they save
@@ -128,6 +135,12 @@ namespace tutti
         void revealSong();
         void saveAndShare();          // presses Save in Live; the save is then shared as usual
         void setAutoSave (bool);
+        void setAutoGet (bool);
+        void trustAndLetIn (const std::string& peer);   // approve now and from now on
+        void forgetTrusted();
+        void continueLastSession();
+        void jumpTo (const std::string& peer);          // your Live to their track and bar
+        void dismissPluginProblems() { pluginProblems.clear(); }
         void playTogether();
         void answerPlayTogether (bool join);
         void stopTogether();
@@ -302,6 +315,20 @@ namespace tutti
         double pluginChangedAt = 0, lastAutoSaveTry = 0;
         bool autoSave = true, saveNeedsPermission = false, permissionNoticeShown = false;
         void autoSaveIfDue();
+        void autoGetIfDue();
+        void autoRejoinIfDue();
+        void trackMembers();
+        void addActivity (const std::string& text);
+        void checkPlugins (const juce::XmlElement& set);
+        bool autoGet = true;
+        double updateSeenAt = 0, lastRejoinTry = 0;
+        std::deque<std::pair<juce::Time, std::string>> activityLog;
+        std::vector<std::string> pluginProblems;
+        std::map<std::string, std::string> trustedPeers;   // peer id -> name
+        std::map<std::string, std::string> knownMembers;   // for "joined" / "left" lines
+        std::string lastSessionId, lastHost, lastSong;     // to rejoin or continue
+        juce::File lastSongFile;
+        bool rejoinWanted = false;
         std::map<std::string, std::pair<std::string, std::vector<std::string>>> othersSaveNeeded; // peer -> name, what
         std::deque<Json> pendingLocalBatches; // waiting for audio files to be hashed
 

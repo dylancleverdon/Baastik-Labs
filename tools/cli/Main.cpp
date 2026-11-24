@@ -131,6 +131,10 @@ int main (int argc, char* argv[])
                 if (! engine.startSession (juce::File (juce::String (str (*cmd, "als"))), error))
                     emit (Json { { "event", "error" }, { "text", error.toStdString() } });
             }
+            else if (c == "trust")
+                engine.trustAndLetIn (str (*cmd, "peer"));
+            else if (c == "auto_get")
+                engine.setAutoGet (boolean (*cmd, "on", true));
             else if (c == "install_script")
                 emit (Json { { "event", "installed" },
                              { "ok", platform::installRemoteScriptTo (juce::File (juce::String (str (*cmd, "from"))),

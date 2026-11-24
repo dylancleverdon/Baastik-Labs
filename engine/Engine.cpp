@@ -108,6 +108,7 @@ namespace tutti
             updateStandIns();
         }
         autoSaveIfDue();
+        autoGetIfDue();
         if (! pendingReload.is_null() && ! reloading && ! liveIsBusy())
         {
             auto meta = std::exchange (pendingReload, nullptr);
@@ -132,6 +133,14 @@ namespace tutti
         if (t - lastLinkCheck > 1.0)
         {
             lastLinkCheck = t;
+            trackMembers();
+            autoRejoinIfDue();
+            if (sessionPtr->inSession() && currentSong.existsAsFile() && currentSong != lastSongFile)
+            {
+                lastSongFile = currentSong;
+                lastSong = sessionPtr->info().song;
+                saveSettings();
+            }
             // Who comes and goes, so a friend dropping out shows up in the logs.
             if (sessionPtr->inSession())
             {
@@ -609,6 +618,9 @@ namespace tutti
     void Engine::liveUpdate (const LiveUpdate& u)
     {
         for (const auto& op : u.apply)
+            if (op.kind == Op::Kind::create && op.type == "clip" && op.props.contains ("file"))
+                addActivity ("New audio on " + (trackName (op.parent).empty() ? std::string ("a track") : trackName (op.parent)));
+        for (const auto& op : u.apply)
             if (op.props.contains ("file") && op.props["file"].is_string())
                 wantFile (op.props["file"].get<std::string>(), true);
         if (! liveBound)
@@ -638,6 +650,12 @@ namespace tutti
 
     void Engine::joinRequested (const MemberInfo& m)
     {
+        if (trustedPeers.count (m.peer) != 0 && sessionPtr->isPlayer1())
+        {
+            log ("letting in " + m.name + " (trusted)");
+            sessionPtr->approveJoin (m.peer, true, now());
+            return;
+        }
         notice (m.name + " wants to join.");
     }
 
@@ -653,6 +671,11 @@ namespace tutti
 
     void Engine::joined()
     {
+        lastSessionId = sessionPtr->info().id;
+        lastHost = sessionPtr->info().p1;
+        lastSong = sessionPtr->info().song;
+        rejoinWanted = true;
+        saveSettings();
         notice ("You joined " + sessionPtr->info().song + ".");
         requestSnapshot();
     }
@@ -681,6 +704,7 @@ namespace tutti
         updateBy.clear();
         mySaveNeeded.clear();
         myPluginChanges.clear();
+        pluginProblems.clear();
         othersSaveNeeded.clear();
         pendingReload = nullptr;
         openedAt = 0;
@@ -714,6 +738,7 @@ namespace tutti
             {
                 const auto name = str (message, "byName", "Someone");
                 notice (name + " added " + what.back() + ". You'll get it when " + name + " saves in Live.");
+                addActivity (name + " added " + what.back());
                 othersSaveNeeded[peer] = { name, what };
             }
         }
@@ -748,7 +773,7 @@ namespace tutti
     {
         // The Remote Script this app ships (remote_script/Tutti/engine.py SCRIPT_VERSION). Live loads
         // scripts only when it starts, so after an update it may still run the old one.
-        constexpr const char* kRemoteScriptVersion = "5";
+        constexpr const char* kRemoteScriptVersion = "6";
     }
 
     bool Engine::liveScriptOutdated() const
@@ -1340,6 +1365,7 @@ namespace tutti
         liveStatus = "In sync";
         startStatus.clear();
         notice ("Session started: " + currentSongName + ". You're Player 1.");
+        addActivity ("You started " + currentSongName);
 
         // Previews for everything, ready for whoever joins.
         for (const auto& hash : files)
@@ -1467,6 +1493,7 @@ namespace tutti
             joinSnapshot = nullptr;
             return;
         }
+        checkPlugins (*set);
         const auto song = str (joinSnapshot, "song", "Song");
         auto folder = workspaceFor (song);
         makeLiveProject (folder);
@@ -1516,6 +1543,8 @@ namespace tutti
 
     void Engine::leaveSession()
     {
+        rejoinWanted = false; // left on purpose: don't join again by itself
+        saveSettings();
         sessionPtr->leave (now());
     }
 

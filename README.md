@@ -46,6 +46,23 @@ possible (see "Plugins" below).
   automatically or never.
 - **Ideas:** select a track and click **Try an idea**: Tutti copies it in your colour, muted for
   everyone else. Others solo it to listen; Player 1 accepts (it replaces the original) or rejects.
+- **Smoother sessions:**
+  - **Always let in:** trust someone once and their joins are approved automatically
+    (Settings lists them, with **Forget trusted friends**).
+  - **Rejoining:** if your Tutti, computer or network drops out, it joins the session again by
+    itself (unless you clicked **Leave session**).
+  - **Continue <song>:** on the start screen, reopens the last song you were in as a new
+    session, from your copy.
+  - **Plugin check:** when you join (or an update arrives), Tutti lists plugins in the song
+    that won't load here, including the wrong format (for example VST3 on one computer and
+    only the Audio Unit on the other).
+  - **Go to:** next to each person: jumps your Live to their track (and bar, when you're
+    stopped).
+  - **Recent:** the last few things that happened (saves, joins, new audio, plugins).
+  - **Getting saves by itself:** when someone saves, Tutti loads the new version once you
+    stop playing. If you have plugin changes that aren't shared yet, it saves yours first so
+    both are combined. Automation you changed but didn't save is replaced, so save after
+    automation edits (or turn this off in Settings).
 - **Suggestion box:** in the app's footer. Ideas and problems go straight to the team's sheet.
   If something went wrong, click **Send logs**: it attaches Tutti's and Live's recent logs.
 - **Menus:** on a Mac, Tutti's menu bar (Session, View) and its menu bar icon have the main

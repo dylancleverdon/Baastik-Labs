@@ -46,6 +46,14 @@ namespace tutti::als
     // Names of third-party plugins the Set uses (VST2, VST3, AU).
     juce::StringArray plugins (const juce::XmlElement& root);
 
+    // The same, with the format each instance uses: "VST3", "VST" or "AU".
+    struct PluginRef
+    {
+        juce::String name, format;
+        bool operator== (const PluginRef& o) const { return name == o.name && format == o.format; }
+    };
+    std::vector<PluginRef> pluginRefs (const juce::XmlElement& root);
+
     // How well an open Set (track names from the Remote Script) matches a file: 0..1.
     double matchScore (const std::vector<Track>& fileTracks, const juce::StringArray& liveTrackNames);
 }

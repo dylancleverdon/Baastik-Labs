@@ -285,6 +285,10 @@ namespace tutti
                 wantFile (h.get<std::string>(), true);
 
         const bool mine = str (meta, "by") == self.peer;
+        addActivity ((mine ? std::string ("You") : str (meta, "byName", "Someone")) + " saved"
+                     + (boolean (meta, "merged") ? " (combined with other saves)" : ""));
+        if (! mine)
+            updateSeenAt = now();
         if (mine && ! boolean (meta, "merged"))
         {
             // Our file is the new snapshot: nothing to reload.
@@ -351,6 +355,7 @@ namespace tutti
             notice ("Couldn't open the update: " + error.toStdString());
             return;
         }
+        checkPlugins (*set);
         if (auto mine = als::load (currentSong, error))
             als::keepPersonalState (*set, field (meta, "map"), *mine, currentMap);
 

@@ -84,6 +84,9 @@ TEST_CASE ("Live Sets: read tracks, plugins and file references, then repoint th
     REQUIRE (loaded);
     CHECK (als::liveVersion (*loaded) == "12.1.5");
     CHECK (als::plugins (*loaded) == juce::StringArray { "Serum 2" });
+    const auto pluginRefs = als::pluginRefs (*loaded);
+    REQUIRE (pluginRefs.size() == 1);
+    CHECK ((pluginRefs[0].name == "Serum 2" && pluginRefs[0].format == "VST3"));
 
     const auto tracks = als::tracks (*loaded);
     REQUIRE (tracks.size() == 4);

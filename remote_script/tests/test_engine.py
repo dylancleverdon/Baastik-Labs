@@ -656,3 +656,36 @@ def test_a_song_opened_from_the_file_keeps_its_markers_when_previews_are_swapped
     clip = song_b.tracks[2].arrangement_clips[0]
     assert clip.file_path == "/b/store/vox.wav"
     assert [(m.beat_time, m.sample_time) for m in clip.warp_markers] == [(0.0, 0.0), (8.0, 3.3)]
+
+
+def test_hello_is_sent_when_live_hands_out_a_new_wrapper_each_time():
+    # Real Live's get_document() returns a new Python object on every call (equal, not identical).
+    from Tutti.engine import Engine
+    from conftest import FakeBridge
+
+    class Wrapper(object):
+        def __init__(self, target):
+            object.__setattr__(self, "_t", target)
+
+        def __getattr__(self, name):
+            return getattr(self._t, name)
+
+        def __eq__(self, other):
+            return self._t is (other._t if isinstance(other, Wrapper) else other)
+
+        def __ne__(self, other):
+            return not self.__eq__(other)
+
+    song = demo_song()
+
+    class App(Live.Application.Application):
+        def get_document(self):
+            return Wrapper(self._song)
+
+    t = [1000.0]
+    bridge = FakeBridge()
+    engine = Engine(Wrapper(song), App(song), Live, bridge, clock=lambda: t[0], settle_first=True)
+    for _ in range(6):
+        t[0] += 1.0
+        engine.tick()
+    assert len(bridge.take("hello")) == 1

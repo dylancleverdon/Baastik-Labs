@@ -188,7 +188,8 @@ class Engine(object):
         now = self.clock()
         try:
             current = self.app.get_document()
-            fp = (current is self.song, self.fingerprint())
+            # Live hands out a new wrapper object each time: compare with ==, never "is".
+            fp = (current == self.song, self.fingerprint())
         except Exception:
             fp = None
         if fp != self._settle_fp or (fp is not None and not fp[0]):

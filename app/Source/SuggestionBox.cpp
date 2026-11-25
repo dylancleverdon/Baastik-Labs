@@ -105,9 +105,12 @@ void SuggestionBox::sendNext()
     {
         logFile = logsDir.getChildFile (juce::String (name));
         post.erase ("logFile");
-        if (logFile.existsAsFile())
+        // After several failed tries with the logs attached, send the words without them, so
+        // the suggestion itself always gets through (the logs are kept for the next try).
+        if (logFile.existsAsFile() && item.value ("tries", 0) < 6)
             post["log"] = logFile.loadFileAsString().toStdString();
     }
+    post.erase ("tries");
     worker = std::make_unique<Job> ([this, item, url, post, logFile] {
         // Post once, without following redirects. Apps Script saves the row, then answers with a
         // redirect to where its reply waits; that reply must be fetched with GET. (On Windows,
@@ -158,7 +161,12 @@ void SuggestionBox::sendNext()
                         break;
                     }
                 save();
-                if (logFile != juce::File())
+                if (logFile != juce::File() && ! post.contains ("log"))
+                {
+                    logFile.deleteFile();
+                    lastResult = "Sent, thanks! (Your logs couldn't be attached.)";
+                }
+                else if (logFile != juce::File())
                 {
                     logFile.deleteFile();
                     // The current sheet script answers {"ok":true,"log":"<link>"} when it kept the
@@ -172,7 +180,18 @@ void SuggestionBox::sendNext()
             else
             {
                 lastResult = "Couldn't send yet; Tutti will keep trying.";
-                nextTry = juce::Time::currentTimeMillis() + 60 * 1000;
+                // Move it behind the others, so one that keeps failing never holds the rest up.
+                for (size_t i = 0; i < queue.size(); ++i)
+                    if (queue[i]["id"] == item["id"])
+                    {
+                        auto failed = queue[i];
+                        failed["tries"] = failed.value ("tries", 0) + 1;
+                        queue.erase (i);
+                        queue.push_back (failed);
+                        break;
+                    }
+                save();
+                nextTry = juce::Time::currentTimeMillis() + (queue.size() > 1 ? 15 : 60) * 1000;
             }
         }
         sending = false;

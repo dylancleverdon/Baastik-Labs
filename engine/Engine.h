@@ -154,6 +154,10 @@ namespace tutti
         void jumpTo (const std::string& peer);          // your Live to their track and bar
         void dismissPluginProblems() { pluginProblems.clear(); }
         void setLockTracks (bool);
+        // Suggestions this computer can't get to Google go through a friend's Tutti.
+        bool relaySuggestion (const Json& item);                       // false: nobody connected
+        std::function<void (const Json& item)> onRelayedSuggestion;    // a friend's, to send on
+        std::function<void (const std::string& id)> onRelayAccepted;   // a friend took ours
         void undoMine();
         void sendMessage (const std::string& text);
         void pingMySpot();

@@ -261,6 +261,9 @@ public:
 
         suggestions = std::make_unique<SuggestionBox> (engine->dataDir());
         suggestions->onChange = [this] { dirty = true; };
+        suggestions->relay = [this] (const tutti::Json& item) { return engine != nullptr && engine->relaySuggestion (item); };
+        engine->onRelayedSuggestion = [this] (const tutti::Json& item) { if (suggestions != nullptr) suggestions->addRelayed (item); };
+        engine->onRelayAccepted = [this] (const std::string& id) { if (suggestions != nullptr) suggestions->relayAccepted (id); };
         suggestions->log = [this] (const std::string& text) {
             juce::MessageManager::callAsync ([this, text] { if (engine != nullptr) engine->logLine (text); });
         };

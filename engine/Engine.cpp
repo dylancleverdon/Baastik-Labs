@@ -492,6 +492,24 @@ namespace tutti
         }
         if (state.peer.empty())
             return;
+        if (type == "relay_suggestion")
+        {
+            // A friend's Tutti can't reach Google: keep their suggestion and send it on.
+            const auto& item = field (frame.json, "item");
+            if (item.is_object() && ! str (item, "id").empty() && onRelayedSuggestion)
+            {
+                log ("sending on a suggestion from " + memberName (state.peer));
+                onRelayedSuggestion (item);
+                send (state.peer, Json { { "type", "relay_ok" }, { "id", str (item, "id") } });
+            }
+            return;
+        }
+        if (type == "relay_ok")
+        {
+            if (onRelayAccepted)
+                onRelayAccepted (str (frame.json, "id"));
+            return;
+        }
         sessionPtr->receive (state.peer, frame.json, now());
     }
 
@@ -606,6 +624,17 @@ namespace tutti
     }
 
     // ================================================================== Session::Listener
+
+    bool Engine::relaySuggestion (const Json& item)
+    {
+        for (const auto& [peer, linkId] : peerLinks)
+        {
+            log ("Google unreachable: handing suggestion " + str (item, "id") + " to " + memberName (peer));
+            sendTo (linkId, Json { { "type", "relay_suggestion" }, { "item", item } });
+            return true;
+        }
+        return false;
+    }
 
     void Engine::send (const std::string& peer, const Json& message)
     {

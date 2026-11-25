@@ -26,6 +26,11 @@ public:
     std::function<void()> onChange;
     std::function<void (const std::string&)> log; // called on the sending thread
 
+    // Passing suggestions through a friend's Tutti when this computer can't reach Google.
+    std::function<bool (const tutti::Json& item)> relay;   // message thread; true: handed over
+    void addRelayed (const tutti::Json& item);             // a friend's, to send on
+    void relayAccepted (const std::string& id);            // a friend has ours
+
 private:
     void save();
     void sendNext();

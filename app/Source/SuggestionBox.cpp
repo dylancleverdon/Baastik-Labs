@@ -192,10 +192,68 @@ void SuggestionBox::sendNext()
                     }
                 save();
                 nextTry = juce::Time::currentTimeMillis() + (queue.size() > 1 ? 15 : 60) * 1000;
+                // Failed twice: hand it (logs included) to a friend's Tutti, which sends it on.
+                if (item.value ("tries", 0) >= 1)
+                {
+                    auto handOver = post;
+                    handOver["id"] = item["id"];
+                    juce::MessageManager::callAsync ([this, handOver] {
+                        if (relay && relay (handOver))
+                        {
+                            std::lock_guard<std::mutex> g (lock);
+                            lastResult = "Couldn't reach Google: passing it to a friend's Tutti...";
+                        }
+                    });
+                }
             }
         }
         sending = false;
         juce::MessageManager::callAsync ([this] { if (onChange) onChange(); });
     });
     worker->startThread();
+}
+
+void SuggestionBox::addRelayed (const tutti::Json& item)
+{
+    {
+        std::lock_guard<std::mutex> g (lock);
+        const auto id = item.value ("id", std::string());
+        for (const auto& q : queue)
+            if (q.value ("id", std::string()) == id)
+                return; // already have it
+        auto keep = item;
+        if (keep.contains ("log") && keep["log"].is_string())
+        {
+            logsDir.createDirectory();
+            auto f = logsDir.getChildFile (juce::String (id) + ".txt");
+            if (f.replaceWithText (juce::String (keep["log"].get<std::string>()), false, false, "\n"))
+                keep["logFile"] = f.getFileName().toStdString();
+        }
+        keep.erase ("log");
+        keep.erase ("tries");
+        queue.push_back (keep);
+        save();
+        nextTry = 0;
+    }
+    if (onChange)
+        onChange();
+}
+
+void SuggestionBox::relayAccepted (const std::string& id)
+{
+    {
+        std::lock_guard<std::mutex> g (lock);
+        for (size_t i = 0; i < queue.size(); ++i)
+            if (queue[i].value ("id", std::string()) == id)
+            {
+                if (const auto name = queue[i].value ("logFile", std::string()); ! name.empty())
+                    logsDir.getChildFile (juce::String (name)).deleteFile();
+                queue.erase (i);
+                break;
+            }
+        save();
+        lastResult = "Sent through a friend's Tutti, thanks!";
+    }
+    if (onChange)
+        onChange();
 }

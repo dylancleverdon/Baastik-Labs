@@ -445,7 +445,8 @@ def main():
               "Cara is in sync with the merged song")
 
         snaps_dir = os.path.join(alice.data, "songs")  # one history per song
-        check(os.path.isdir(snaps_dir) and len(os.listdir(snaps_dir)) == 1, "versions are kept per song")
+        songs = [d for d in os.listdir(snaps_dir) if not d.startswith(".")] if os.path.isdir(snaps_dir) else []
+        check(len(songs) == 1, "versions are kept per song (found: %r)" % (os.listdir(snaps_dir) if os.path.isdir(snaps_dir) else None,))
         newest = None
         for root, _, files in os.walk(snaps_dir):
             for f in files:

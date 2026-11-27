@@ -42,7 +42,7 @@ namespace tutti
     {
         // One song, one history: every session of the same song adds to the same versions.
         if (! currentSongId.empty())
-            return options.dataDir.getChildFile ("songs").getChildFile (juce::String (currentSongId)).getChildFile ("versions");
+            return options.dataDir.getChildFile ("song-history").getChildFile (juce::String (currentSongId)).getChildFile ("versions");
         return options.dataDir.getChildFile ("sessions").getChildFile (juce::String (sessionPtr->info().id)).getChildFile ("snapshots");
     }
 

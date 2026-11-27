@@ -444,7 +444,7 @@ def main():
         check(h.run(15, lambda: cara.state()["live_bound"] and not cara.state()["update_available"]),
               "Cara is in sync with the merged song")
 
-        snaps_dir = os.path.join(alice.data, "songs")  # one history per song
+        snaps_dir = os.path.join(alice.data, "song-history")  # one history per song
         songs = [d for d in os.listdir(snaps_dir) if not d.startswith(".")] if os.path.isdir(snaps_dir) else []
         check(len(songs) == 1, "versions are kept per song (found: %r)" % (os.listdir(snaps_dir) if os.path.isdir(snaps_dir) else None,))
         newest = None

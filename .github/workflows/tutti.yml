@@ -19,9 +19,8 @@ on:
         type: boolean
         default: false
 
-concurrency:
-  group: tutti-${{ github.ref }}
-  cancel-in-progress: false
+# No run-wide lock: a newer push cancels an older run's builds (it contains their changes), but a
+# release that's already publishing is never interrupted (see the jobs' own concurrency).
 
 permissions:
   contents: read
@@ -112,6 +111,9 @@ jobs:
     needs: plan
     if: needs.plan.outputs.mac == 'true'
     runs-on: macos-15
+    concurrency:
+      group: tutti-macos-${{ github.ref }}
+      cancel-in-progress: true
     env:
       VERSION: ${{ needs.plan.outputs.version }}
       BUILD: ${{ needs.plan.outputs.build }}
@@ -120,6 +122,12 @@ jobs:
 
       - name: Install Ninja
         run: command -v ninja || brew install ninja
+
+      # Reuse what was compiled last time (JUCE barely changes): most of the build time.
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: tutti-macos-arm64
+          max-size: 2G
 
       - uses: actions/setup-python@v5
         if: needs.plan.outputs.script == 'true' || needs.plan.outputs.e2e == 'true'
@@ -136,6 +144,8 @@ jobs:
         if: needs.plan.outputs.build_app == 'true' || needs.plan.outputs.build_plugin == 'true' || needs.plan.outputs.cpp == 'true' || needs.plan.outputs.e2e == 'true'
         run: >
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_OBJCXX_COMPILER_LAUNCHER=ccache
+          -DCMAKE_OBJC_COMPILER_LAUNCHER=ccache
           -DTUTTI_BUILD_APP=${{ needs.plan.outputs.build_app == 'true' && 'ON' || 'OFF' }}
           -DTUTTI_BUILD_PLUGIN=${{ needs.plan.outputs.build_plugin == 'true' && 'ON' || 'OFF' }}
           -DTUTTI_BUILD_TESTS=${{ needs.plan.outputs.cpp == 'true' && 'ON' || 'OFF' }}
@@ -256,6 +266,9 @@ jobs:
   windows:
     name: Windows build, checks and package
     needs: plan
+    concurrency:
+      group: tutti-windows-${{ github.ref }}
+      cancel-in-progress: true
     if: needs.plan.outputs.windows == 'true'
     runs-on: windows-latest
     env:
@@ -512,6 +525,9 @@ jobs:
   publish:
     name: Publish release
     needs: [plan, macos, windows]
+    concurrency:
+      group: tutti-publish-${{ github.ref }}
+      cancel-in-progress: false
     if: needs.plan.outputs.publish == 'true' && needs.macos.result == 'success' && needs.windows.result == 'success'
     runs-on: ubuntu-24.04   # uploads the release; builds nothing
     permissions:

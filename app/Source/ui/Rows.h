@@ -25,6 +25,8 @@ struct Row
     bool crown = false;       // Player 1
     bool dim = false;         // offline
     std::vector<Action> actions;
+    float progress = -1.0f;   // 0..1 draws a progress bar under the text; < 0: none
+    bool progressBad = false; // stalled: the bar turns red
 };
 
 class RowComponent : public juce::Component

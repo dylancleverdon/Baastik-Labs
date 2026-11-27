@@ -24,6 +24,7 @@ public:
     bool keyPressed (const juce::KeyPress&) override;
     void chooseSong();
     void askForMessage();
+    void joinWithMyCopy (const std::string& peer, const std::string& song);
 
 private:
     std::vector<Row> buildRows (const AppState&);

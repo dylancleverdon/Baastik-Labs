@@ -82,7 +82,7 @@ int main (int argc, char* argv[])
     };
 
     // The end-to-end test plays Live: it saves the song when Tutti "presses" Save.
-    options.pressSaveInLive = [] (bool bringToFront) {
+    options.pressSaveInLive = [] (bool bringToFront, const std::string&) {
         emit (Json { { "event", "press_save" }, { "front", bringToFront } });
         return static_cast<int> (saveKeyPressed);
     };

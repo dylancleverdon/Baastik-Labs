@@ -311,9 +311,9 @@ void AppUpdater::setAutoUpdate (bool on)
 void AppUpdater::tick()
 {
     const auto nowMs = juce::Time::currentTimeMillis();
-    // First check a minute after launch, then hourly.
+    // First check a minute after launch, then every 15 minutes (never installs during a session).
     static const auto launched = nowMs;
-    if (! busy && nowMs - launched > 60 * 1000 && nowMs - lastCheck > 60 * 60 * 1000)
+    if (! busy && nowMs - launched > 60 * 1000 && nowMs - lastCheck > 15 * 60 * 1000)
         startCheck (false);
 
     if (! busy && staged != juce::File() && nowMs >= retryInstallAt && options.safeToInstall && options.safeToInstall())

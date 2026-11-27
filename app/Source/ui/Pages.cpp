@@ -49,7 +49,14 @@ SettingsPage::SettingsPage (AppActions& a, std::function<void()> onDone) : actio
     };
 
     autoUpdate.onClick = [this] { actions.setAutoUpdate (autoUpdate.getToggleState()); };
-    autoSave.onClick = [this] { actions.setAutoSave (autoSave.getToggleState()); };
+    autoSave.addItemList ({ "Off", "every 30 s at most", "every 1 min at most", "every 2 min at most", "every 5 min at most" }, 1);
+    autoSave.onChange = [this] {
+        static const int seconds[] = { 0, 30, 60, 120, 300 };
+        actions.setAutoSaveSeconds (seconds[juce::jlimit (0, 4, autoSave.getSelectedItemIndex())]);
+    };
+    autoSaveLabel.setText ("Save for me after plugin and automation changes:", juce::dontSendNotification);
+    styleLabel (autoSaveLabel, 14.0f, theme::text);
+    addAndMakeVisible (autoSaveLabel);
     autoGet.onClick = [this] { actions.setAutoGet (autoGet.getToggleState()); };
     lockTracks.onClick = [this] { actions.setLockTracks (lockTracks.getToggleState()); };
     addAndMakeVisible (lockTracks);
@@ -96,7 +103,10 @@ void SettingsPage::update (const AppState& s)
     radio (never, s.engine.playTogetherMode == "never");
     autoUpdate.setToggleState (s.updates.autoUpdate, juce::dontSendNotification);
     startAtLogin.setToggleState (s.setup.startAtLogin, juce::dontSendNotification);
-    autoSave.setToggleState (s.engine.autoSave, juce::dontSendNotification);
+    {
+        const int secs = s.engine.autoSaveSeconds;
+        autoSave.setSelectedItemIndex (secs <= 0 ? 0 : secs <= 30 ? 1 : secs <= 60 ? 2 : secs <= 120 ? 3 : 4, juce::dontSendNotification);
+    }
     autoGet.setToggleState (s.engine.autoGet, juce::dontSendNotification);
     lockTracks.setToggleState (s.engine.lockTracks, juce::dontSendNotification);
     lockTracks.setEnabled (s.engine.canChangeLock);
@@ -110,6 +120,7 @@ void SettingsPage::update (const AppState& s)
         forgetTrusted.setVisible (! names.isEmpty());
     }
     autoSave.setVisible (s.engine.canSaveForYou);
+    autoSaveLabel.setVisible (s.engine.canSaveForYou);
     allowSave.setVisible (s.engine.canSaveForYou && s.engine.saveNeedsPermission);
     rollBack.setEnabled (s.updates.canRollBack && ! s.updates.busy);
     checkNow.setEnabled (! s.updates.busy);
@@ -205,7 +216,8 @@ void SettingsPage::resized()
 
     setupTop = y;
     startAtLogin.setBounds (0, y + 22, w, 26);
-    autoSave.setBounds (0, y + 50, w, 26);
+    autoSaveLabel.setBounds (0, y + 50, w - 190, 26);
+    autoSave.setBounds (w - 185, y + 50, 185, 26);
     autoGet.setBounds (0, y + 78, w, 26);
     lockTracks.setBounds (0, y + 106, w, 26);
     trustedInfo.setBounds (0, y + 136, w - 180, 36);

@@ -375,6 +375,12 @@ def main():
             guest.open_live(clone(snapshot_song))
             check(h.run(15, lambda: guest.state()["live_bound"]), guest.name + "'s Live is in sync")
 
+        def song_id(p):
+            f = os.path.join(os.path.dirname(p.state()["song_file"]), "Ableton Project Info", "tutti.json")
+            return json.load(open(f)).get("song") if os.path.exists(f) else None
+        check(song_id(alice) and song_id(alice) == song_id(bob) == song_id(cara),
+              "everyone's copy is marked as the same song")
+
         print("3. Edits flow both ways")
         alice.song.tracks[1].name = "Sub Bass"
         alice.song.tracks[0].arrangement_clips[0].ui_add_note(42, 0.5, 0.25)
@@ -438,7 +444,8 @@ def main():
         check(h.run(15, lambda: cara.state()["live_bound"] and not cara.state()["update_available"]),
               "Cara is in sync with the merged song")
 
-        snaps_dir = os.path.join(alice.data, "sessions")
+        snaps_dir = os.path.join(alice.data, "songs")  # one history per song
+        check(os.path.isdir(snaps_dir) and len(os.listdir(snaps_dir)) == 1, "versions are kept per song")
         newest = None
         for root, _, files in os.walk(snaps_dir):
             for f in files:

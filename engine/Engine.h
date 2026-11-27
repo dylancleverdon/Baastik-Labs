@@ -16,7 +16,8 @@
 namespace tutti
 {
     // What pressSaveInLive did.
-    enum SaveKeyResult { saveKeyPressed = 0, saveKeyNeedsPermission, saveKeyNoLive, saveKeyNotInFront, saveKeyBusy, saveKeyFailed };
+    enum SaveKeyResult { saveKeyPressed = 0, saveKeyNeedsPermission, saveKeyNoLive, saveKeyNotInFront, saveKeyBusy, saveKeyFailed,
+                         saveKeyWrongSong };
 
     struct EngineOptions
     {
@@ -31,7 +32,9 @@ namespace tutti
         // Presses Save (Cmd+S / Ctrl+S) in Live for the person. bringToFront: they clicked a
         // button, so Live may be brought forward; otherwise only if Live is already in front.
         // Empty: this Tutti can't (the headless peer).
-        std::function<int (bool bringToFront)> pressSaveInLive;
+        std::function<int (bool bringToFront, const std::string& expectedSong)> pressSaveInLive;
+        // True while Live shows a Save dialog (pressing Save made Live ask where to save).
+        std::function<bool()> saveDialogShowing;
         juce::String appVersion;
         juce::String os;
         juce::String name;             // default display name (else Tailscale's or the computer's)
@@ -93,8 +96,20 @@ namespace tutti
         std::vector<Version> versions; // newest first
         std::string songFile;          // the session song on this computer (Music/Tutti/...)
         bool updateWhenStopped = false; // an update is waiting for Live to stop playing
+        struct Transfer
+        {
+            bool active = false;
+            int64_t done = 0, total = 0;   // bytes
+            double bytesPerSecond = 0, secondsLeft = -1;
+            double quietFor = 0;           // seconds since the last byte
+            bool stalled = false;
+            std::string who;               // who it's from / to
+        };
+        Transfer download, upload;
         bool canSaveForYou = false;    // Tutti can press Save in Live (the app, not the headless peer)
         bool autoSave = true;          // save by itself after plugin changes
+        int autoSaveSeconds = 60;      // at most once every this many seconds (0 = off)
+        std::string linkedFolder;      // this song's project folder on this computer, if linked
         bool saveNeedsPermission = false; // macOS hasn't allowed Tutti to press keys yet
         bool autoGet = true;           // load others' saves by itself when it's safe
         std::vector<std::string> activity;      // "21:04  Wilson saved", newest first
@@ -147,12 +162,15 @@ namespace tutti
         void revealSong();
         void saveAndShare();          // presses Save in Live; the save is then shared as usual
         void setAutoSave (bool);
+        void setAutoSaveSeconds (int seconds);    // 0 = off
+        void linkSong (const std::string& song, const juce::File& folder);
         void setAutoGet (bool);
         void trustAndLetIn (const std::string& peer);   // approve now and from now on
         void forgetTrusted();
         void continueLastSession();
         void jumpTo (const std::string& peer);          // your Live to their track and bar
         void dismissPluginProblems() { pluginProblems.clear(); }
+        void openJoinedSongNow() { openJoinedNow = true; maybeOpenJoinedSong(); }
         void setLockTracks (bool);
         // Suggestions this computer can't get to Google go through a friend's Tutti.
         bool relaySuggestion (const Json& item);                       // false: nobody connected
@@ -353,6 +371,29 @@ namespace tutti
         bool lockTracks = false, sessionLock = false;
         bool editedSinceSave = false;
         std::set<std::string> handledSnapshots;
+        bool openJoinedNow = false;              // "Open with what's here" while joining
+        // Progress of file transfers, for the progress bars.
+        struct Flow
+        {
+            int64_t total = 0, done = 0;
+            double lastProgress = 0;
+            std::deque<std::pair<double, int64_t>> samples;  // (time, done) for the speed
+            void add (int64_t bytes, double t);
+            EngineView::Transfer view (double t, const std::string& who) const;
+        };
+        Flow downloads, uploads;
+        // One song, one history: versions are kept per song, not per session.
+        std::string currentSongId;
+        std::string songIdFor (const juce::File& folder, const std::string& known = {});
+        // "This is my copy of the same song": a joiner's own project folder for a song.
+        std::map<std::string, juce::File> linkedFolders;  // song name -> folder
+        juce::File alternateSong (const juce::File& current) const; // the other file updates load into
+        bool isLinkedFolder (const juce::File& folder) const;
+        // Saving safety
+        int autoSaveSeconds = 60;                // 0: Tutti never saves by itself
+        double lastAutoSaveAt = 0, saveDialogCheckAt = 0;
+        bool noAutoSaveThisSession = false;      // Live showed a Save dialog: stop saving for the person
+        int pressSave (bool bringToFront);
         double lastLockNotice = 0;
         struct UndoStep
         {
@@ -419,6 +460,7 @@ namespace tutti
             double lastProgress = 0;  // when a chunk last arrived (or the request was sent)
             bool active = false;
             bool first = false;             // the song file itself: before any audio
+            int64_t expected = 0;           // bytes counted in the download progress
         };
         std::map<std::string, Transfer> transfers; // key: hash + ":" + kind
         struct Outgoing

@@ -27,6 +27,34 @@ namespace tutti
         return peer;
     }
 
+    void Engine::Flow::add (int64_t bytes, double t)
+    {
+        done += bytes;
+        lastProgress = t;
+        samples.emplace_back (t, done);
+        while (samples.size() > 2 && t - samples.front().first > 8.0)
+            samples.pop_front();
+    }
+
+    EngineView::Transfer Engine::Flow::view (double t, const std::string& who) const
+    {
+        EngineView::Transfer v;
+        if (total <= 0)
+            return v;
+        v.active = true;
+        v.done = std::min (done, total);
+        v.total = total;
+        v.who = who;
+        if (samples.size() >= 2 && samples.back().first - samples.front().first > 0.5)
+            v.bytesPerSecond = (double) (samples.back().second - samples.front().second) / (samples.back().first - samples.front().first);
+        v.quietFor = lastProgress > 0 ? t - lastProgress : 0;
+        if (v.quietFor > 4.0)
+            v.bytesPerSecond = 0;
+        v.secondsLeft = v.bytesPerSecond > 0 ? (double) (total - v.done) / v.bytesPerSecond : -1;
+        v.stalled = v.quietFor > 15.0;
+        return v;
+    }
+
     void Engine::wantFile (const std::string& hash, bool previewFirst)
     {
         if (hash.size() != 64 || contentStore.has (hash))
@@ -34,7 +62,17 @@ namespace tutti
         if (previewFirst && ! contentStore.hasPreviewWav (hash) && transfers.count (hash + ":preview") == 0)
             transfers[hash + ":preview"] = Transfer { hash, "preview" };
         if (transfers.count (hash + ":full") == 0)
-            transfers[hash + ":full"] = Transfer { hash, "full" };
+        {
+            Transfer tr { hash, "full" };
+            if (downloads.total == 0)
+                downloads.lastProgress = now();
+            if (auto m = contentStore.meta (hash); m && m->size > 0)
+            {
+                downloads.total += m->size; // counted up front, so the bar shows the whole song
+                tr.expected = m->size;
+            }
+            transfers[hash + ":full"] = tr;
+        }
         // Not audio (the song file): fetch it before any audio, or a song with many recordings
         // sits at "Downloading the song..." until every preview has arrived.
         if (! previewFirst)
@@ -44,7 +82,10 @@ namespace tutti
     void Engine::pumpTransfers()
     {
         if (transfers.empty())
+        {
+            downloads = {};
             return;
+        }
         const double t = now();
         int active = 0;
         for (auto& [key, tr] : transfers)
@@ -165,6 +206,9 @@ namespace tutti
             if (auto meta = contentStore.meta (hash))
                 out.meta = meta->toJson();
             serving.push_back (out);
+            if (uploads.total == 0)
+                uploads.lastProgress = now();
+            uploads.total += out.total;
             log ("sending " + file.getFileName().toStdString() + " (" + hash.substr (0, 12) + ", " + kind + ", "
                  + std::to_string (out.total / 1024) + " KB) to " + memberName (peer));
             return;
@@ -229,6 +273,12 @@ namespace tutti
         }
         tr.received += static_cast<int64_t> (binary->data.size());
         tr.lastProgress = now();
+        if (tr.expected == 0 && tr.total > 0)
+        {
+            tr.expected = tr.total;
+            downloads.total += tr.total;
+        }
+        downloads.add (static_cast<int64_t> (binary->data.size()), now());
         if (tr.received < tr.total)
             return;
 
@@ -249,6 +299,11 @@ namespace tutti
 
     void Engine::serveChunks()
     {
+        if (serving.empty())
+        {
+            uploads = {};
+            return;
+        }
         int budget = 16; // chunks per pump
         while (! serving.empty() && budget-- > 0)
         {
@@ -276,6 +331,7 @@ namespace tutti
                 header["meta"] = out.meta;
             it->second.link->send (protocol::encodeBinary (header, data.getData(), static_cast<size_t> (n)));
             out.offset += n;
+            uploads.add (n, now());
             if (out.offset < out.total && n > 0)
                 serving.push_back (out);
         }
@@ -523,6 +579,12 @@ namespace tutti
         self.color = static_cast<int> (integer (j, "color", static_cast<int64_t> (std::hash<std::string> {} (self.peer) % 8)));
         playMode = str (j, "play", "ask");
         autoSave = boolean (j, "autosave", true);
+        autoSaveSeconds = static_cast<int> (integer (j, "autosave_s", autoSave ? 60 : 0));
+        autoSave = autoSaveSeconds > 0;
+        if (const auto& linked = field (j, "linked"); linked.is_object())
+            for (const auto& [song, path] : linked.items())
+                if (path.is_string())
+                    linkedFolders[song] = juce::File (juce::String (path.get<std::string>()));
         autoGet = boolean (j, "autoget", true);
         lockTracks = boolean (j, "lock", false);
         if (const auto& t = field (j, "trusted"); t.is_object())
@@ -556,6 +618,11 @@ namespace tutti
         j["color"] = self.color;
         j["play"] = playMode;
         j["autosave"] = autoSave;
+        j["autosave_s"] = autoSaveSeconds;
+        Json linked = Json::object();
+        for (const auto& [song, folder] : linkedFolders)
+            linked[song] = folder.getFullPathName().toStdString();
+        j["linked"] = linked;
         j["autoget"] = autoGet;
         j["lock"] = lockTracks;
         Json trusted = Json::object();
@@ -666,6 +733,24 @@ namespace tutti
 
         v.updateAvailable = s.inSession() && ! latestSnapshot.empty() && latestSnapshot != currentSnapshot && ! reloading;
         v.updateBy = updateBy;
+        {
+            std::set<std::string> from, to;
+            for (const auto& [key, tr] : transfers)
+                if (tr.active && ! tr.from.empty())
+                    from.insert (memberName (tr.from));
+            for (const auto& out : serving)
+                for (const auto& [peer, linkId] : peerLinks)
+                    if (linkId == out.link)
+                        to.insert (memberName (peer));
+            auto names = [] (const std::set<std::string>& s) {
+                juce::StringArray a;
+                for (const auto& n : s)
+                    a.add (juce::String (n));
+                return a.joinIntoString (", ").toStdString();
+            };
+            v.download = downloads.view (now(), names (from));
+            v.upload = serving.empty() ? EngineView::Transfer {} : uploads.view (now(), names (to));
+        }
         if (s.inSession())
         {
             v.songFile = currentSong.getFullPathName().toStdString();
@@ -679,6 +764,9 @@ namespace tutti
         v.backupFolder = backupFolder.getFullPathName().toStdString();
         v.canSaveForYou = static_cast<bool> (options.pressSaveInLive);
         v.autoSave = autoSave;
+        v.autoSaveSeconds = autoSaveSeconds;
+        if (s.inSession() && isLinkedFolder (currentSong.getParentDirectory()))
+            v.linkedFolder = currentSong.getParentDirectory().getFullPathName().toStdString();
         v.saveNeedsPermission = saveNeedsPermission;
         v.autoGet = autoGet;
         v.lockTracks = s.inSession() ? sessionLock : lockTracks;

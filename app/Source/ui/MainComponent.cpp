@@ -87,6 +87,39 @@ void MainComponent::chooseSong()
                           });
 }
 
+namespace
+{
+    juce::String megabytes (int64_t bytes)
+    {
+        return juce::String ((double) bytes / (1024.0 * 1024.0), bytes < 10 * 1024 * 1024 ? 1 : 0) + " MB";
+    }
+
+    // "Downloading from Sam: 34 of 120 MB · 2.1 MB/s · about 40 s left", or why it's stuck.
+    Row transferRow (const std::string& id, const tutti::EngineView::Transfer& t, bool sending)
+    {
+        Row r { id, Row::Style::card,
+                juce::String (sending ? "Sending" : "Downloading") + (t.who.empty() ? juce::String() : juce::String (sending ? " to " : " from ") + juce::String (t.who)) };
+        juce::String d = megabytes (t.done) + " of " + megabytes (t.total);
+        if (t.stalled)
+            d << "  " << theme::middot() << "  nothing for " << (int) t.quietFor << " s: Tutti is asking again"
+              << (sending ? "" : " (check the other computer is on and connected)");
+        else if (t.bytesPerSecond > 0)
+        {
+            d << "  " << theme::middot() << "  " << megabytes ((int64_t) t.bytesPerSecond) << "/s";
+            if (t.secondsLeft >= 0)
+                d << "  " << theme::middot() << "  about " << (t.secondsLeft < 90 ? juce::String ((int) t.secondsLeft + 1) + " s"
+                                                                                  : juce::String ((int) (t.secondsLeft / 60) + 1) + " min")
+                  << " left";
+        }
+        else
+            d << "  " << theme::middot() << "  starting...";
+        r.detail = d;
+        r.progress = t.total > 0 ? (float) ((double) t.done / (double) t.total) : 0.0f;
+        r.progressBad = t.stalled;
+        return r;
+    }
+}
+
 std::vector<Row> MainComponent::buildRows (const AppState& s)
 {
     std::vector<Row> out;
@@ -146,9 +179,12 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
             {
                 ++hosting;
                 const auto peer = p.peer;
+                const auto song = p.song;
                 add ({ "join-" + p.peer, Row::Style::card, juce::String (p.song),
                        juce::String (p.name) + " is Player 1 " + theme::middot() + " " + juce::String (p.members) + (p.members == 1 ? " person" : " people"),
-                       {}, false, false, { { "Join", [&act, peer] { act.join (peer); }, true } } });
+                       {}, false, false,
+                       { { "Join with my copy...", [this, peer, song] { joinWithMyCopy (peer, song); } },
+                         { "Join", [&act, peer] { act.join (peer); }, true } } });
             }
             else
                 online.add (p.name);
@@ -166,6 +202,15 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
                { { "Cancel", [&act] { act.leave(); } } } });
         return out;
     }
+    if (e.download.active)
+    {
+        auto r = transferRow ("download", e.download, false);
+        if (e.download.stalled && ! e.startStatus.empty() && e.download.quietFor > 60)
+            r.actions.push_back ({ "Open with what's here", [&act] { act.openJoinedSongNow(); } });
+        out.push_back (r);
+    }
+    if (e.upload.active)
+        out.push_back (transferRow ("upload", e.upload, true));
 
     // --- in a session
     const bool iAmP1 = e.role == Session::Role::player1;
@@ -268,7 +313,9 @@ std::vector<Row> MainComponent::buildRows (const AppState& s)
         add ({ "save-share", Row::Style::warning, "Not shared yet: " + what.joinIntoString (", "),
                "Plugins and their sounds only reach the others with a save. "
                    + juce::String (e.canSaveForYou && e.autoSave && ! e.saveNeedsPermission
-                                       ? "Tutti saves for you a few seconds after you stop tweaking (while Live is in front and not playing)."
+                                       ? "Tutti saves for you once you stop tweaking, at most every "
+                                             + (e.autoSaveSeconds < 60 ? juce::String (e.autoSaveSeconds) + " s" : juce::String (e.autoSaveSeconds / 60) + " min")
+                                             + " (Settings), while Live is in front, on the session song and not playing."
                                        : "Press " + saveKey + " in Live."),
                {}, false, false, saveNow });
     }
@@ -427,6 +474,18 @@ std::vector<Row> MainComponent::buildVersionRows (const AppState& s)
                      { { "Name the latest version...", [this] { askForLabel(); } } } });
     out.push_back ({ "back", Row::Style::quiet, {}, {}, {}, false, false, { { "Back", [this] { showPage (Page::main); } } } });
     return out;
+}
+
+void MainComponent::joinWithMyCopy (const std::string& peer, const std::string& song)
+{
+    // "This is my copy of the same song": Tutti takes the audio from this project and keeps the
+    // session's version in it as "<song> (Tutti).als" (the person's own .als is never touched).
+    chooser = std::make_unique<juce::FileChooser> ("Choose your project folder for " + juce::String (song), juce::File());
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
+                          [this, peer, song] (const juce::FileChooser& fc) {
+                              if (fc.getResult().isDirectory())
+                                  actions.joinWithMyCopy (peer, song, fc.getResult());
+                          });
 }
 
 void MainComponent::askForMessage()

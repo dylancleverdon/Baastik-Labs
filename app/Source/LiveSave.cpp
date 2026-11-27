@@ -7,7 +7,25 @@
 // (Privacy & Security > Accessibility).
 #include "Engine.h"
 
+#include <algorithm>
+#include <cctype>
 #include <string>
+
+namespace
+{
+    // Live's window title shows the open song's name ("Night Drive (Tutti) [Night Drive]...").
+    // An unreadable title only lets a click on the button through, never an automatic save.
+    bool titleShows (const std::string& title, const std::string& song, bool clicked)
+    {
+        if (title.empty() || song.empty())
+            return clicked && title.empty();
+        auto lower = [] (std::string s) {
+            std::transform (s.begin(), s.end(), s.begin(), [] (unsigned char c) { return (char) std::tolower (c); });
+            return s;
+        };
+        return lower (title).find (lower (song)) != std::string::npos;
+    }
+}
 
 #if defined (__APPLE__)
  #include <ApplicationServices/ApplicationServices.h>
@@ -66,6 +84,103 @@ namespace
     }
 }
 
+namespace
+{
+    std::string cfString (CFTypeRef value)
+    {
+        if (value == nullptr || CFGetTypeID (value) != CFStringGetTypeID())
+            return {};
+        char buffer[1024] = {};
+        CFStringGetCString ((CFStringRef) value, buffer, sizeof (buffer), kCFStringEncodingUTF8);
+        return buffer;
+    }
+
+    // Live's main window title (it shows the open song's name), via Accessibility.
+    std::string liveWindowTitle (pid_t pid)
+    {
+        auto app = AXUIElementCreateApplication (pid);
+        if (app == nullptr)
+            return {};
+        std::string title;
+        CFTypeRef window = nullptr;
+        if (AXUIElementCopyAttributeValue (app, kAXMainWindowAttribute, &window) == kAXErrorSuccess && window != nullptr)
+        {
+            CFTypeRef value = nullptr;
+            if (AXUIElementCopyAttributeValue ((AXUIElementRef) window, kAXTitleAttribute, &value) == kAXErrorSuccess)
+            {
+                title = cfString (value);
+                if (value != nullptr)
+                    CFRelease (value);
+            }
+            CFRelease (window);
+        }
+        CFRelease (app);
+        return title;
+    }
+
+    // A Save panel: a sheet on Live's window, or a separate focused window that isn't the main one.
+    bool saveDialogOpen (pid_t pid)
+    {
+        auto app = AXUIElementCreateApplication (pid);
+        if (app == nullptr)
+            return false;
+        bool open = false;
+        CFTypeRef focused = nullptr, main = nullptr;
+        AXUIElementCopyAttributeValue (app, kAXFocusedWindowAttribute, &focused);
+        AXUIElementCopyAttributeValue (app, kAXMainWindowAttribute, &main);
+        for (CFTypeRef w : { focused, main })
+        {
+            if (w == nullptr)
+                continue;
+            CFTypeRef children = nullptr;
+            if (AXUIElementCopyAttributeValue ((AXUIElementRef) w, kAXChildrenAttribute, &children) == kAXErrorSuccess && children != nullptr)
+            {
+                const auto n = CFArrayGetCount ((CFArrayRef) children);
+                for (CFIndex i = 0; i < n && ! open; ++i)
+                {
+                    CFTypeRef role = nullptr;
+                    if (AXUIElementCopyAttributeValue ((AXUIElementRef) CFArrayGetValueAtIndex ((CFArrayRef) children, i), kAXRoleAttribute, &role) == kAXErrorSuccess)
+                    {
+                        open = cfString (role) == "AXSheet";
+                        if (role != nullptr)
+                            CFRelease (role);
+                    }
+                }
+                CFRelease (children);
+            }
+        }
+        if (! open && focused != nullptr && main != nullptr && ! CFEqual (focused, main))
+        {
+            CFTypeRef title = nullptr;
+            if (AXUIElementCopyAttributeValue ((AXUIElementRef) focused, kAXTitleAttribute, &title) == kAXErrorSuccess)
+            {
+                const auto t = cfString (title);
+                open = t.find ("Save") != std::string::npos;
+                if (title != nullptr)
+                    CFRelease (title);
+            }
+        }
+        if (focused != nullptr)
+            CFRelease (focused);
+        if (main != nullptr)
+            CFRelease (main);
+        CFRelease (app);
+        return open;
+    }
+}
+
+bool liveSaveDialogShowing()
+{
+    id live = runningLive();
+    return live != nullptr && saveDialogOpen (pidOf (live));
+}
+
+std::string liveTitleForLog()
+{
+    id live = runningLive();
+    return live != nullptr ? liveWindowTitle (pidOf (live)) : std::string();
+}
+
 bool allowedToPressKeys (bool askIfNot)
 {
     const void* keys[] = { kAXTrustedCheckOptionPrompt };
@@ -76,13 +191,16 @@ bool allowedToPressKeys (bool askIfNot)
     return trusted;
 }
 
-int pressSaveInLive (bool bringToFront)
+int pressSaveInLive (bool bringToFront, const std::string& expectedSong)
 {
     id live = runningLive();
     if (live == nullptr)
         return tutti::saveKeyNoLive;
     if (! allowedToPressKeys (bringToFront))
         return tutti::saveKeyNeedsPermission;
+    // Only when Live is on the session song: anything else makes Live ask where to save.
+    if (! titleShows (liveWindowTitle (pidOf (live)), expectedSong, bringToFront))
+        return tutti::saveKeyWrongSong;
     if (! liveInFront (live))
     {
         if (! bringToFront)
@@ -174,10 +292,65 @@ namespace
     }
 }
 
+namespace
+{
+    std::string windowTitle (HWND hwnd)
+    {
+        wchar_t text[512] = {};
+        GetWindowTextW (hwnd, text, 511);
+        return juce::String (text).toStdString();
+    }
+
+    struct DialogSearch
+    {
+        bool found = false;
+    };
+
+    // A Save dialog: a standard dialog window ("#32770") belonging to Live.
+    BOOL CALLBACK findLiveDialog (HWND hwnd, LPARAM param)
+    {
+        if (! IsWindowVisible (hwnd))
+            return TRUE;
+        wchar_t cls[64] = {};
+        GetClassNameW (hwnd, cls, 63);
+        DWORD pid = 0;
+        GetWindowThreadProcessId (hwnd, &pid);
+        if (std::wstring (cls) == L"#32770" && isLiveProcess (pid))
+        {
+            reinterpret_cast<DialogSearch*> (param)->found = true;
+            return FALSE;
+        }
+        return TRUE;
+    }
+}
+
+bool liveSaveDialogShowing()
+{
+    DialogSearch search;
+    EnumWindows (findLiveDialog, reinterpret_cast<LPARAM> (&search));
+    return search.found;
+}
+
+std::string liveTitleForLog()
+{
+    Search search;
+    EnumWindows (findLiveWindow, reinterpret_cast<LPARAM> (&search));
+    return search.found != nullptr ? windowTitle (search.found) : std::string();
+}
+
 bool allowedToPressKeys (bool) { return true; }
 
-int pressSaveInLive (bool bringToFront)
+int pressSaveInLive (bool bringToFront, const std::string& expectedSong)
 {
+    {
+        Search search;
+        EnumWindows (findLiveWindow, reinterpret_cast<LPARAM> (&search));
+        if (search.found == nullptr)
+            return tutti::saveKeyNoLive;
+        // Only when Live is on the session song: anything else makes Live ask where to save.
+        if (! titleShows (windowTitle (search.found), expectedSong, bringToFront))
+            return tutti::saveKeyWrongSong;
+    }
     if (! liveInFront())
     {
         Search search;
@@ -210,5 +383,7 @@ int pressSaveInLive (bool bringToFront)
 
 #else
 bool allowedToPressKeys (bool) { return false; }
-int pressSaveInLive (bool) { return tutti::saveKeyFailed; }
+int pressSaveInLive (bool, const std::string&) { return tutti::saveKeyFailed; }
+bool liveSaveDialogShowing() { return false; }
+std::string liveTitleForLog() { return {}; }
 #endif

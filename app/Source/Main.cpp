@@ -54,6 +54,9 @@ namespace
         void jumpToSpot (const std::string&, double) override {}
         void saveCompleteCopy() override {}
         void dismissCopyOffer() override {}
+        void setAutoSaveSeconds (int) override {}
+        void joinWithMyCopy (const std::string&, const std::string&, const juce::File&) override {}
+        void openJoinedSongNow() override {}
         void makeIdea() override {}
         void acceptIdea (const std::string&) override {}
         void rejectIdea (const std::string&) override {}
@@ -157,6 +160,7 @@ namespace
         s.engine.activity = { "21:04  Sam saved", "21:02  New audio on Vox", "20:58  Cara joined" };
         s.engine.messages = { { "21:05", "Sam", "Look at Vox, bar 33", "t3", 128.0 }, { "21:03", "You", "love that bass", "", 0 } };
         s.engine.undoSteps = 3;
+        s.engine.upload = { true, 42 * 1024 * 1024, 120 * 1024 * 1024, 2.4 * 1024 * 1024, 33, 0.2, false, "Sam" };
         s.engine.pluginTable = { "Serum 2 (VST3): you, Sam | missing for Cara", "Valhalla Room (VST3): you, Sam, Cara" };
         s.engine.pluginProblems = { "Serum 2: the song uses VST3, you have AU (install the VST3 version and turn on VST3 in Live's Plug-Ins settings)" };
         shoot ("3-session-player1", s);
@@ -199,7 +203,8 @@ namespace
 void installReopenHandler (std::function<void()>); // MacReopen.cpp
 #endif
 std::string keepRunningInBackground(); // Background.cpp
-int pressSaveInLive (bool bringToFront); // LiveSave.cpp
+int pressSaveInLive (bool bringToFront, const std::string& expectedSong); // LiveSave.cpp
+bool liveSaveDialogShowing(); // LiveSave.cpp
 bool allowedToPressKeys (bool askIfNot); // LiveSave.cpp
 
 class TuttiApp : public juce::JUCEApplication, private AppActions, private juce::Timer
@@ -239,7 +244,8 @@ public:
         AppUpdater::cleanUpAfterUpdate();
         tutti::EngineOptions engineOptions;
        #if JUCE_MAC || JUCE_WINDOWS
-        engineOptions.pressSaveInLive = [] (bool bringToFront) { return pressSaveInLive (bringToFront); };
+        engineOptions.pressSaveInLive = [] (bool bringToFront, const std::string& song) { return pressSaveInLive (bringToFront, song); };
+        engineOptions.saveDialogShowing = [] { return liveSaveDialogShowing(); };
        #endif
         engine = std::make_unique<tutti::Engine> (engineOptions);
         engine->onChange = [this] { dirty = true; };
@@ -600,6 +606,14 @@ private:
     void jumpToSpot (const std::string& track, double time) override { engine->jumpToSpot (track, time); }
     void saveCompleteCopy() override { engine->saveCompleteCopy(); dirty = true; }
     void dismissCopyOffer() override { engine->dismissCopyOffer(); dirty = true; }
+    void setAutoSaveSeconds (int s) override { engine->setAutoSaveSeconds (s); dirty = true; }
+    void joinWithMyCopy (const std::string& peer, const std::string& song, const juce::File& folder) override
+    {
+        engine->linkSong (song, folder);
+        engine->joinSession (peer);
+        dirty = true;
+    }
+    void openJoinedSongNow() override { engine->openJoinedSongNow(); dirty = true; }
     void allowSaving() override
     {
         if (! allowedToPressKeys (true))

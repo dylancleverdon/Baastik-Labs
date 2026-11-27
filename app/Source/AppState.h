@@ -69,6 +69,9 @@ struct AppActions
     virtual void jumpToSpot (const std::string& track, double time) = 0;
     virtual void saveCompleteCopy() = 0;
     virtual void dismissCopyOffer() = 0;
+    virtual void setAutoSaveSeconds (int) = 0;
+    virtual void joinWithMyCopy (const std::string& peer, const std::string& song, const juce::File& folder) = 0;
+    virtual void openJoinedSongNow() = 0;
     virtual void makeIdea() = 0;
     virtual void acceptIdea (const std::string& track) = 0;
     virtual void rejectIdea (const std::string& track) = 0;

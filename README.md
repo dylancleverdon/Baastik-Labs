@@ -59,6 +59,14 @@ possible (see "Plugins" below).
   - **Go to:** next to each person: jumps your Live to their track (and bar, when you're
     stopped).
   - **Recent:** the last few things that happened (saves, joins, new audio, plugins).
+  - **Join with my copy...:** if you already have the song's project, point Tutti at it: it
+    takes the audio from there instead of downloading it and keeps the session's version in
+    that folder as `<song> (Tutti).als` (your own `.als` is never touched).
+  - **One song, one history:** every session of the same song (and **Continue**) adds to one
+    version history, and everyone's copy is marked as the same song.
+  - **Progress bars:** for sending (when hosting) and downloading, with speed, time left and a
+    clear "stalled" warning. Joining downloads everything at full quality before the song
+    opens; if a download stalls for a minute you can open with what's there.
   - **Getting saves by itself:** when someone saves, Tutti loads the new version once you
     stop playing. If you've changed anything since your last save, it saves yours first so
     both are combined (turn this off in Settings).
@@ -94,6 +102,10 @@ possible (see "Plugins" below).
   Tutti then reopens the song in Live (it alternates between `<song>.als` and
   `<song> (Tutti).als`, because Live can't reload a file it has open). It never does this while
   you're playing or recording: the update waits until you stop.
+- **Safe automatic saving:** Tutti only presses Save when Live's window shows the session song
+  (anything else would make Live ask where to save). If Live shows a Save dialog anyway, Tutti
+  stops saving by itself for that session and says so. **Settings > Save for me after plugin
+  and automation changes** sets how often it may: Off, or at most every 30 s, 1, 2 or 5 min.
 - **Save & share:** Tutti can press Save in Live for you (the **Save & share now** button, also
   in the menus), and by default it does so by itself a few seconds after you add or tweak a
   plugin, while Live is in front and not playing. A save carries each plugin's whole current
@@ -124,7 +136,7 @@ plays a shared recording of that track for the people who don't.
 
 ## Updates
 
-Tutti updates itself: it checks every hour, downloads only from this repository's `tutti-*`
+Tutti updates itself: it checks every 15 minutes, downloads only from this repository's `tutti-*`
 releases, checks the download's SHA-256, and installs when you're not in a session. **Settings**
 shows the version and what's new, and has **Check now**, **Roll back** and an auto-update switch.
 

@@ -109,6 +109,20 @@ namespace tutti
         }
         autoSaveIfDue();
         autoGetIfDue();
+        if (saveDialogCheckAt > 0 && now() >= saveDialogCheckAt)
+        {
+            saveDialogCheckAt = 0;
+            if (options.saveDialogShowing && options.saveDialogShowing())
+            {
+                // Live asked where to save: it doesn't treat the open song as Tutti's copy. Never
+                // press Save by itself again this session, and say so.
+                noAutoSaveThisSession = true;
+                log ("Live showed a Save dialog after Tutti pressed Save: automatic saving is off for this session");
+                notice ("Live asked where to save, so Tutti stopped saving for you this session. Cancel that dialog, "
+                        "click Open the song, then save with Cmd+S / Ctrl+S. Please Send logs so this can be fixed.");
+                addActivity ("Automatic saving paused (Live asked where to save)");
+            }
+        }
         if (! pendingReload.is_null() && ! reloading && ! liveIsBusy())
         {
             auto meta = std::exchange (pendingReload, nullptr);
@@ -745,6 +759,8 @@ namespace tutti
         pluginProblems.clear();
         undoStack.clear();
         sessionLock = false;
+        noAutoSaveThisSession = false;
+        currentSongId.clear();
         editedSinceSave = false;
         othersSaveNeeded.clear();
         pendingReload = nullptr;
@@ -1014,10 +1030,10 @@ namespace tutti
             {
                 // Updated: the other copy of the song file is now stale.
                 reloading = false;
-                const auto base = currentSong.getFileNameWithoutExtension().upToLastOccurrenceOf (" (Tutti)", false, false);
-                for (const auto& name : { base + ".als", base + " (Tutti).als" })
-                    if (auto f = currentSong.getSiblingFile (name); f != currentSong)
-                        f.deleteFile();
+                // Only ever Tutti's own other file: in a linked project folder the person's own
+                // song sits next to these and must never be touched.
+                if (auto other = alternateSong (currentSong); other != currentSong)
+                    other.deleteFile();
                 notice ("Your Live is up to date.");
                 editedSinceSave = false;
             }
@@ -1297,6 +1313,8 @@ namespace tutti
 
     juce::File Engine::workspaceFor (const std::string& song) const
     {
+        if (auto it = linkedFolders.find (song); it != linkedFolders.end() && it->second.isDirectory())
+            return it->second;
         auto name = juce::File::createLegalFileName (juce::String (song));
         if (name.isEmpty())
             name = "Song";
@@ -1431,12 +1449,14 @@ namespace tutti
 
         const auto sessionId = newSessionId();
         const auto snapshotId = newVersionId();
+        currentSongId = songIdFor (pendingStartCopy.getParentDirectory());
         Json snap { { "type", "snap" }, { "id", snapshotId }, { "session", sessionId }, { "song", currentSongName },
+                    { "songId", currentSongId },
                     { "file", pendingStartCopy.getFileName().toStdString() }, { "als", *alsHash }, { "seq", 0 },
                     { "map", field (captured, "map") }, { "notes", field (captured, "notes") },
                     { "files", Json (std::vector<std::string> (files.begin(), files.end())) },
                     { "by", self.peer }, { "byName", self.name }, { "at", juce::Time::getCurrentTime().toISO8601 (true).toStdString() } };
-        auto dir = options.dataDir.getChildFile ("sessions").getChildFile (sessionId).getChildFile ("snapshots");
+        auto dir = snapshotsDir();
         dir.createDirectory();
         dir.getChildFile (snapshotId + ".json").replaceWithText (snap.dump (1));
 
@@ -1489,8 +1509,10 @@ namespace tutti
     void Engine::handleSnapshotRequest (const std::string& peer, const Json& message)
     {
         const auto id = str (message, "id");
-        auto file = options.dataDir.getChildFile ("sessions").getChildFile (juce::String (str (message, "session")))
-                        .getChildFile ("snapshots").getChildFile (juce::String (id) + ".json");
+        auto file = snapshotsDir().getChildFile (juce::String (id) + ".json");
+        if (! file.existsAsFile())
+            file = options.dataDir.getChildFile ("sessions").getChildFile (juce::String (str (message, "session")))
+                       .getChildFile ("snapshots").getChildFile (juce::String (id) + ".json");
         auto snap = parseJson (file.loadFileAsString().toStdString());
         if (! snap)
         {
@@ -1527,7 +1549,8 @@ namespace tutti
                 if (auto m = AudioMeta::fromJson (mj); m && ! contentStore.meta (m->hash))
                     contentStore.writeMeta (*m);
 
-        auto dir = options.dataDir.getChildFile ("sessions").getChildFile (juce::String (sessionPtr->info().id)).getChildFile ("snapshots");
+        currentSongId = str (message, "songId");
+        auto dir = snapshotsDir();
         dir.createDirectory();
         Json keep = message;
         keep.erase ("metas");
@@ -1535,12 +1558,49 @@ namespace tutti
 
         joinSnapshot = message;
         joinSnapshot["received_at"] = now();
-        wantFile (str (message, "als"), false);
+        auto fetch = [this, message] {
+            // Everything at full quality before the song opens: slower for big songs, but Live
+            // never has to swap previews for full files (that caused tempo and binding trouble).
+            wantFile (str (message, "als"), false);
+            if (const auto& files = field (message, "files"); files.is_array())
+                for (const auto& h : files)
+                    wantFile (h.get<std::string>(), false);
+            startStatus = "Downloading the song...";
+            maybeOpenJoinedSong();
+        };
+        const auto song = str (message, "song");
+        auto linked = linkedFolders.find (song);
+        if (linked == linkedFolders.end() || ! linked->second.isDirectory())
+        {
+            fetch();
+            return;
+        }
+        // "This is my copy of the same song": take the audio from the person's own project
+        // folder (matched by content, so renamed files count) before downloading anything.
+        std::map<juce::int64, std::vector<std::string>> wantedBySize;
         if (const auto& files = field (message, "files"); files.is_array())
             for (const auto& h : files)
-                wantFile (h.get<std::string>(), true);
-        startStatus = "Downloading the song...";
-        maybeOpenJoinedSong();
+                if (auto m = contentStore.meta (h.get<std::string>()); m && ! contentStore.has (m->hash))
+                    wantedBySize[m->size].push_back (m->hash);
+        startStatus = "Looking for the song's audio in your project...";
+        juce::Thread::launch ([this, folder = linked->second, wantedBySize, fetch] {
+            int found = 0;
+            for (const auto& f : folder.findChildFiles (juce::File::findFiles, true, "*.wav;*.aif;*.aiff;*.flac;*.mp3;*.ogg;*.m4a"))
+            {
+                if (f.getFullPathName().contains ("Backup"))
+                    continue;
+                auto it = wantedBySize.find (f.getSize());
+                if (it == wantedBySize.end())
+                    continue;
+                juce::String error;
+                if (auto h = contentStore.add (f, error); h && std::find (it->second.begin(), it->second.end(), *h) != it->second.end())
+                    ++found;
+            }
+            post ([this, found, fetch] {
+                log ("found " + std::to_string (found) + " of the song's audio files in the linked project");
+                fetch();
+            });
+        });
     }
 
     void Engine::maybeOpenJoinedSong()
@@ -1556,21 +1616,18 @@ namespace tutti
         int waiting = 0;
         if (const auto& files = field (joinSnapshot, "files"); files.is_array())
             for (const auto& h : files)
-            {
-                const auto hash = h.get<std::string>();
-                auto m = contentStore.meta (hash);
-                const bool audio = m && m->isAudio() && ! m->previewHash.empty();
-                if (! contentStore.has (hash) && (! audio || ! contentStore.hasPreviewWav (hash)))
+                if (! contentStore.has (h.get<std::string>()))
                     ++waiting;
-            }
-        // Open as soon as every preview is here (or after 30 s with whatever has arrived).
-        if (waiting > 0 && now() - number (joinSnapshot, "received_at") < 8.0)
+        // Open once every file is here at full quality (the progress bar shows it's moving; if
+        // it stalls, the person can open with what has arrived).
+        if (waiting > 0 && ! openJoinedNow)
         {
             if (startStatus.find (std::to_string (waiting) + " audio") == std::string::npos)
-                log ("song file is here; waiting for " + std::to_string (waiting) + " audio preview(s)");
+                log ("song file is here; waiting for " + std::to_string (waiting) + " audio file(s)");
             startStatus = "Downloading the song (" + std::to_string (waiting) + " audio files to go)...";
             return;
         }
+        openJoinedNow = false;
 
         juce::String error;
         auto set = als::load (contentStore.fileFor (alsHash), error);
@@ -1585,6 +1642,10 @@ namespace tutti
         auto folder = workspaceFor (song);
         makeLiveProject (folder);
         auto target = folder.getChildFile (juce::String (str (joinSnapshot, "file", song + ".als")));
+        if (isLinkedFolder (folder))
+            target = folder.getChildFile (target.getFileNameWithoutExtension() + " (Tutti).als"); // never the person's own file
+        if (! currentSongId.empty())
+            songIdFor (folder, currentSongId);
         for (auto& ref : als::fileRefs (*set))
         {
             juce::File original (ref.path.replaceCharacter ('\\', '/'));

@@ -62,6 +62,8 @@ int RowComponent::preferredHeight (int width) const
         return h + 6;
     if (! row.actions.empty() && row.style != Row::Style::member)
         h += buttonHeight + 10;
+    if (row.progress >= 0.0f)
+        h += 16;
     return h + 2 * 11;
 }
 
@@ -133,6 +135,15 @@ void RowComponent::paint (juce::Graphics& g)
     const float y = row.style == Row::Style::member ? (float) area.getY() + juce::jmax (0.0f, (area.getHeight() - layout.getHeight()) / 2.0f)
                                                     : (float) area.getY();
     layout.draw (g, juce::Rectangle<float> ((float) area.getX(), y, (float) area.getWidth(), layout.getHeight()));
+
+    if (row.progress >= 0.0f)
+    {
+        juce::Rectangle<float> bar ((float) area.getX(), y + layout.getHeight() + 7.0f, (float) area.getWidth(), 6.0f);
+        g.setColour (theme::cardHi);
+        g.fillRoundedRectangle (bar, 3.0f);
+        g.setColour (row.progressBad ? theme::bad : theme::accent);
+        g.fillRoundedRectangle (bar.withWidth (bar.getWidth() * juce::jlimit (0.0f, 1.0f, row.progress)), 3.0f);
+    }
 
     if (row.crown && layout.getNumLines() > 0)
     {

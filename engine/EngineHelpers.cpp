@@ -4,6 +4,7 @@
 #include "Engine.h"
 
 #include "tutti/Als.h"
+#include "tutti/Ids.h"
 
 namespace tutti
 {
@@ -68,10 +69,10 @@ namespace tutti
         {
             // You've changed things since your last save (maybe automation, which Tutti can't
             // see): save yours first, which combines both, rather than replacing your work.
-            if (! options.pressSaveInLive || ! autoSave || t - lastAutoSaveTry < 5.0)
+            if (! options.pressSaveInLive || ! autoSave || noAutoSaveThisSession || t - lastAutoSaveTry < 5.0)
                 return; // without that, the person chooses (the update card)
             lastAutoSaveTry = t;
-            if (options.pressSaveInLive (false) == saveKeyPressed)
+            if (pressSave (false) == saveKeyPressed)
             {
                 log ("saved to combine my changes with the new version");
                 updateSeenAt = t + 30.0;
@@ -186,5 +187,64 @@ namespace tutti
             return;
         sendToLive (Json { { "type", "goto" }, { "track", it->second.track }, { "time", it->second.time } });
         notice ("Jumped to " + memberName (peer) + "'s spot.");
+    }
+}
+
+namespace tutti
+{
+    // ================================================================== one song, one history
+
+    std::string Engine::songIdFor (const juce::File& folder, const std::string& known)
+    {
+        // Kept inside the song's folder, so every session of this song (and "Continue") shares
+        // one version history, and each person's copy is recognised as the same song.
+        auto file = folder.getChildFile ("Ableton Project Info").getChildFile ("tutti.json");
+        auto j = parseJson (file.loadFileAsString().toStdString()).value_or (Json::object());
+        auto id = known.empty() ? str (j, "song") : known;
+        if (id.empty())
+            id = randomId ("song");
+        if (str (j, "song") != id)
+        {
+            j["song"] = id;
+            file.getParentDirectory().createDirectory();
+            file.replaceWithText (juce::String (j.dump (2)));
+        }
+        return id;
+    }
+
+    // ================================================================== my copy of the same song
+
+    void Engine::linkSong (const std::string& song, const juce::File& folder)
+    {
+        if (song.empty() || ! folder.isDirectory())
+            return;
+        linkedFolders[song] = folder;
+        saveSettings();
+        log ("linked " + song + " to " + folder.getFullPathName().toStdString());
+    }
+
+    bool Engine::isLinkedFolder (const juce::File& folder) const
+    {
+        for (const auto& [song, f] : linkedFolders)
+            if (f == folder)
+                return true;
+        return false;
+    }
+
+    juce::File Engine::alternateSong (const juce::File& current) const
+    {
+        // Live won't reload a file it has open, so updates alternate between two files. In a
+        // linked project both carry "(Tutti)", so the person's own song file is never used.
+        auto stem = current.getFileNameWithoutExtension();
+        for (const auto* suffix : { " (Tutti 2)", " (Tutti)" })
+            if (stem.endsWith (suffix))
+            {
+                stem = stem.dropLastCharacters (juce::String (suffix).length());
+                break;
+            }
+        const bool linked = isLinkedFolder (current.getParentDirectory());
+        const auto a = current.getSiblingFile (stem + (linked ? " (Tutti).als" : ".als"));
+        const auto b = current.getSiblingFile (stem + (linked ? " (Tutti 2).als" : " (Tutti).als"));
+        return current == a ? b : a;
     }
 }

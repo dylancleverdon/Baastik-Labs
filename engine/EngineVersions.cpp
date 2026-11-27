@@ -40,6 +40,9 @@ namespace tutti
 
     juce::File Engine::snapshotsDir() const
     {
+        // One song, one history: every session of the same song adds to the same versions.
+        if (! currentSongId.empty())
+            return options.dataDir.getChildFile ("songs").getChildFile (juce::String (currentSongId)).getChildFile ("versions");
         return options.dataDir.getChildFile ("sessions").getChildFile (juce::String (sessionPtr->info().id)).getChildFile ("snapshots");
     }
 
@@ -365,9 +368,7 @@ namespace tutti
             als::keepPersonalState (*set, field (meta, "map"), *mine, currentMap);
 
         // Live won't reload a file it already has open, so alternate between two names.
-        const auto base = currentSong.getFileNameWithoutExtension().upToLastOccurrenceOf (" (Tutti)", false, false);
-        const bool alternate = ! currentSong.getFileNameWithoutExtension().endsWith (" (Tutti)");
-        auto target = folder.getChildFile (base + (alternate ? " (Tutti).als" : ".als"));
+        auto target = alternateSong (currentSong);
         if (! als::save (*set, target))
         {
             notice ("Couldn't write the updated song.");
@@ -400,8 +401,12 @@ namespace tutti
         }
         if (! options.pressSaveInLive)
             return;
-        switch (options.pressSaveInLive (true))
+        switch (pressSave (true))
         {
+            case saveKeyWrongSong:
+                notice ("Live isn't on the session song, so Tutti didn't press Save (it would ask where to save). "
+                        "Click Open the song, then try again.");
+                break;
             case saveKeyPressed:
                 saveNeedsPermission = false;
                 log ("pressed Save in Live");
@@ -434,8 +439,27 @@ namespace tutti
 
     void Engine::setAutoSave (bool on)
     {
-        autoSave = on;
+        setAutoSaveSeconds (on ? 60 : 0);
+    }
+
+    void Engine::setAutoSaveSeconds (int seconds)
+    {
+        autoSaveSeconds = juce::jlimit (0, 3600, seconds);
+        autoSave = autoSaveSeconds > 0;
         saveSettings();
+    }
+
+    // Presses Save in Live only if Live's window shows the session song (anything else would
+    // make Live ask where to save), and checks a moment later that no Save dialog appeared.
+    int Engine::pressSave (bool bringToFront)
+    {
+        const auto expected = currentSong.getFileNameWithoutExtension().toStdString();
+        const int result = options.pressSaveInLive (bringToFront, expected);
+        if (result == saveKeyPressed)
+            saveDialogCheckAt = now() + 1.5;
+        else if (result == saveKeyWrongSong)
+            log ("didn't press Save: Live's window isn't on " + expected);
+        return result;
     }
 
     void Engine::autoSaveIfDue()
@@ -443,16 +467,19 @@ namespace tutti
         // After a plugin was added or changed, save once the person has stopped tweaking for a
         // few seconds, isn't playing or recording, and is working in Live (Tutti never pulls
         // Live to the front by itself).
-        if (! autoSave || ! options.pressSaveInLive || ! sessionPtr->inSession() || ! liveBound || reloading
-            || ! pendingSave.is_null() || (mySaveNeeded.empty() && myPluginChanges.empty()))
+        if (autoSaveSeconds <= 0 || noAutoSaveThisSession || ! options.pressSaveInLive || ! sessionPtr->inSession() || ! liveBound
+            || reloading || ! pendingSave.is_null() || (mySaveNeeded.empty() && myPluginChanges.empty()))
             return;
         const double t = now();
-        if (t - pluginChangedAt < 8.0 || t - lastAutoSaveTry < 5.0 || liveIsBusy())
+        // Not constantly: at most once every autoSaveSeconds (Settings), and only once the
+        // person has stopped tweaking for a few seconds.
+        if (t - pluginChangedAt < 8.0 || t - lastAutoSaveTry < 5.0 || t - lastAutoSaveAt < autoSaveSeconds || liveIsBusy())
             return;
         lastAutoSaveTry = t;
-        switch (options.pressSaveInLive (false))
+        switch (pressSave (false))
         {
             case saveKeyPressed:
+                lastAutoSaveAt = t;
                 saveNeedsPermission = false;
                 log ("saved automatically after plugin changes");
                 notice ("Saved your plugin changes so everyone gets them.");

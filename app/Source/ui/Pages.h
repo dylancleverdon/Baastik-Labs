@@ -24,7 +24,8 @@ private:
     juce::TextEditor name;
     juce::TextButton ask { "Ask me" }, automatic { "Join automatically" }, never { "Never" };
     juce::ToggleButton autoUpdate { "Update automatically" }, startAtLogin { "Start Tutti when I log in" };
-    juce::ToggleButton autoSave { "Save for me after plugin changes" };
+    juce::Label autoSaveLabel;
+    juce::ComboBox autoSave;
     juce::ToggleButton autoGet { "Get others' saves automatically (not while playing)" };
     juce::ToggleButton lockTracks { "Lock the track someone is on (Player 1 sets it for the session)" };
     juce::TextButton forgetTrusted { "Forget trusted friends" };

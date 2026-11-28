@@ -1,0 +1,512 @@
+# Pickless food knowledge: foods, label ingredients and dishes.
+#
+# FODMAP thresholds are ESTIMATES compiled from published research and public dietitian guidance
+# (not copied from any app's database). The app always labels them as estimates.
+#
+# Columns (| separated):
+#   id | kind | category | name | aliases | parent | tags | fodmap | units | components
+# kind:       F = food (searchable), I = label ingredient (not searched), D = dish (searchable)
+# aliases:    comma-separated phrases matched in ingredient lists and used by search (lowercase)
+# parent:     inherits the parent's tags (not its FODMAP numbers)
+# tags:       avoid categories / families. "whole" = when a product's name matches, its FODMAP
+#             numbers describe the whole product (milks, breads...). maybe-* = could contain it.
+# fodmap:     group:low/moderate in grams of this food per serve. Up to "low" is green, up to
+#             "moderate" is amber, beyond is red. Groups: fructans gos lactose fructose sorbitol mannitol
+# units:      name=grams; the first is the default serving
+# components: for dishes, typical recipe per default serving: id:grams;...
+#
+# IDs are permanent: never rename or reuse one (logs refer to them).
+
+# ---------- Fruit ----------
+apple|F|fruit|Apple|apple,apples,green apple,red apple,granny smith,gala apple,fuji apple,honeycrisp|-|-|fructose:20/40;sorbitol:20/40|each=180;cup=125|-
+apple-juice|F|beverage|Apple juice|apple juice,apple cider,cider|apple|whole|fructose:25/50;sorbitol:25/50|cup=240|-
+apple-juice-concentrate|I|sweetener|Apple juice concentrate|apple juice concentrate,concentrated apple juice,apple concentrate,apple juice from concentrate|apple|added-sugar|fructose:4/10;sorbitol:4/10|-|-
+applesauce|F|fruit|Applesauce|applesauce,apple sauce,apple puree,apple puree concentrate|apple|whole|fructose:20/40;sorbitol:20/40|cup=245;tbsp=15|-
+apricot|F|fruit|Apricot|apricot,apricots|-|-|sorbitol:20/40|each=35|-
+dried-apricot|F|fruit|Dried apricots|dried apricot,dried apricots|apricot|-|sorbitol:5/12;fructans:5/12|each=8|-
+avocado|F|fruit|Avocado|avocado,avocados,hass avocado,avocado pulp|-|-|sorbitol:30/60|each=150;tbsp=15|-
+banana|F|fruit|Banana (ripe)|banana,bananas,ripe banana,banana puree,banana flakes|-|-|fructans:35/75|each=118;cup=150|-
+banana-firm|F|fruit|Banana (firm, not fully ripe)|firm banana,unripe banana,green banana,just ripe banana|banana|-|fructans:100/150|each=100|-
+blackberries|F|fruit|Blackberries|blackberry,blackberries|-|-|sorbitol:15/40|cup=144;each=6|-
+blueberries|F|fruit|Blueberries|blueberry,blueberries,wild blueberries|-|-|fructans:125/200|cup=148;tbsp=10|-
+cantaloupe|F|fruit|Cantaloupe|cantaloupe,rockmelon,muskmelon|-|-|fructans:120/180|cup=160|-
+cherries|F|fruit|Cherries|cherry,cherries,sweet cherries,tart cherries,maraschino cherries|-|-|fructose:20/40;sorbitol:20/40|cup=155;each=8|-
+dried-cranberries|F|fruit|Dried cranberries|dried cranberries,craisins,sweetened dried cranberries|-|added-sugar|fructose:15/30|tbsp=10;cup=120|-
+cranberry-juice|F|beverage|Cranberry juice|cranberry juice,cranberry juice cocktail|-|added-sugar,whole|fructose:125/250|cup=240|-
+dates|F|fruit|Dates|date,dates,medjool dates,dried dates,date paste|-|-|fructans:20/40|each=24|-
+dragon-fruit|F|fruit|Dragon fruit|dragon fruit,pitaya|-|-|fructose:150/300|each=200|-
+figs|F|fruit|Figs|fig,figs,dried figs,fig paste|-|-|fructans:15/30;fructose:15/30|each=40|-
+grapefruit|F|fruit|Grapefruit|grapefruit,grapefruits|-|citrus|fructans:80/160|each=250|-
+grapes|F|fruit|Grapes|grape,grapes,red grapes,green grapes,concord grapes|-|-|fructose:150/300|cup=150|-
+grape-juice|F|beverage|Grape juice|grape juice,white grape juice,grape juice concentrate|grapes|whole|fructose:60/120|cup=240|-
+honeydew|F|fruit|Honeydew melon|honeydew,honeydew melon|-|-|fructose:90/180|cup=170|-
+kiwi|F|fruit|Kiwifruit|kiwi,kiwis,kiwifruit,kiwi fruit|-|-|fructans:150/300|each=75|-
+lemon|F|fruit|Lemon|lemon,lemons,lemon zest,lemon peel|-|citrus|-|each=60|-
+lemon-juice|I|condiment|Lemon juice|lemon juice,lemon juice concentrate,fresh lemon juice|lemon|citrus|-|tbsp=15|-
+lime|F|fruit|Lime|lime,limes,lime juice,key lime,lime zest|-|citrus|-|each=45;tbsp=15|-
+lychee|F|fruit|Lychee|lychee,lychees,litchi|-|-|sorbitol:30/60|each=10|-
+mandarin|F|fruit|Mandarin / clementine|mandarin,mandarins,clementine,clementines,tangerine,tangerines,cutie,cuties,mandarin oranges|-|citrus|fructose:90/180|each=75|-
+mango|F|fruit|Mango|mango,mangoes,mangos,mango puree,dried mango|-|-|fructose:40/75|cup=165;each=200|-
+nectarine|F|fruit|Nectarine|nectarine,nectarines|-|-|sorbitol:20/40|each=140|-
+orange|F|fruit|Orange|orange,oranges,navel orange,blood orange,orange zest,orange peel|-|citrus|fructans:130/260|each=140|-
+orange-juice|F|beverage|Orange juice|orange juice,oj,orange juice concentrate|orange|citrus,whole|fructose:125/250|cup=240|-
+papaya|F|fruit|Papaya|papaya,pawpaw|-|-|fructose:140/280|cup=145|-
+passionfruit|F|fruit|Passion fruit|passionfruit,passion fruit|-|-|fructans:45/90|each=18|-
+peach|F|fruit|Peach|peach,peaches,yellow peach,canned peaches,peach puree|-|-|sorbitol:30/60;mannitol:30/60|each=150|-
+pear|F|fruit|Pear|pear,pears,pear puree,asian pear|-|-|fructose:20/40;sorbitol:20/40|each=180|-
+pear-juice-concentrate|I|sweetener|Pear juice concentrate|pear juice concentrate,concentrated pear juice,pear juice|pear|added-sugar|fructose:4/10;sorbitol:4/10|-|-
+pineapple|F|fruit|Pineapple|pineapple,pineapples,pineapple juice|-|-|fructans:140/200|cup=165|-
+plum|F|fruit|Plum|plum,plums|-|-|sorbitol:30/60|each=66|-
+prunes|F|fruit|Prunes|prune,prunes,dried plums,prune juice|plum|-|sorbitol:8/16|each=10|-
+pomegranate|F|fruit|Pomegranate seeds|pomegranate,pomegranate seeds,pomegranate arils,pomegranate juice|-|-|fructans:40/80|cup=87|-
+raisins|F|fruit|Raisins|raisin,raisins,sultanas,golden raisins,currants|-|-|fructans:13/26|tbsp=9;cup=145|-
+raspberries|F|fruit|Raspberries|raspberry,raspberries|-|-|fructans:60/120|cup=123|-
+strawberries|F|fruit|Strawberries|strawberry,strawberries,strawberry puree|-|-|fructose:65/140|cup=150;each=12|-
+watermelon|F|fruit|Watermelon|watermelon|-|-|fructose:15/30;mannitol:15/30;fructans:15/30|cup=152|-
+coconut|F|fruit|Coconut (flesh, shredded)|coconut,shredded coconut,desiccated coconut,coconut flakes,toasted coconut,coconut flour|-|-|sorbitol:18/40|tbsp=5;cup=80|-
+fruit-juice-concentrate|I|sweetener|Fruit juice concentrate|fruit juice concentrate,juice concentrate,fruit juice concentrates,fruit juice,juice|-|added-sugar|fructose:5/12|-|-
+
+# ---------- Vegetables ----------
+artichoke|F|vegetable|Artichoke|artichoke,artichokes,artichoke hearts|-|-|fructans:10/20|each=120;cup=170|-
+arugula|F|vegetable|Arugula|arugula,rocket|-|cruciferous|-|cup=20|-
+asparagus|F|vegetable|Asparagus|asparagus|-|-|fructose:12/40;fructans:12/40|each=16;cup=134|-
+beets|F|vegetable|Beets|beet,beets,beetroot,beet juice,beetroot powder|-|-|fructans:20/40;gos:20/40|cup=136;each=82|-
+bell-pepper|F|vegetable|Bell pepper (green)|bell pepper,bell peppers,green bell pepper,green pepper,green peppers,capsicum,sweet pepper,sweet peppers,yellow bell pepper,orange bell pepper|-|nightshade|sorbitol:75/150|cup=150;each=120|-
+bell-pepper-red|F|vegetable|Red bell pepper|red bell pepper,red bell peppers,roasted red pepper,roasted red peppers,red capsicum,pimento,pimentos,pimiento|bell-pepper|-|fructose:43/75|cup=150;each=120|-
+bok-choy|F|vegetable|Bok choy|bok choy,pak choi,bok choi,baby bok choy|-|cruciferous|-|cup=70|-
+broccoli|F|vegetable|Broccoli|broccoli,broccoli florets,broccoli heads|-|cruciferous|fructose:75/150|cup=91|-
+broccolini|F|vegetable|Broccolini|broccolini|broccoli|-|fructans:45/90|cup=85|-
+brussels-sprouts|F|vegetable|Brussels sprouts|brussels sprouts,brussel sprouts,brussels sprout,brussel sprout,brussels,shaved brussels sprouts|-|brussels-sprouts,cruciferous|fructans:38/80|each=19;cup=88|-
+butternut-squash|F|vegetable|Butternut squash|butternut squash,butternut pumpkin,butternut,acorn squash,winter squash|-|-|gos:45/90;mannitol:45/90|cup=140|-
+cabbage|F|vegetable|Cabbage (green or red)|cabbage,green cabbage,red cabbage,purple cabbage,coleslaw mix,shredded cabbage|-|cruciferous|sorbitol:75/150|cup=89|-
+savoy-cabbage|F|vegetable|Savoy cabbage|savoy cabbage|cabbage|-|fructans:40/80|cup=70|-
+napa-cabbage|F|vegetable|Napa cabbage|napa cabbage,chinese cabbage,wombok|cabbage|-|-|cup=76|-
+carrot|F|vegetable|Carrot|carrot,carrots,baby carrots,carrot juice,shredded carrots|-|-|-|each=61;cup=128|-
+cauliflower|F|vegetable|Cauliflower|cauliflower,cauliflower florets,cauliflower rice,riced cauliflower,cauliflower crust|-|cruciferous|mannitol:40/75|cup=107|-
+celery|F|vegetable|Celery|celery,celery stalk,celery stalks,celery juice|-|-|mannitol:10/30|each=40;cup=101|-
+chard|F|vegetable|Swiss chard|swiss chard,chard,rainbow chard|-|-|-|cup=36|-
+collard-greens|F|vegetable|Collard greens|collard greens,collards,mustard greens,turnip greens|-|cruciferous|-|cup=36|-
+corn-sweet|F|vegetable|Sweet corn|corn,sweet corn,corn kernels,corn on the cob,corn cob,creamed corn|-|corn|sorbitol:38/60|cup=145;each=90|-
+cucumber|F|vegetable|Cucumber|cucumber,cucumbers,english cucumber,persian cucumber|-|-|-|cup=104;each=300|-
+eggplant|F|vegetable|Eggplant|eggplant,aubergine,baba ganoush|-|nightshade|sorbitol:75/180|cup=82|-
+fennel|F|vegetable|Fennel bulb|fennel,fennel bulb|-|-|fructans:48/75|cup=87|-
+garlic|F|vegetable|Garlic|garlic,fresh garlic,garlic clove,garlic cloves,minced garlic,chopped garlic,roasted garlic,dehydrated garlic,dried garlic,garlic puree,garlic paste,black garlic|-|allium,garlic|fructans:0.5/1.5|each=3;tsp=3|-
+garlic-powder|I|herb-spice|Garlic powder|garlic powder,granulated garlic,garlic granules,garlic salt,garlic flakes,garlic extract|garlic|-|fructans:0.15/0.5|tsp=3|-
+garlic-oil|F|fat|Garlic-infused oil|garlic infused oil,garlic-infused oil,garlic oil,garlic flavored oil|-|-|-|tbsp=14|-
+green-beans|F|vegetable|Green beans|green beans,string beans,snap beans,french beans,haricots verts|-|-|sorbitol:75/125|cup=110|-
+kale|F|vegetable|Kale|kale,baby kale,tuscan kale,lacinato kale,curly kale,kale chips|-|cruciferous|-|cup=21|-
+kohlrabi|F|vegetable|Kohlrabi|kohlrabi|-|cruciferous|-|cup=135|-
+leek|F|vegetable|Leek (white part)|leek,leeks,leek bulb|-|allium,onion|fructans:10/20|cup=89|-
+leek-greens|F|vegetable|Leek greens (green leaves only)|leek greens,leek leaves,green part of leek,green leek tops|-|allium|fructans:50/100|cup=89|-
+lettuce|F|vegetable|Lettuce|lettuce,romaine,romaine lettuce,iceberg lettuce,mixed greens,salad greens,spring mix,butter lettuce,green leaf lettuce,red leaf lettuce|-|-|-|cup=47|-
+mushrooms|F|vegetable|Mushrooms (button, cremini, portobello)|mushroom,mushrooms,button mushrooms,cremini mushrooms,crimini mushrooms,portobello,portobello mushrooms,portabella,white mushrooms,baby bella,shiitake,shiitake mushrooms,mushroom powder,mushroom extract|-|mushroom|mannitol:10/25|cup=70|-
+oyster-mushrooms|F|vegetable|Oyster mushrooms|oyster mushrooms,oyster mushroom|mushrooms|-|-|cup=86|-
+okra|F|vegetable|Okra|okra|-|-|fructans:70/120|cup=100|-
+olives|F|vegetable|Olives|olive,olives,black olives,green olives,kalamata olives,ripe olives|-|-|-|each=4;tbsp=8|-
+onion|F|vegetable|Onion|onion,onions,white onion,yellow onion,red onion,brown onion,sweet onion,vidalia onion,diced onion,chopped onion,dehydrated onion,dried onion,minced onion,onion flakes,caramelized onions,pearl onions,onion juice|-|allium,onion|fructans:5/12|each=110;cup=160;tbsp=10|-
+onion-powder|I|herb-spice|Onion powder|onion powder,granulated onion,onion salt,onion extract|onion|-|fructans:0.5/1.5|tsp=2.5|-
+shallot|F|vegetable|Shallot|shallot,shallots|onion|-|fructans:5/10|each=25;tbsp=10|-
+scallion|F|vegetable|Scallion (white part)|scallion,scallions,green onion,green onions,spring onion,spring onions|onion|-|fructans:5/10|each=15;tbsp=6|-
+scallion-greens|F|vegetable|Scallion greens (green tops only)|scallion greens,green onion tops,green tops of scallions,spring onion greens,green onion greens|-|allium|-|tbsp=6|-
+chives|F|herb-spice|Chives|chives,chive|-|allium|-|tbsp=3|-
+parsnip|F|vegetable|Parsnip|parsnip,parsnips|-|-|-|cup=133|-
+peas|F|vegetable|Green peas|peas,green peas,garden peas,frozen peas,sweet peas|-|legume|gos:15/30;fructans:15/30|cup=145;tbsp=10|-
+snow-peas|F|vegetable|Snow peas|snow peas,snow pea,mangetout|-|legume|fructans:10/25;mannitol:10/25|cup=63|-
+sugar-snap-peas|F|vegetable|Sugar snap peas|sugar snap peas,snap peas|-|legume|fructose:10/25|cup=63|-
+potato|F|vegetable|Potato|potato,potatoes,white potato,russet potato,russet potatoes,red potatoes,yukon gold,baked potato,boiled potatoes,potato flakes,dehydrated potatoes,dried potatoes,potato starch,potato flour,potato protein|-|nightshade|-|each=170;cup=150|-
+pumpkin|F|vegetable|Pumpkin (kabocha)|pumpkin,kabocha,japanese pumpkin,canned pumpkin,pumpkin puree,pumpkin pie filling|-|-|-|cup=116|-
+radish|F|vegetable|Radish|radish,radishes,daikon,daikon radish|-|cruciferous|-|cup=116|-
+rutabaga|F|vegetable|Rutabaga / turnip|rutabaga,swede,turnip,turnips|-|cruciferous|-|cup=140|-
+spinach|F|vegetable|Spinach|spinach,baby spinach,spinach powder|-|-|-|cup=30|-
+sweet-potato|F|vegetable|Sweet potato|sweet potato,sweet potatoes,yam,yams,sweet potato fries|-|-|mannitol:75/100|cup=133;each=130|-
+tomato|F|vegetable|Tomato|tomato,tomatoes,diced tomatoes,crushed tomatoes,whole tomatoes,roma tomatoes,cherry tomatoes,grape tomatoes,tomato puree,tomato concentrate,tomato powder,stewed tomatoes,fresh tomatoes|-|nightshade|fructose:75/150|each=123;cup=180|-
+tomato-paste|I|condiment|Tomato paste|tomato paste,double concentrated tomato paste|tomato|-|fructose:30/60|tbsp=16|-
+sun-dried-tomato|F|vegetable|Sun-dried tomatoes|sun-dried tomatoes,sun dried tomatoes,sundried tomatoes|tomato|-|fructose:8/20|each=2;tbsp=8|-
+zucchini|F|vegetable|Zucchini|zucchini,courgette,summer squash,yellow squash,zucchini noodles,zoodles|-|-|fructans:65/100|cup=124|-
+bean-sprouts|F|vegetable|Bean sprouts|bean sprouts,mung bean sprouts,alfalfa sprouts|-|-|-|cup=104|-
+seaweed|F|vegetable|Seaweed (nori)|nori,seaweed,kelp,wakame,seaweed snack,roasted seaweed|-|-|-|each=3|-
+jicama|F|vegetable|Jicama|jicama|-|-|fructans:75/150|cup=120|-
+water-chestnuts|F|vegetable|Water chestnuts|water chestnut,water chestnuts|-|-|-|cup=124|-
+bamboo-shoots|F|vegetable|Bamboo shoots|bamboo shoots|-|-|-|cup=131|-
+
+# ---------- Chili, spices, herbs ----------
+chili|F|herb-spice|Chili pepper|chili,chilli,chile,chiles,chilies,chillies,hot pepper,hot peppers,chili pepper,chili peppers,chile pepper,chile peppers,red chili,red chilies,green chili,thai chili,thai chilies,birds eye chili,bird's eye chili,serrano,serrano pepper,serrano peppers,habanero,habaneros,habanero pepper,scotch bonnet,cayenne,cayenne pepper,ghost pepper,carolina reaper,chile de arbol,arbol chile,capsaicin,peri peri,piri piri,hot chili,dried chilies,chili paste,chili sauce,thai chili sauce|-|spicy,nightshade|-|each=45;tsp=2|-
+chili-mild|F|herb-spice|Mild chiles (Anaheim, poblano, ancho)|anaheim pepper,anaheim peppers,poblano,poblano pepper,poblano peppers,ancho,ancho chile,ancho chili,guajillo,guajillo chile,pasilla,green chiles,green chilies,diced green chiles,mild chiles,banana peppers,pepperoncini,mild green chiles|-|spicy-mild,nightshade|-|each=45|-
+jalapeno|F|vegetable|Jalapeño|jalapeno,jalapenos,jalapeno pepper,jalapeno peppers,pickled jalapenos,jalapeno powder,jalapeno juice|chili|-|-|each=14|-
+chili-powder|I|herb-spice|Chili powder|chili powder,chile powder,chilli powder,chili seasoning,chili spice|chili|-|-|tsp=2.7|-
+red-pepper-flakes|I|herb-spice|Crushed red pepper|crushed red pepper,red pepper flakes,chili flakes,chile flakes,crushed chili,red chili flakes,chili oil,chile oil,hot chili oil,chili crisp|chili|-|-|tsp=1.8|-
+red-pepper|I|herb-spice|Red pepper (could be spice or bell pepper)|red pepper,red peppers,ground red pepper,red pepper powder|-|spicy-mild|-|tsp=2|-
+paprika|I|herb-spice|Paprika|paprika,smoked paprika,sweet paprika,paprika extract,paprika oleoresin|-|nightshade|-|tsp=2.3|-
+hot-paprika|I|herb-spice|Hot paprika|hot paprika,hot smoked paprika|paprika|spicy|-|tsp=2.3|-
+chipotle|I|herb-spice|Chipotle|chipotle,chipotle pepper,chipotle peppers,chipotles in adobo,chipotle powder,adobo sauce|chili|-|-|tsp=2|-
+sriracha|F|condiment|Sriracha|sriracha,sriracha sauce|-|spicy,garlic,allium,whole|fructans:5/15|tsp=5;tbsp=15|-
+hot-sauce|F|condiment|Hot sauce|hot sauce,tabasco,louisiana hot sauce,cayenne pepper sauce,franks red hot,frank's redhot,buffalo sauce,wing sauce,pepper sauce,valentina,cholula,tapatio|-|spicy,whole|-|tsp=5;tbsp=15|-
+gochujang|F|condiment|Gochujang|gochujang,korean chili paste,gochugaru,korean chili flakes,korean red pepper flakes|-|spicy,soy,wheat,gluten|fructans:10/20|tbsp=17|-
+harissa|F|condiment|Harissa|harissa,harissa paste|-|spicy,garlic,allium|fructans:5/15|tsp=5|-
+sambal|F|condiment|Sambal / chili garlic sauce|sambal,sambal oelek,chili garlic sauce,chile garlic sauce|-|spicy,garlic,allium|fructans:5/15|tsp=5|-
+curry-powder|I|herb-spice|Curry powder|curry powder,curry,garam masala,curry paste,red curry paste,green curry paste,yellow curry paste|-|spicy-mild|-|tsp=2|-
+taco-seasoning|I|herb-spice|Taco / cajun seasoning|taco seasoning,fajita seasoning,cajun seasoning,creole seasoning,jerk seasoning,blackening seasoning,chili lime seasoning,nashville hot|-|spicy-mild,garlic,onion,allium|fructans:2/5|tsp=3|-
+black-pepper|I|herb-spice|Black pepper|black pepper,pepper,ground pepper,ground black pepper,peppercorn,peppercorns,white pepper,cracked black pepper,lemon pepper|-|-|-|tsp=2.3|-
+ginger|F|herb-spice|Ginger|ginger,ginger root,ground ginger,fresh ginger,ginger juice,ginger extract,pickled ginger|-|-|-|tsp=2|-
+horseradish|I|condiment|Horseradish / wasabi|horseradish,wasabi,prepared horseradish,wasabi paste|-|spicy-mild|-|tsp=5|-
+mustard|F|condiment|Mustard|mustard,yellow mustard,dijon mustard,dijon,mustard seed,mustard seeds,mustard flour,ground mustard,spicy brown mustard,whole grain mustard,mustard powder|-|-|-|tsp=5;tbsp=15|-
+hot-mustard|F|condiment|Hot mustard|hot mustard,chinese hot mustard,english mustard|mustard|spicy-mild|-|tsp=5|-
+herbs|F|herb-spice|Herbs (basil, parsley, cilantro, mint...)|basil,parsley,cilantro,coriander,coriander leaves,mint,dill,dill weed,oregano,thyme,rosemary,sage,tarragon,marjoram,herbs,fresh herbs,dried herbs,italian seasoning,herbes de provence,bay leaf,bay leaves,lemongrass,celery seed,celery salt,fenugreek,caraway,caraway seeds,fennel seed,fennel seeds,anise|-|-|-|tbsp=2|-
+spices|I|herb-spice|Spices (not named)|spices,spice,spice blend,seasoning,seasonings,natural spices,spice extractives,spice extract,spices and herbs|-|maybe-hidden|-|-|-
+cumin|I|herb-spice|Cumin|cumin,ground cumin,cumin seed,cumin seeds|-|-|-|tsp=2|-
+turmeric|I|herb-spice|Turmeric|turmeric,turmeric extract,turmeric color,turmeric oleoresin,curcumin,saffron,annatto,annatto extract,annatto color|-|-|-|tsp=3|-
+baking-spices|I|herb-spice|Cinnamon, nutmeg, vanilla & co.|cinnamon,ground cinnamon,nutmeg,cloves,allspice,cardamom,star anise,vanilla,vanilla extract,pure vanilla extract,vanilla bean,vanilla beans,vanillin,mace,pumpkin pie spice,apple pie spice|-|-|-|tsp=2.6|-
+salt|I|other|Salt|salt,sea salt,kosher salt,iodized salt,sodium chloride,pink salt,himalayan salt,potassium chloride,flake salt|-|-|-|tsp=6|-
+
+# ---------- Grains & starches ----------
+wheat-flour|I|grain|Wheat flour|wheat flour,flour,enriched flour,enriched wheat flour,enriched bleached flour,enriched unbleached flour,unbleached flour,unbleached enriched flour,unbleached wheat flour,bleached flour,bleached wheat flour,all-purpose flour,all purpose flour,bread flour,cake flour,pastry flour,self rising flour,whole wheat flour,whole wheat,whole grain wheat,whole grain wheat flour,wheat,durum,durum wheat,durum flour,semolina,durum semolina,durum wheat semolina,graham flour,white whole wheat flour,stone ground wheat,stone ground whole wheat flour,cracked wheat,bulgur,bulgur wheat,farina,wheat bran,wheat germ,wheat berries,einkorn,emmer,farro,kamut,khorasan wheat,triticale,freekeh,wheat flakes,toasted wheat germ,whole grain flour|-|wheat,gluten|fructans:25/50|cup=125|-
+spelt|I|grain|Spelt|spelt,spelt flour,whole spelt flour|wheat-flour|-|fructans:40/80|cup=120|-
+rye|I|grain|Rye|rye,rye flour,whole rye,whole grain rye,rye meal,pumpernickel,rye flakes,cracked rye|-|gluten|fructans:12/24|cup=100|-
+barley|I|grain|Barley|barley,pearl barley,pearled barley,barley flour,barley flakes,barley grass|-|gluten|fructans:30/60;gos:30/60|cup=157|-
+malt|I|grain|Malt|malt,barley malt,malted barley,malted barley flour,malt extract,barley malt extract,malt syrup,barley malt syrup,malt vinegar,malt flavoring,malt flavor,malted milk|barley|-|fructans:10/25|-|-
+wheat-starch|I|grain|Wheat starch|wheat starch,modified wheat starch|-|wheat,gluten|-|-|-
+wheat-gluten|I|grain|Wheat gluten / seitan|wheat gluten,vital wheat gluten,gluten,seitan,wheat protein,wheat protein isolate,hydrolyzed wheat protein|-|wheat,gluten|-|serving=85|-
+oats|F|grain|Oats (rolled)|oats,oat,rolled oats,old fashioned oats,old-fashioned oats,whole grain oats,whole oats,oat flakes,oatmeal,porridge oats,steel cut oats,steel-cut oats,oat groats,gluten free oats,gluten-free oats,whole grain rolled oats,organic oats,whole grain oat flour,toasted oats|-|oat|fructans:52/90;gos:52/90|cup=80;tbsp=5|-
+quick-oats|F|grain|Quick / instant oats|quick oats,instant oats,quick cooking oats,quick-cooking oats,instant oatmeal,oatmeal packet|oats|-|fructans:23/50;gos:23/50|cup=80;packet=40|-
+oat-flour|I|grain|Oat flour|oat flour,oat powder|oats|-|fructans:40/80|cup=90|-
+oat-bran|F|grain|Oat bran|oat bran|oats|-|fructans:22/45|tbsp=6|-
+oat-fiber|I|grain|Oat fiber|oat fiber,oat fibre,oat hull fiber,oat hull fibre|oats|-|-|-|-
+oat-syrup|I|sweetener|Oat syrup|oat syrup,oat syrup solids,oat extract,oat base|oats|-|-|-|-
+oat-beta-glucan|I|additive|Oat beta-glucan|oat beta-glucan,oat beta glucan,beta-glucan from oats,oat bran concentrate|oats|-|-|-|-
+oat-protein|I|protein|Oat protein|oat protein,oat protein concentrate|oats|-|-|-|-
+oat-cereal|F|grain|Toasted oat cereal (Cheerios-style)|cheerios,toasted oat cereal,oat o's,oat cereal,honey nut cheerios,oat crunch cereal|oats|whole|fructans:30/60|cup=28|-
+rice|F|grain|Rice (white or brown)|rice,white rice,brown rice,jasmine rice,basmati rice,wild rice,long grain rice,long-grain rice,parboiled rice,rice flour,brown rice flour,white rice flour,sweet rice flour,glutinous rice flour,rice starch,sushi rice,arborio rice,rice bran,whole grain brown rice,rice protein,cooked rice|-|-|-|cup=158|-
+rice-noodles|F|grain|Rice noodles|rice noodles,rice vermicelli,rice stick noodles,pad thai noodles,rice paper|rice|-|-|cup=176|-
+quinoa|F|grain|Quinoa|quinoa,quinoa flakes,quinoa flour,red quinoa,white quinoa|-|-|-|cup=185|-
+buckwheat|F|grain|Buckwheat|buckwheat,buckwheat groats,kasha,buckwheat flour,buckwheat noodles,100% buckwheat soba|-|-|fructans:90/170|cup=168|-
+gf-grains|I|grain|Millet, sorghum, teff, amaranth|millet,millet flour,sorghum,sorghum flour,teff,teff flour,amaranth,amaranth flour,arrowroot,arrowroot flour,arrowroot starch|-|-|-|cup=170|-
+corn-grain|I|grain|Corn (grain, masa, cornmeal)|whole grain corn,whole corn,ground corn,yellow corn,white corn,whole grain yellow corn,whole grain white corn,corn masa,corn masa flour,masa,masa harina,cornmeal,corn meal,polenta,grits,corn grits,corn flour,degermed yellow cornmeal,degerminated yellow corn meal,hominy,nixtamalized corn,corn bran,corn cereal|-|corn|-|cup=150|-
+cornstarch|I|grain|Cornstarch / modified food starch|cornstarch,corn starch,modified corn starch,modified food starch,food starch,food starch-modified,food starch modified,maize starch,modified starch,starch,resistant corn starch|-|corn|-|tbsp=8|-
+tapioca|I|grain|Tapioca / cassava|tapioca,tapioca starch,tapioca flour,tapioca pearls,boba,cassava,cassava flour,cassava starch,yuca,manioc|-|-|-|tbsp=8|-
+couscous|F|grain|Couscous|couscous,pearl couscous,israeli couscous|wheat-flour|-|fructans:40/80|cup=157|-
+bread-white|F|grain|White bread / rolls|white bread,sandwich bread,bread,toast,white toast,hamburger bun,hamburger buns,hot dog bun,hot dog buns,burger bun,burger buns,dinner roll,dinner rolls,roll,rolls,sub roll,hoagie roll,brioche,brioche bun,potato bread,potato rolls,hawaiian rolls,texas toast,french bread,baguette,ciabatta,italian bread,pita,pita bread,naan,flatbread,focaccia,challah|wheat-flour|whole|fructans:26/52|slice=28;each=50|-
+bread-whole-wheat|F|grain|Whole wheat / multigrain bread|whole wheat bread,wholemeal bread,multigrain bread,multi-grain bread,whole grain bread,wheat bread,seeded bread,honey wheat bread,sprouted bread,sprouted grain bread,ezekiel bread|wheat-flour|whole|fructans:24/48|slice=32|-
+sourdough|F|grain|Sourdough bread (traditional)|sourdough,sourdough bread,sourdough loaf,sourdough toast|wheat-flour|whole|fructans:109/150|slice=50|-
+gf-bread|F|grain|Gluten-free bread|gluten free bread,gf bread,gluten-free bread,gluten free bun,gluten-free bun|-|whole|fructans:100/150|slice=30|-
+rye-bread|F|grain|Rye bread|rye bread,pumpernickel bread,marble rye,seeded rye|rye|whole|fructans:12/24|slice=32|-
+bagel|F|grain|Bagel|bagel,bagels,plain bagel,everything bagel,bagel thins|wheat-flour|whole|fructans:26/52|each=100|-
+english-muffin|F|grain|English muffin|english muffin,english muffins|wheat-flour|whole|fructans:26/52|each=57|-
+tortilla-flour|F|grain|Flour tortilla / wrap|flour tortilla,flour tortillas,tortilla wrap,tortilla wraps,wrap,wraps,burrito tortilla,lavash|wheat-flour|whole|fructans:26/52|each=45|-
+tortilla-corn|F|grain|Corn tortilla|corn tortilla,corn tortillas,tostada,tostadas,taco shell,taco shells|corn-grain|whole|-|each=26|-
+pasta|F|grain|Pasta (wheat)|pasta,spaghetti,penne,macaroni,noodles,egg noodles,fettuccine,linguine,rigatoni,lasagna noodles,lasagne sheets,ramen noodles,udon,udon noodles,lo mein noodles,chow mein noodles,orzo,ziti,rotini,farfalle,bow tie pasta,elbow macaroni,tortellini,ravioli,gnocchi,angel hair,cooked pasta|wheat-flour|whole|fructans:74/120|cup=140|-
+gf-pasta|F|grain|Gluten-free pasta|gluten free pasta,gluten-free pasta,rice pasta,corn pasta,brown rice pasta,gf pasta,quinoa pasta|-|whole|-|cup=140|-
+legume-pasta|F|legume|Chickpea / lentil pasta|chickpea pasta,lentil pasta,red lentil pasta,bean pasta,edamame pasta,banza|-|legume,whole|gos:40/80|cup=140|-
+crackers|F|snack|Crackers (wheat)|crackers,cracker,saltines,saltine crackers,water crackers,wheat crackers,wheat thins,ritz,goldfish crackers,cheese crackers,graham crackers,club crackers|wheat-flour|whole|fructans:30/60|serving=30;each=3|-
+rice-cakes|F|snack|Rice cakes / rice crackers|rice cake,rice cakes,rice crackers,rice cracker,puffed rice cakes|rice|whole|-|each=9|-
+corn-flakes|F|grain|Corn flakes|corn flakes,cornflakes,frosted flakes|corn-grain|whole|fructans:30/60|cup=28|-
+rice-cereal|F|grain|Crisp rice cereal|rice krispies,rice crisps,crisp rice,crisp rice cereal,puffed rice|rice|whole|fructans:30/60|cup=28|-
+breadcrumbs|I|grain|Breadcrumbs / croutons|breadcrumbs,bread crumbs,panko,panko bread crumbs,panko breadcrumbs,crouton,croutons,stuffing,cracker meal,batter,breading|wheat-flour|-|fructans:20/40|tbsp=7|-
+popcorn|F|snack|Popcorn (plain)|popcorn,popped corn,popcorn kernels,air popped popcorn|corn-grain|-|-|cup=8|-
+pretzels|F|snack|Pretzels|pretzel,pretzels,pretzel sticks,soft pretzel|wheat-flour|whole|fructans:30/60|serving=28|-
+potato-chips|F|snack|Potato chips|potato chips,chips,crisps,kettle chips,potato crisps,kettle cooked chips,ruffles,lays,pringles|potato|fried,whole|-|serving=28|-
+baked-chips|F|snack|Baked chips|baked chips,baked potato chips,baked crisps,baked potato crisps,baked tortilla chips,popped chips|potato|whole|-|serving=28|-
+tortilla-chips|F|snack|Tortilla chips|tortilla chips,corn chips,nacho chips,tortilla strips,fritos,doritos,tostitos|corn-grain|fried,whole|-|serving=28|-
+french-fries|F|snack|French fries / hash browns|french fries,fries,steak fries,curly fries,waffle fries,shoestring fries,tater tots,tots,hash browns,hashbrowns,hash brown,home fries,potato wedges|potato|fried|-|serving=117|-
+
+# ---------- Legumes & soy ----------
+chickpeas|F|legume|Chickpeas (canned, drained)|chickpeas,chickpea,garbanzo beans,garbanzo bean,garbanzos,canned chickpeas,chick peas,roasted chickpeas|-|legume|gos:42/84|cup=160;tbsp=10|-
+chickpea-flour|I|legume|Chickpea flour|chickpea flour,garbanzo bean flour,gram flour,besan|chickpeas|-|gos:15/30|-|-
+lentils|F|legume|Lentils (canned, drained)|lentils,lentil,canned lentils,red lentils,green lentils,brown lentils,black lentils,french lentils|-|legume|gos:46/92|cup=198|-
+lentils-boiled|F|legume|Lentils (cooked from dry) / dal|cooked lentils,boiled lentils,dal,dahl,daal,lentil soup,lentil flour|lentils|-|gos:23/46|cup=198|-
+black-beans|F|legume|Black beans|black beans,black bean,black turtle beans|-|legume|gos:40/80|cup=172|-
+kidney-beans|F|legume|Kidney beans|kidney beans,red kidney beans,dark red kidney beans,red beans|-|legume|gos:20/40|cup=177|-
+pinto-beans|F|legume|Pinto beans / refried beans|pinto beans,refried beans,refried pinto beans,charro beans,borracho beans|-|legume|gos:20/40|cup=171|-
+navy-beans|F|legume|White beans / baked beans|navy beans,white beans,cannellini beans,great northern beans,haricot beans,baked beans,pork and beans|-|legume|gos:20/40|cup=182|-
+lima-beans|F|legume|Lima / butter beans|lima beans,butter beans,mixed beans,bean blend,bean flour|-|legume|gos:30/60|cup=170|-
+split-peas|F|legume|Split peas|split peas,split pea,yellow split peas,pea flour,pea fiber|-|legume|gos:20/40|cup=196|-
+pea-protein|I|protein|Pea protein|pea protein,pea protein isolate,pea protein concentrate,pea starch,yellow pea protein|-|legume|-|-|-
+soybeans|F|legume|Soybeans (whole, cooked)|soybeans,soybean,soy beans,soya beans,whole soybeans,organic soybeans,roasted soybeans,soy nuts,soynuts,dry roasted soybeans|-|soy,legume|gos:20/40|cup=172|-
+edamame|F|legume|Edamame|edamame,green soybeans,shelled edamame|soybeans|-|gos:90/180|cup=155|-
+tofu-firm|F|protein|Firm tofu (drained)|tofu,firm tofu,extra firm tofu,extra-firm tofu,pressed tofu,tofu firm,baked tofu,smoked tofu|soybeans|whole|gos:170/340|cup=250;serving=126|-
+tofu-silken|F|protein|Silken tofu|silken tofu,soft tofu,silken soft tofu|soybeans|whole|gos:40/80|cup=250|-
+tempeh|F|protein|Tempeh|tempeh|soybeans|whole|gos:100/200|serving=85|-
+soy-milk-whole|F|milk-alt|Soy milk (made from whole soybeans)|soy milk,soymilk,soya milk,soy beverage,soya drink,soy drink,organic soymilk|soybeans|whole|gos:40/100|cup=240|-
+soy-milk-protein|F|milk-alt|Soy milk (made from soy protein)|soy protein milk,soy milk made from soy protein,soy protein beverage,soy protein drink|soy-protein|whole|gos:260/600|cup=240|-
+soy-yogurt|F|milk-alt|Soy yogurt|soy yogurt,soy yoghurt,soy based yogurt|soybeans|whole|gos:60/120|cup=170|-
+soy-protein|I|protein|Soy protein|soy protein,soy protein isolate,isolated soy protein,soy protein concentrate,textured soy protein,texturized soy protein,textured vegetable protein,texturized vegetable protein,tvp,hydrolyzed soy protein,soya protein,soy protein crisps,soy crisps,soy isolate|soybeans|-|-|-|-
+soy-flour|I|legume|Soy flour|soy flour,soya flour,defatted soy flour,soy grits,soy fiber,okara,soy pulp|soybeans|-|gos:10/20|-|-
+soy-sauce|F|condiment|Soy sauce|soy sauce,shoyu,naturally brewed soy sauce,light soy sauce,dark soy sauce,low sodium soy sauce,soy sauce powder|soybeans|wheat,gluten,whole|-|tbsp=16;tsp=5|-
+tamari|F|condiment|Tamari|tamari,gluten free soy sauce,gluten-free soy sauce,tamari soy sauce|soybeans|whole|-|tbsp=16|-
+miso|F|condiment|Miso|miso,miso paste,white miso,red miso,yellow miso,miso powder|soybeans|whole|fructans:15/40|tbsp=17|-
+natto|F|protein|Natto|natto|soybeans|-|gos:40/80|serving=50|-
+yuba|F|protein|Yuba / tofu skin|yuba,tofu skin,bean curd skin,bean curd,dried bean curd|soybeans|-|gos:40/80|serving=50|-
+soy-lecithin|I|additive|Soy lecithin|soy lecithin,soya lecithin,soybean lecithin,emulsifier soy lecithin|-|soy-refined|-|-|-
+lecithin|I|additive|Lecithin (source not stated)|lecithin,e322,emulsifier e322,emulsifier,emulsifiers|-|maybe-soy|-|-|-
+sunflower-lecithin|I|additive|Sunflower lecithin|sunflower lecithin,rapeseed lecithin,canola lecithin|-|-|-|-|-
+soybean-oil|I|fat|Soybean oil|soybean oil,soy oil,soya oil,soya bean oil,partially hydrogenated soybean oil,hydrogenated soybean oil,fully hydrogenated soybean oil,interesterified soybean oil,high oleic soybean oil,expeller pressed soybean oil|-|soy-refined|-|tbsp=14|-
+vegetable-oil|I|fat|Vegetable oil (not named)|vegetable oil,vegetable oils,vegetable shortening,shortening,vegetable oil blend,contains one or more of the following oils,margarine,vegetable fat,hydrogenated vegetable oil,partially hydrogenated vegetable oil|-|maybe-soy|-|tbsp=14|-
+oils|I|fat|Oil (canola, olive, sunflower...)|canola oil,olive oil,extra virgin olive oil,virgin olive oil,light olive oil,sunflower oil,high oleic sunflower oil,safflower oil,high oleic safflower oil,avocado oil,coconut oil,refined coconut oil,palm oil,palm kernel oil,palm fruit oil,fractionated palm kernel oil,corn oil,cottonseed oil,rice bran oil,peanut oil,sesame oil,toasted sesame oil,grapeseed oil,expeller pressed canola oil,rapeseed oil,high oleic canola oil,mct oil,medium chain triglycerides,oil,cooking spray,lard,tallow,beef tallow,duck fat,schmaltz|-|-|-|tbsp=14|-
+hvp|I|additive|Hydrolyzed vegetable protein|hydrolyzed vegetable protein,hvp,hydrolyzed plant protein,hydrolyzed corn protein|-|maybe-soy|-|-|-
+mono-diglycerides|I|additive|Mono- and diglycerides|mono and diglycerides,mono- and diglycerides,monoglycerides,diglycerides,e471,datem,polysorbate 80,polysorbate 60,sodium stearoyl lactylate,calcium stearoyl lactylate|-|-|-|-|-
+
+# ---------- Nuts & seeds ----------
+almonds|F|nut|Almonds|almond,almonds,almond flour,almond meal,ground almonds,blanched almonds,roasted almonds,sliced almonds,slivered almonds,almond pieces,marcona almonds,almond paste,marzipan|-|tree-nut|gos:12/24|each=1.2;cup=143;serving=28|-
+almond-butter|F|nut|Almond butter|almond butter,almond spread|almonds|whole|gos:20/40|tbsp=16|-
+almond-milk|F|milk-alt|Almond milk|almond milk,almondmilk,almond beverage,almond drink,almond base|almonds|whole|gos:500/1000|cup=240|-
+cashews|F|nut|Cashews|cashew,cashews,cashew nuts,cashew butter,cashew pieces,cashew paste|-|tree-nut|gos:5/10;fructans:5/10|serving=28;each=1.5|-
+cashew-milk|F|milk-alt|Cashew milk|cashew milk,cashewmilk,cashew beverage,cashew base|cashews|whole|gos:250/500|cup=240|-
+pistachios|F|nut|Pistachios|pistachio,pistachios,pistachio nuts,pistachio paste|-|tree-nut|gos:5/10;fructans:5/10|serving=28|-
+walnuts|F|nut|Walnuts|walnut,walnuts,walnut pieces,english walnuts,black walnuts|-|tree-nut|-|serving=30;each=2.5|-
+pecans|F|nut|Pecans|pecan,pecans,pecan pieces,pecan halves|-|tree-nut|fructans:20/40|serving=28|-
+macadamias|F|nut|Macadamia nuts|macadamia,macadamias,macadamia nuts,macadamia milk|-|tree-nut|-|serving=40|-
+hazelnuts|F|nut|Hazelnuts|hazelnut,hazelnuts,filberts,hazelnut paste,hazelnut spread,hazelnut milk|-|tree-nut|gos:15/30|serving=28|-
+brazil-nuts|F|nut|Brazil nuts|brazil nut,brazil nuts|-|tree-nut|-|serving=40|-
+pine-nuts|F|nut|Pine nuts|pine nut,pine nuts,pignoli|-|tree-nut|fructans:14/28|tbsp=9|-
+mixed-nuts|F|nut|Mixed nuts|mixed nuts,tree nuts,nuts,assorted nuts|-|tree-nut|gos:10/20;fructans:10/20|serving=28|-
+peanuts|F|nut|Peanuts|peanut,peanuts,roasted peanuts,dry roasted peanuts,peanut flour,peanut pieces,honey roasted peanuts|-|peanut,legume|-|serving=28|-
+peanut-butter|F|nut|Peanut butter|peanut butter,creamy peanut butter,crunchy peanut butter,natural peanut butter,peanut butter powder,pb2,peanut spread|peanuts|whole|gos:32/64|tbsp=16|-
+coconut-milk|F|milk-alt|Coconut milk (canned)|coconut milk,coconut cream,canned coconut milk,light coconut milk,coconut milk powder,cream of coconut|coconut|whole|sorbitol:120/240|cup=240;tbsp=15|-
+coconut-beverage|F|milk-alt|Coconut milk beverage (carton)|coconut milk beverage,coconutmilk beverage,coconut beverage,coconut drink,coconutmilk,coconut yogurt|coconut|whole|sorbitol:125/250|cup=240|-
+rice-milk|F|milk-alt|Rice milk|rice milk,rice beverage,rice drink,rice dream|rice|whole|fructans:200/350|cup=240|-
+hemp-milk|F|milk-alt|Hemp milk|hemp milk,hemp beverage,hemp drink|-|whole|-|cup=240|-
+oat-milk|F|milk-alt|Oat milk|oat milk,oatmilk,oat beverage,oat drink,oatly,oat creamer,oat milk creamer,oatmilk creamer|oats|whole|fructans:125/300;gos:125/300|cup=240|-
+pea-milk|F|milk-alt|Pea milk|pea milk,pea protein milk,ripple milk|pea-protein|whole|-|cup=240|-
+chia|F|seed|Chia seeds|chia,chia seeds,chia seed,chia pudding|-|-|-|tbsp=12|-
+flaxseed|F|seed|Flaxseed|flax,flaxseed,flaxseeds,flax seed,flax seeds,linseed,ground flaxseed,flax meal,golden flax,milled flaxseed|-|-|fructans:15/30|tbsp=10|-
+pumpkin-seeds|F|seed|Pumpkin seeds|pumpkin seeds,pepitas,pumpkin seed|-|-|-|tbsp=9|-
+sunflower-seeds|F|seed|Sunflower seeds|sunflower seeds,sunflower seed,sunflower kernels,sunflower seed butter,sunbutter,sunflower butter|-|-|fructans:6/20|tbsp=9|-
+sesame|F|seed|Sesame seeds|sesame,sesame seeds,sesame seed,toasted sesame seeds,black sesame|-|sesame|-|tbsp=9|-
+tahini|F|seed|Tahini|tahini,tahina,sesame paste,sesame butter|sesame|whole|fructans:30/60|tbsp=15|-
+hemp-seeds|F|seed|Hemp seeds|hemp seeds,hemp hearts,hulled hemp seeds,hemp protein,hemp seed|-|-|-|tbsp=10|-
+
+# ---------- Dairy ----------
+milk|F|dairy|Cow's milk|milk,whole milk,2% milk,1% milk,reduced fat milk,low fat milk,lowfat milk,skim milk,nonfat milk,fat free milk,cultured milk,pasteurized milk,grade a milk,organic milk,cow's milk,cow milk,dairy milk,chocolate milk,strawberry milk,steamed milk,cultured pasteurized milk,cultured nonfat milk,pasteurized skim milk|-|dairy,whole|lactose:20/60|cup=244;tbsp=15|-
+lactose-free-milk|F|dairy|Lactose-free milk|lactose free milk,lactose-free milk,lactaid,fairlife,ultra-filtered milk,ultrafiltered milk,lactose free whole milk,lactase enzyme|milk|whole|-|cup=244|-
+goat-milk|F|dairy|Goat / sheep milk|goat milk,goats milk,goat's milk,sheep milk,sheep's milk,goat milk powder|milk|whole|lactose:20/60|cup=244|-
+milk-powder|I|dairy|Milk powder / milk solids|milk powder,dry milk,nonfat dry milk,dried milk,skim milk powder,whole milk powder,powdered milk,milk solids,nonfat milk solids,dry whole milk,milk ingredients,modified milk ingredients,dairy solids,dried whole milk,dried skim milk,nonfat dry milk solids,milk solids-not-fat|milk|-|lactose:2/6|tbsp=7|-
+condensed-milk|F|dairy|Sweetened condensed milk|condensed milk,sweetened condensed milk,dulce de leche|milk|added-sugar|lactose:4/12|tbsp=19|-
+evaporated-milk|F|dairy|Evaporated milk|evaporated milk,evaporated skim milk|milk|-|lactose:10/30|tbsp=16|-
+buttermilk|F|dairy|Buttermilk|buttermilk,cultured buttermilk,buttermilk powder,dried buttermilk,buttermilk solids|milk|whole|lactose:20/60|cup=245|-
+cream|F|dairy|Cream|cream,heavy cream,whipping cream,heavy whipping cream,light cream,whipped cream,creme fraiche,clotted cream,cream powder,sweet cream,fresh cream,double cream,single cream|milk|-|lactose:40/80|tbsp=15;cup=238|-
+half-and-half|F|dairy|Half and half / dairy creamer|half and half,half & half,half-and-half,dairy creamer,coffee cream|cream|whole|lactose:30/80|tbsp=15|-
+creamer|F|dairy|Coffee creamer (non-dairy style)|coffee creamer,non-dairy creamer,nondairy creamer,coffee whitener,coffee mate,coffee-mate,powdered creamer,international delight|-|maybe-dairy,maybe-soy,whole|-|tbsp=15|-
+sour-cream|F|dairy|Sour cream|sour cream,cultured sour cream,light sour cream,sour cream powder|cream|whole|lactose:40/80|tbsp=12|-
+butter|F|dairy|Butter|butter,unsalted butter,salted butter,sweet cream butter,butterfat,butter oil,milkfat,milk fat,anhydrous milk fat,cultured butter,brown butter,melted butter,clarified butter oil,whipped butter|milk|-|-|tbsp=14;tsp=5|-
+ghee|F|dairy|Ghee|ghee,clarified butter,desi ghee|butter|-|-|tbsp=13|-
+cheese|F|dairy|Cheese (cheddar, swiss, parmesan, mozzarella...)|cheese,cheddar,cheddar cheese,sharp cheddar,mild cheddar,white cheddar,swiss cheese,swiss,parmesan,parmesan cheese,parmigiano,parmigiano reggiano,grana padano,mozzarella,mozzarella cheese,part skim mozzarella,low moisture mozzarella,fresh mozzarella,monterey jack,monterey jack cheese,colby,colby jack,pepper jack,provolone,gouda,havarti,muenster,romano,romano cheese,pecorino,pecorino romano,asiago,gruyere,manchego,emmental,string cheese,cheese blend,shredded cheese,mexican blend cheese,cotija,queso fresco,cheese powder,cheddar cheese powder,dried cheese,cheese flavor,cheese solids,enzyme modified cheese|milk|-|lactose:200/400|slice=21;cup=113;serving=28|-
+cheese-processed|F|dairy|Processed / American cheese, queso|american cheese,processed cheese,pasteurized process cheese,cheese sauce,cheese dip,queso,queso dip,velveeta,cheese spread,nacho cheese,cheez whiz,processed cheese food,cheese product|cheese|whole|lactose:40/80|slice=21;tbsp=16|-
+cheese-soft|F|dairy|Soft cheese (brie, feta, goat, blue)|brie,camembert,feta,feta cheese,goat cheese,chevre,blue cheese,bleu cheese,gorgonzola,halloumi,paneer,burrata,boursin,goat's cheese,sheep's cheese,roquefort|cheese|-|lactose:40/120|serving=40|-
+cream-cheese|F|dairy|Cream cheese|cream cheese,neufchatel,whipped cream cheese,cream cheese spread,cream cheese frosting|milk|whole|lactose:40/70|tbsp=15|-
+cottage-cheese|F|dairy|Cottage cheese|cottage cheese,farmers cheese,quark|milk|whole|lactose:40/80|cup=226|-
+ricotta|F|dairy|Ricotta|ricotta,ricotta cheese,whole milk ricotta|milk|whole|lactose:40/80|cup=246|-
+mascarpone|F|dairy|Mascarpone|mascarpone|milk|-|lactose:40/80|tbsp=15|-
+yogurt|F|dairy|Yogurt|yogurt,yoghurt,plain yogurt,greek yogurt,greek yoghurt,low fat yogurt,nonfat yogurt,vanilla yogurt,fruit yogurt,skyr,drinkable yogurt,yogurt powder,yogurt coating,frozen yogurt,cultured dairy|milk|whole|lactose:30/90|cup=245;each=150|-
+lactose-free-yogurt|F|dairy|Lactose-free yogurt|lactose free yogurt,lactose-free yogurt,lactose free greek yogurt|yogurt|whole|-|cup=245|-
+kefir|F|dairy|Kefir|kefir,milk kefir|milk|whole|lactose:40/120|cup=243|-
+ice-cream|F|dairy|Ice cream|ice cream,frozen custard,gelato,soft serve,milkshake,shake,frozen dairy dessert,ice cream bar|milk|added-sugar,whole|lactose:17/50|cup=132|-
+whey|I|dairy|Whey / whey protein concentrate|whey,sweet whey,whey powder,dried whey,whey solids,whey protein,whey protein concentrate,wpc,whey permeate,dairy permeate,milk permeate,reduced lactose whey,demineralized whey|milk|-|lactose:20/40|-|-
+whey-isolate|I|dairy|Whey protein isolate|whey protein isolate,whey isolate,hydrolyzed whey protein,whey protein hydrolysate,hydrolyzed whey protein isolate|whey|-|-|-|-
+casein|I|dairy|Casein / milk protein|casein,caseinate,caseinates,sodium caseinate,calcium caseinate,micellar casein,milk protein,milk proteins,milk protein concentrate,milk protein isolate,lactalbumin,lactoglobulin,rennet casein,potassium caseinate,magnesium caseinate,acid casein,ultrafiltered milk protein|milk|-|-|-|-
+lactose|I|dairy|Lactose|lactose,milk sugar,lactose monohydrate|milk|-|lactose:1/3|-|-
+custard|F|dairy|Custard / pudding|custard,pudding,vanilla pudding,chocolate pudding,creme brulee,flan,panna cotta|milk|egg|lactose:25/75|cup=250|-
+milk-chocolate|F|snack|Milk chocolate|milk chocolate,milk chocolate chips,milk chocolate coating,chocolate bar,candy bar,chocolate candy|milk|added-sugar|lactose:20/40|serving=40|-
+dark-chocolate|F|snack|Dark chocolate|dark chocolate,bittersweet chocolate,semisweet chocolate,semi-sweet chocolate,semisweet chocolate chips,chocolate chips,chocolate liquor,unsweetened chocolate,cocoa mass,chocolate chunks,dark chocolate chips,baking chocolate|-|added-sugar|-|serving=30|-
+white-chocolate|F|snack|White chocolate|white chocolate,white chocolate chips,white confectionery coating|milk|added-sugar|lactose:20/40|serving=30|-
+cocoa|I|other|Cocoa powder|cocoa,cocoa powder,cocoa processed with alkali,dutch cocoa,dutch processed cocoa,cacao,cacao powder,cacao nibs,cocoa nibs,hot cocoa mix|-|-|-|tbsp=5|-
+cocoa-butter|I|fat|Cocoa butter|cocoa butter,cacao butter,shea butter,illipe butter|-|-|-|-|-
+leavening|I|additive|Leavening & baking basics|baking soda,baking powder,cream of tartar,yeast,active dry yeast,instant yeast,sodium bicarbonate,leavening,leavening agents,monocalcium phosphate,sodium acid pyrophosphate,sodium aluminum phosphate,calcium phosphate,ammonium bicarbonate,sodium aluminum sulfate|-|-|-|-|-
+
+# ---------- Protein foods ----------
+eggs|F|protein|Eggs|egg,eggs,whole eggs,whole egg,egg whites,egg white,egg yolks,egg yolk,dried egg,dried eggs,dried egg whites,egg white powder,liquid egg,liquid eggs,liquid egg whites,scrambled eggs,boiled eggs,hard boiled egg,hard boiled eggs,poached egg,poached eggs,egg powder,albumen,egg albumen,ovalbumin,lysozyme,egg product,pasteurized eggs|-|egg|-|each=50|-
+fried-egg|F|protein|Fried egg|fried egg,fried eggs,sunny side up,over easy eggs,eggs over easy|eggs|fried-light|-|each=50|-
+chicken|F|protein|Chicken|chicken,chicken breast,chicken thigh,chicken thighs,chicken breasts,grilled chicken,roast chicken,roasted chicken,rotisserie chicken,chicken meat,cooked chicken,chicken breast meat,baked chicken,chicken drumsticks,shredded chicken,chicken fat|-|-|-|serving=85|-
+turkey|F|protein|Turkey|turkey,turkey breast,ground turkey,deli turkey,sliced turkey,smoked turkey,roast turkey|-|-|-|serving=85|-
+beef|F|protein|Beef|beef,steak,ground beef,hamburger,hamburger patty,roast beef,brisket,beef patty,sirloin,ribeye,flank steak,corned beef,meatballs,meatloaf|-|-|-|serving=85|-
+pork|F|protein|Pork|pork,pork chop,pork chops,pork loin,pulled pork,ham,prosciutto,pork tenderloin,pork shoulder,carnitas,ground pork,canadian bacon|-|-|-|serving=85|-
+bacon|F|protein|Bacon|bacon,turkey bacon,bacon bits,pancetta,bacon strips|pork|fried-light|-|each=8|-
+sausage|F|protein|Sausage / hot dog / cured meat|sausage,sausages,bratwurst,italian sausage,breakfast sausage,pork sausage,chicken sausage,chorizo,pepperoni,salami,hot dog,hot dogs,frankfurter,frankfurters,kielbasa,andouille,bologna,summer sausage,sausage links,sausage patty|pork|maybe-hidden|fructans:40/80|each=75|-
+lamb|F|protein|Lamb|lamb,lamb chop,lamb chops,ground lamb,gyro meat,leg of lamb|-|-|-|serving=85|-
+fish|F|protein|Fish|fish,salmon,tuna,cod,tilapia,halibut,trout,mahi mahi,sardines,anchovies,anchovy,anchovy paste,canned tuna,smoked salmon,lox,white fish,whitefish,pollock,catfish,sea bass,snapper,swordfish,haddock,mackerel,fish oil,fish gelatin|-|fish|-|serving=85|-
+shellfish|F|protein|Shellfish|shrimp,prawns,prawn,crab,crab meat,lobster,scallops,scallop,mussels,clams,clam,oysters,oyster,crawfish,crayfish,shellfish,calamari,squid,octopus,imitation crab,surimi|-|shellfish|-|serving=85|-
+
+# ---------- Sweeteners & additives ----------
+sugar|I|sweetener|Sugar, syrups & dextrose|sugar,sugars,cane sugar,granulated sugar,brown sugar,light brown sugar,dark brown sugar,powdered sugar,confectioners sugar,confectioner's sugar,icing sugar,organic cane sugar,organic sugar,raw sugar,raw cane sugar,turbinado sugar,demerara sugar,evaporated cane juice,dextrose,glucose,glucose syrup,corn syrup,light corn syrup,corn syrup solids,rice syrup,brown rice syrup,maltodextrin,tapioca syrup,tapioca maltodextrin,invert sugar,invert cane sugar,cane syrup,golden syrup,molasses,blackstrap molasses,dried cane syrup,beet sugar,coconut sugar,coconut palm sugar,palm sugar,maltose,sucrose,dried glucose syrup,caramel,caramel color,caramelized sugar,cane molasses,sorghum syrup,treacle,dextrin,sugar syrup,simple syrup,rock sugar,date sugar|-|added-sugar|-|tsp=4;tbsp=12|-
+hfcs|I|sweetener|High-fructose corn syrup|high fructose corn syrup,high-fructose corn syrup,hfcs,glucose-fructose syrup,glucose fructose syrup,fructose-glucose syrup,fructose glucose syrup,isoglucose,glucose-fructose|-|added-sugar,corn|fructose:3/8|-|-
+fructose|I|sweetener|Fructose|fructose,crystalline fructose,fruit sugar,fructose syrup|-|added-sugar|fructose:1/3|-|-
+honey|F|sweetener|Honey|honey,raw honey,clover honey,honey powder,dried honey,wildflower honey,manuka honey,honeycomb|-|added-sugar|fructose:7/14|tsp=7;tbsp=21|-
+agave|F|sweetener|Agave syrup|agave,agave syrup,agave nectar,blue agave,agave sweetener|-|added-sugar|fructose:2/5;fructans:2/5|tsp=7;tbsp=21|-
+maple-syrup|F|sweetener|Maple syrup|maple syrup,pure maple syrup,maple sugar|-|added-sugar|-|tbsp=20|-
+jam|F|condiment|Jam / jelly|jam,jelly,preserves,strawberry jam,grape jelly,fruit spread,marmalade,raspberry jam,fruit preserves|-|added-sugar,whole|fructose:40/80|tbsp=20|-
+sorbitol|I|additive|Sorbitol|sorbitol,e420,sorbitol syrup,sorbitol solution,d-sorbitol|-|polyol|sorbitol:0.4/1|-|-
+mannitol|I|additive|Mannitol|mannitol,e421|-|polyol|mannitol:0.4/1|-|-
+xylitol|I|additive|Xylitol|xylitol,e967|-|polyol|sorbitol:0.5/1.5|-|-
+maltitol|I|additive|Maltitol|maltitol,maltitol syrup,e965,hydrogenated starch hydrolysate,hydrogenated starch hydrolysates,polyglycitol|-|polyol|sorbitol:1/3|-|-
+isomalt|I|additive|Isomalt|isomalt,e953|-|polyol|sorbitol:1.5/4|-|-
+lactitol|I|additive|Lactitol|lactitol,e966|-|polyol|sorbitol:1/3|-|-
+erythritol|I|additive|Erythritol / allulose|erythritol,e968,allulose,psicose,tagatose|-|-|-|-|-
+sweeteners|I|additive|Low-calorie sweeteners|stevia,stevia leaf extract,stevia extract,reb a,rebaudioside a,rebaudioside m,steviol glycosides,monk fruit,monk fruit extract,luo han guo,sucralose,splenda,aspartame,acesulfame potassium,acesulfame k,ace-k,saccharin,neotame,advantame|-|-|-|-|-
+inulin|I|additive|Inulin / chicory root fiber|inulin,chicory root,chicory root fiber,chicory root fibre,chicory root extract,chicory fiber,chicory root inulin,chicory,fructooligosaccharides,fructo-oligosaccharides,fos,oligofructose,agave inulin,agave fiber,prebiotic fiber,jerusalem artichoke,sunchoke,yacon,yacon syrup|-|fiber-additive|fructans:0.3/1|-|-
+gos|I|additive|Galacto-oligosaccharides|galactooligosaccharides,galacto-oligosaccharides,galacto oligosaccharides,gos prebiotic|-|fiber-additive|gos:0.3/1|-|-
+polydextrose|I|additive|Polydextrose / added fibers|polydextrose,soluble corn fiber,resistant dextrin,resistant maltodextrin,corn fiber,isomaltooligosaccharide,isomalto-oligosaccharides,imo,tapioca fiber,soluble tapioca fiber,acacia fiber,sugar cane fiber,bamboo fiber|-|fiber-additive|-|-|-
+psyllium|F|additive|Psyllium|psyllium,psyllium husk,psyllium husk powder,metamucil|-|-|-|tsp=5|-
+gums|I|additive|Gums & thickeners|xanthan gum,guar gum,gellan gum,locust bean gum,carob bean gum,gum arabic,acacia gum,acacia,cellulose gum,carrageenan,pectin,fruit pectin,agar,agar agar,gelatin,methylcellulose,microcrystalline cellulose,cellulose,powdered cellulose,carboxymethylcellulose,hydroxypropyl methylcellulose,konjac,glucomannan,tara gum,sodium alginate|-|-|-|-|-
+natural-flavors|I|additive|Natural flavors|natural flavor,natural flavors,natural flavour,natural flavours,natural flavoring,natural flavorings,flavoring,flavorings,artificial flavor,artificial flavors,natural and artificial flavors,natural & artificial flavors,flavor,flavors,smoke flavor,natural smoke flavor,liquid smoke,other natural flavors|-|maybe-hidden|-|-|-
+yeast-extract|I|additive|Yeast extract / nutritional yeast|yeast extract,autolyzed yeast extract,autolyzed yeast,nutritional yeast,torula yeast,brewers yeast,yeast flakes|-|-|-|-|-
+acids-preservatives|I|additive|Acids, preservatives & vitamins|citric acid,lactic acid,malic acid,ascorbic acid,acetic acid,fumaric acid,tartaric acid,phosphoric acid,sodium citrate,potassium citrate,calcium lactate,sodium lactate,sodium benzoate,potassium sorbate,sorbic acid,calcium propionate,sodium nitrite,sodium erythorbate,tocopherols,mixed tocopherols,vitamin e,rosemary extract,bht,bha,tbhq,edta,calcium disodium edta,vitamin a palmitate,vitamin d3,vitamin d2,vitamin c,niacin,reduced iron,iron,thiamine mononitrate,riboflavin,folic acid,zinc oxide,calcium carbonate,tricalcium phosphate,magnesium oxide,potassium iodide,pyridoxine hydrochloride,vitamin b12,cyanocobalamin,dicalcium phosphate,disodium phosphate,sodium phosphate,trisodium phosphate,monosodium glutamate,msg,disodium inosinate,disodium guanylate,silicon dioxide,calcium silicate,sodium hexametaphosphate,calcium chloride,calcium sulfate,magnesium chloride,nigari,enzymes,cultures,live cultures,active cultures,bacterial cultures,probiotic cultures,lactobacillus acidophilus,bifidobacterium,water,filtered water,purified water,carbonated water,ice,colors,color added,artificial color,red 40,yellow 5,yellow 6,blue 1,titanium dioxide,beta carotene,paprika color,vegetable juice color,fruit juice color,spirulina extract|-|-|-|-|-
+
+# ---------- Condiments, sauces, fats ----------
+vinegar|I|condiment|Vinegar|vinegar,distilled vinegar,white vinegar,apple cider vinegar,cider vinegar,rice vinegar,seasoned rice vinegar,red wine vinegar,white wine vinegar,wine vinegar,distilled white vinegar|-|-|-|tbsp=15|-
+balsamic|F|condiment|Balsamic vinegar|balsamic vinegar,balsamic,balsamic glaze,balsamic reduction|-|-|fructose:15/30|tbsp=16|-
+ketchup|F|condiment|Ketchup|ketchup,catsup,tomato ketchup|tomato|added-sugar,whole|fructose:13/30;fructans:13/30|tbsp=17|-
+mayonnaise|F|condiment|Mayonnaise|mayonnaise,mayo,light mayonnaise,vegan mayo,sandwich spread|-|egg,whole|-|tbsp=14|-
+aioli|F|condiment|Aioli / garlic mayo|aioli,garlic aioli,garlic mayo,garlic sauce,toum|-|egg,garlic,allium|fructans:5/15|tbsp=14|-
+bbq-sauce|F|condiment|BBQ sauce|bbq sauce,barbecue sauce,barbeque sauce|-|added-sugar,garlic,onion,allium,whole|fructans:15/35;fructose:15/35|tbsp=17|-
+salsa|F|condiment|Salsa / pico de gallo|salsa,pico de gallo,salsa verde,tomato salsa,chunky salsa,restaurant style salsa,enchilada sauce|-|onion,garlic,allium,spicy-mild,whole|fructans:20/40|tbsp=16|-
+pesto|F|condiment|Pesto|pesto,basil pesto,pesto sauce|-|dairy,garlic,allium,tree-nut,whole|fructans:10/25|tbsp=16|-
+ranch|F|condiment|Ranch dressing / dip|ranch,ranch dressing,ranch dip,ranch seasoning,ranch powder|-|dairy,garlic,onion,allium,egg,whole|fructans:15/30;lactose:15/30|tbsp=15|-
+caesar-dressing|F|condiment|Caesar dressing|caesar dressing,caesar|-|dairy,garlic,allium,egg,fish,whole|fructans:15/30|tbsp=15|-
+italian-dressing|F|condiment|Vinaigrette / Italian dressing|italian dressing,vinaigrette,balsamic vinaigrette,salad dressing,greek dressing,red wine vinaigrette|-|garlic,onion,allium,whole|fructans:15/30|tbsp=15|-
+creamy-dressing|F|condiment|Creamy dressing (blue cheese, thousand island)|blue cheese dressing,thousand island,thousand island dressing,creamy dressing,honey mustard dressing,poppyseed dressing|-|dairy,egg,onion,allium,whole|fructans:15/30|tbsp=15|-
+gravy|F|condiment|Gravy|gravy,brown gravy,turkey gravy,sausage gravy,white gravy,country gravy,gravy mix|-|wheat,gluten,onion,allium,whole|fructans:30/60|tbsp=15;cup=233|-
+worcestershire|F|condiment|Worcestershire sauce|worcestershire,worcestershire sauce|-|fish,garlic,onion,allium|-|tbsp=17|-
+fish-sauce|F|condiment|Fish sauce|fish sauce,nam pla|-|fish|-|tbsp=18|-
+oyster-sauce|F|condiment|Oyster sauce|oyster sauce|-|shellfish,wheat,gluten|-|tbsp=16|-
+hoisin|F|condiment|Hoisin sauce|hoisin,hoisin sauce,plum sauce|-|soy,garlic,allium,wheat,gluten|fructans:16/32|tbsp=16|-
+teriyaki|F|condiment|Teriyaki sauce|teriyaki,teriyaki sauce,teriyaki glaze|-|soy,wheat,gluten,garlic,allium,whole|fructans:16/40|tbsp=18|-
+sweet-chili-sauce|F|condiment|Sweet chili sauce|sweet chili sauce,sweet chilli sauce,thai sweet chili sauce|-|spicy-mild,garlic,allium,added-sugar|fructans:10/30|tbsp=19|-
+stock|F|condiment|Stock / broth|broth,stock,chicken broth,beef broth,vegetable broth,chicken stock,beef stock,vegetable stock,bouillon,bouillon cube,bone broth,chicken base,beef base,soup base,consomme|-|onion,garlic,allium,whole|fructans:20/50|cup=240|-
+pickles|F|condiment|Pickles|pickle,pickles,dill pickles,gherkins,pickle relish,sweet relish,relish,bread and butter pickles,cornichons|cucumber|-|-|each=35|-
+sauerkraut|F|vegetable|Sauerkraut|sauerkraut|cabbage|-|mannitol:15/30|tbsp=10|-
+kimchi|F|vegetable|Kimchi|kimchi|napa-cabbage|spicy,garlic,allium|fructans:20/40|tbsp=15|-
+tomato-sauce|F|condiment|Tomato / marinara sauce|marinara,marinara sauce,pasta sauce,spaghetti sauce,tomato sauce,pizza sauce,arrabbiata,vodka sauce,meat sauce|tomato|garlic,onion,allium,whole|fructans:30/60;fructose:60/120|cup=250;tbsp=16|-
+passata|F|condiment|Plain tomato passata|passata,tomato passata,strained tomatoes,plain tomato puree|tomato|whole|fructose:125/250|cup=250|-
+
+# ---------- Drinks ----------
+water|F|beverage|Water|plain water,bottled water,tap water,mineral water,spring water,seltzer,club soda,soda water,sparkling mineral water|-|-|-|cup=240|-
+coffee|F|beverage|Coffee|coffee,black coffee,espresso,brewed coffee,cold brew,americano,coffee extract,instant coffee,iced coffee,drip coffee|-|caffeine|-|cup=240|-
+decaf|F|beverage|Decaf coffee|decaf,decaf coffee,decaffeinated coffee|-|-|-|cup=240|-
+tea|F|beverage|Black / green tea|tea,black tea,green tea,iced tea,sweet tea,earl grey,english breakfast tea,matcha,chai,chai tea,chai latte,tea extract,green tea extract|-|caffeine|-|cup=240|-
+herbal-tea-high|F|beverage|Chamomile / fennel / oolong tea|chamomile tea,chamomile,fennel tea,oolong tea,oolong|-|-|fructans:100/200|cup=240|-
+herbal-tea|F|beverage|Peppermint / ginger / rooibos tea|peppermint tea,mint tea,herbal tea,ginger tea,rooibos,rooibos tea,lemon ginger tea|-|-|-|cup=240|-
+soda|F|beverage|Soda (regular)|soda,cola,coke,coca cola,coca-cola,pepsi,soft drink,pop,root beer,sprite,7up,ginger ale,lemon lime soda,cream soda,mountain dew,dr pepper,orange soda,fanta|-|added-sugar,caffeine|-|can=355|water:316;hfcs:39
+diet-soda|F|beverage|Diet / zero-sugar soda|diet soda,diet coke,coke zero,diet pepsi,pepsi zero,zero sugar soda,sugar free soda,diet ginger ale|-|caffeine|-|can=355|-
+sparkling-water-flavored|F|beverage|Flavored sparkling water|lacroix,la croix,bubly,spindrift,flavored sparkling water,flavored seltzer,sparkling water|-|-|-|can=355|-
+sports-drink|F|beverage|Sports drink|gatorade,powerade,sports drink,electrolyte drink,body armor,bodyarmor,liquid iv,electrolyte powder|-|added-sugar|-|cup=240|-
+energy-drink|F|beverage|Energy drink|energy drink,red bull,monster,monster energy,celsius,rockstar,bang,ghost energy,c4 energy|-|caffeine,added-sugar|-|can=250|-
+beer|F|beverage|Beer|beer,lager,ale,ipa,stout,pilsner,light beer,hard seltzer|-|alcohol,gluten|-|can=355|-
+wine|F|beverage|Wine|wine,red wine,white wine,rose,rose wine,prosecco,champagne,sparkling wine|-|alcohol|-|glass=150|-
+spirits|F|beverage|Spirits (vodka, gin, whiskey, tequila)|vodka,gin,whiskey,whisky,tequila,bourbon,scotch,spirits,liquor,shot,mezcal,brandy|-|alcohol|-|shot=44|-
+rum|F|beverage|Rum|rum,dark rum,spiced rum|-|alcohol|fructose:30/60|shot=44|-
+cocktail|D|beverage|Cocktail (sweetened)|cocktail,margarita,mojito,pina colada,cosmopolitan,daiquiri,mixed drink|-|alcohol|-|glass=200|spirits:44;sugar:15;lime:15;fruit-juice-concentrate:10
+kombucha|F|beverage|Kombucha|kombucha|-|whole|fructose:180/300|cup=240|-
+coconut-water|F|beverage|Coconut water|coconut water|coconut|whole|sorbitol:100/200|cup=240|-
+lemonade|F|beverage|Lemonade|lemonade,pink lemonade,arnold palmer|lemon|added-sugar,whole|-|cup=240|-
+hot-chocolate|D|beverage|Hot chocolate (with milk)|hot chocolate,hot cocoa,cocoa drink|-|-|-|cup=240|milk:220;cocoa:8;sugar:15
+
+# ---------- Snacks & sweets ----------
+cookies|D|snack|Cookies|cookie,cookies,chocolate chip cookies,chocolate chip cookie,oreo,oreos,sugar cookies,shortbread,biscotti|-|added-sugar|-|each=15;serving=30|wheat-flour:12;sugar:8;butter:6;eggs:2
+cake|D|snack|Cake / cupcake|cake,birthday cake,chocolate cake,cupcake,cupcakes,pound cake,sheet cake,cheesecake,carrot cake,coffee cake,red velvet cake|-|added-sugar|-|slice=80|wheat-flour:25;sugar:25;butter:12;eggs:10;milk:8
+muffin|D|snack|Muffin|muffin,muffins,blueberry muffin,banana muffin,bran muffin|-|added-sugar|-|each=113|wheat-flour:40;sugar:25;oils:12;eggs:12;milk:20;blueberries:10
+donut|D|snack|Doughnut / churro / fritter|donut,donuts,doughnut,doughnuts,cruller,fritter,apple fritter,beignet,beignets,churro,churros,funnel cake,glazed donut|-|fried,added-sugar|-|each=60|wheat-flour:30;sugar:10;milk:8;eggs:5;oils:10
+pastry|D|snack|Croissant / pastry / scone|croissant,croissants,danish,pastry,pastries,puff pastry,scone,scones,cinnamon roll,cinnamon rolls,turnover,strudel|-|added-sugar|-|each=60|wheat-flour:30;butter:15;milk:5;sugar:5
+pie|D|snack|Pie|pie,apple pie,pumpkin pie,pecan pie,cherry pie,pie crust,pot pie|-|added-sugar|-|slice=120|wheat-flour:30;butter:15;sugar:20;apple:40
+brownie|D|snack|Brownie|brownie,brownies,blondie,blondies|-|added-sugar|-|each=60|wheat-flour:15;sugar:20;butter:12;eggs:8;dark-chocolate:5
+gummies|F|snack|Gummy candy|gummies,gummy bears,gummy candy,gummy worms,jelly beans,sour gummies,licorice,fruit snacks,skittles,starburst,hard candy,lollipop,marshmallows,marshmallow|-|added-sugar|-|serving=40|-
+sugar-free-candy|F|snack|Sugar-free candy / gum|sugar free gum,sugar-free gum,chewing gum,gum,sugar free candy,sugar-free candy,sugar free mints,breath mints,sugar free chocolate,keto candy|-|polyol|sorbitol:1/3|each=2;serving=5|-
+protein-bar|F|snack|Protein bar|protein bar,protein bars,quest bar,clif bar,kind bar,rxbar,larabar,energy bar,builder bar,one bar,barebells|-|maybe-hidden|fructans:30/60|each=60|-
+granola|D|grain|Granola / muesli|granola,granola cereal,muesli,granola clusters|-|oat,whole|-|serving=55;cup=120|oats:35;honey:8;almonds:8;oils:4
+granola-bar|D|snack|Granola bar|granola bar,granola bars,chewy granola bar,nature valley,cereal bar,oat bar|-|oat,whole|-|each=42|oats:20;honey:5;sugar:7;oils:4;almonds:3
+trail-mix|D|snack|Trail mix|trail mix,nut mix,student mix|-|-|-|serving=40|peanuts:12;raisins:10;almonds:8;cashews:5;milk-chocolate:5
+jerky|F|protein|Jerky|jerky,beef jerky,turkey jerky,meat stick,meat sticks,slim jim|beef|maybe-hidden|fructans:28/56|serving=28|-
+cheese-puffs|F|snack|Cheese puffs / flavored chips|cheetos,cheese puffs,cheese curls,flavored chips,bbq chips,sour cream and onion chips,nacho cheese chips|corn-grain|fried,dairy,garlic,onion,allium|fructans:15/30|serving=28|-
+
+# ---------- Dishes (typical recipes; edit them in the app if yours differ) ----------
+pizza|D|dish|Pizza|pizza,cheese pizza,pepperoni pizza,pizza slice,slice of pizza,flatbread pizza,frozen pizza|-|-|-|slice=107|wheat-flour:45;cheese:25;tomato-sauce:20;oils:3
+burger|D|dish|Burger / cheeseburger|burger,cheeseburger,cheese burger,smash burger,double cheeseburger,big mac,whopper|-|-|-|each=226|bread-white:60;beef:110;cheese-processed:20;onion:10;ketchup:12;lettuce:10;tomato:15
+burrito|D|dish|Burrito|burrito,bean burrito,chicken burrito,carne asada burrito,steak burrito,wet burrito|-|-|-|each=350|tortilla-flour:90;rice:80;black-beans:60;chicken:70;cheese:25;salsa:30;sour-cream:20;onion:5
+burrito-bowl|D|dish|Burrito bowl|burrito bowl,chipotle bowl,rice bowl,taco bowl|-|-|-|bowl=500|rice:150;black-beans:100;chicken:110;salsa:60;cheese:30;sour-cream:30;lettuce:20
+tacos|D|dish|Tacos|taco,tacos,street tacos,fish tacos,carne asada tacos,al pastor tacos,chicken tacos|-|-|-|each=100|tortilla-corn:26;beef:45;onion:8;salsa:15;cheese:10;lettuce:5
+nachos|D|dish|Nachos|nachos,loaded nachos|-|fried|-|serving=250|tortilla-chips:80;cheese-processed:60;black-beans:40;jalapeno:10;sour-cream:20;salsa:30
+quesadilla|D|dish|Quesadilla|quesadilla,quesadillas,cheese quesadilla,chicken quesadilla|-|-|-|each=180|tortilla-flour:90;cheese:60;chicken:30
+enchiladas|D|dish|Enchiladas|enchilada,enchiladas|-|spicy-mild|-|serving=300|tortilla-corn:80;chicken:80;cheese:50;salsa:60;onion:15;sour-cream:15
+pad-thai|D|dish|Pad thai|pad thai,phad thai|-|-|-|serving=400|rice-noodles:200;chicken:60;eggs:30;peanuts:15;garlic:4;shallot:10;fish-sauce:15;sugar:15;bean-sprouts:30;tofu-firm:20;lime:5
+fried-rice|D|dish|Fried rice|fried rice,chicken fried rice,egg fried rice,vegetable fried rice,shrimp fried rice|-|fried-light|-|cup=200|rice:150;eggs:25;soy-sauce:10;peas:15;onion:10;garlic:2;oils:8
+lo-mein|D|dish|Lo mein / chow mein|lo mein,chow mein,stir fry noodles,yakisoba|-|-|-|serving=300|pasta:180;soy-sauce:15;cabbage:30;carrot:20;onion:15;garlic:3;oils:10;chicken:40
+stir-fry|D|dish|Stir-fry (chicken/beef and broccoli)|stir fry,stir-fry,chicken and broccoli,beef and broccoli,chicken stir fry,vegetable stir fry,teriyaki chicken|-|-|-|serving=300|chicken:110;broccoli:80;soy-sauce:15;garlic:3;cornstarch:5;oils:8;rice:0
+general-tso|D|dish|General Tso's / orange / sesame chicken|general tso,general tsos chicken,general tso's chicken,orange chicken,sesame chicken,sweet and sour chicken,sweet and sour pork,honey walnut shrimp|-|fried|-|serving=250|chicken:120;wheat-flour:30;sugar:25;soy-sauce:15;garlic:3;oils:20;chili:2;cornstarch:15
+kung-pao|D|dish|Kung pao chicken|kung pao,kung pao chicken,szechuan chicken,sichuan chicken,mapo tofu|-|spicy|-|serving=250|chicken:120;peanuts:20;soy-sauce:15;chili:5;garlic:3;scallion:10;bell-pepper:30;oils:10
+sushi|D|dish|Sushi rolls|sushi,sushi roll,sushi rolls,maki,california roll,nigiri,sashimi,salmon roll,tuna roll|-|-|-|serving=200|rice:120;fish:50;seaweed:3;cucumber:10;avocado:15;soy-sauce:10
+spicy-sushi|D|dish|Spicy sushi roll|spicy tuna roll,spicy salmon roll,spicy crab roll,dynamite roll|-|spicy|-|serving=200|rice:120;fish:50;seaweed:3;mayonnaise:10;sriracha:5;soy-sauce:10
+poke|D|dish|Poke bowl|poke,poke bowl|-|-|-|bowl=400|rice:200;fish:100;soy-sauce:15;avocado:30;cucumber:20;scallion:5;sesame:3
+ramen|D|dish|Ramen|ramen,tonkotsu ramen,shoyu ramen,miso ramen,instant ramen,cup noodles,cup of noodles,top ramen|-|-|-|bowl=500|pasta:150;stock:350;soy-sauce:15;eggs:25;scallion:10;garlic:3
+pho|D|dish|Pho|pho,beef pho,chicken pho|-|-|-|bowl=600|rice-noodles:200;stock:400;beef:80;herbs:5;bean-sprouts:20;lime:5;onion:15
+curry-indian|D|dish|Indian curry (tikka masala, korma, butter chicken)|curry dish,chicken curry,tikka masala,chicken tikka masala,korma,chicken korma,vindaloo,butter chicken,saag,saag paneer,palak paneer,masala,rogan josh|-|spicy-mild|-|serving=300|chicken:120;onion:40;garlic:5;tomato:50;cream:40;butter:10;ginger:5;curry-powder:5
+thai-curry|D|dish|Thai curry (green, red, panang)|thai curry,green curry,red curry,thai green curry,thai red curry,panang,panang curry,massaman,massaman curry,yellow curry|-|spicy|-|serving=300|coconut-milk:120;chicken:100;bell-pepper:30;garlic:3;shallot:10;fish-sauce:10;chili:5;sugar:5
+chili-con-carne|D|dish|Chili (con carne)|chili con carne,beef chili,turkey chili,bowl of chili,chili beans,white chicken chili,texas chili|-|spicy-mild|-|cup=250|beef:80;kidney-beans:60;tomato:60;onion:25;garlic:4;chili-powder:4;bell-pepper:15
+spaghetti|D|dish|Spaghetti with meat or marinara sauce|spaghetti bolognese,spaghetti and meatballs,spaghetti with meat sauce,bolognese,pasta with meat sauce,spaghetti marinara,pasta marinara,penne marinara|-|-|-|serving=400|pasta:200;tomato-sauce:120;beef:60;onion:10;garlic:3;cheese:5
+mac-and-cheese|D|dish|Mac and cheese|mac and cheese,macaroni and cheese,mac n cheese,mac & cheese,kraft dinner,boxed mac and cheese|-|-|-|cup=200|pasta:120;cheese-processed:40;milk:30;butter:10
+lasagna|D|dish|Lasagna|lasagna,lasagne,baked ziti|-|-|-|serving=250|pasta:70;tomato-sauce:60;beef:40;ricotta:40;cheese:30;onion:5;garlic:2
+alfredo|D|dish|Fettuccine alfredo|alfredo,fettuccine alfredo,alfredo sauce,chicken alfredo,carbonara,cream sauce pasta|-|-|-|serving=350|pasta:200;cream:80;butter:20;cheese:30;garlic:3
+grilled-cheese|D|dish|Grilled cheese|grilled cheese,grilled cheese sandwich,cheese toastie,melt,patty melt,tuna melt|-|-|-|each=120|bread-white:56;cheese-processed:42;butter:14
+sandwich|D|dish|Deli sandwich / sub|sandwich,turkey sandwich,ham sandwich,sub,sub sandwich,deli sandwich,hoagie,club sandwich,blt,italian sub,subway sandwich|-|-|-|each=250|bread-white:80;turkey:80;cheese:20;lettuce:15;tomato:20;mayonnaise:14
+pbj|D|dish|Peanut butter and jelly sandwich|pbj,pb&j,peanut butter and jelly,peanut butter sandwich,peanut butter and jelly sandwich|-|-|-|each=100|bread-white:56;peanut-butter:32;jam:20
+hot-dog-meal|D|dish|Hot dog in a bun|hot dog with bun,chili dog,corn dog,ballpark hot dog|-|-|-|each=150|bread-white:45;sausage:75;ketchup:10;mustard:5;onion:5
+fried-chicken|D|dish|Fried chicken / nuggets / tenders|fried chicken,chicken tenders,chicken strips,chicken nuggets,nuggets,chicken fingers,popcorn chicken,crispy chicken,fried chicken sandwich,chicken fried steak,schnitzel,chicken katsu,tonkatsu|-|fried|-|serving=150|chicken:110;wheat-flour:25;oils:15;spices:2
+wings|D|dish|Buffalo wings|wings,buffalo wings,hot wings,chicken wings,boneless wings|-|fried,spicy|-|serving=200|chicken:160;hot-sauce:20;butter:10;oils:15
+fish-and-chips|D|dish|Fish and chips / fried fish|fish and chips,fish & chips,fried fish,battered fish,fish sticks,fish fillet sandwich,fried shrimp,coconut shrimp,popcorn shrimp,fried calamari|-|fried|-|serving=350|fish:150;wheat-flour:30;french-fries:150;oils:20
+tempura|D|dish|Tempura|tempura,shrimp tempura,vegetable tempura|-|fried|-|serving=150|shellfish:80;wheat-flour:25;oils:20;sweet-potato:20
+spring-rolls|D|dish|Egg rolls / fried spring rolls|egg roll,egg rolls,spring roll,spring rolls,fried spring rolls,crab rangoon,rangoon,wontons fried,fried wontons|-|fried|-|each=65|wheat-flour:20;cabbage:15;pork:10;carrot:5;garlic:1;oils:8
+fresh-rolls|D|dish|Fresh (summer) rolls|summer rolls,fresh rolls,fresh spring rolls,salad rolls,rice paper rolls|-|-|-|each=80|rice-noodles:25;shellfish:20;lettuce:15;herbs:3;carrot:10
+dumplings|D|dish|Dumplings / potstickers|dumplings,dumpling,potstickers,potsticker,gyoza,wontons,wonton soup,bao,bao buns,xiao long bao,pierogi,pierogies|-|-|-|serving=150|wheat-flour:50;pork:50;cabbage:20;scallion:8;garlic:2;soy-sauce:10
+falafel|D|dish|Falafel|falafel,falafel wrap,falafel pita|-|fried|-|serving=100|chickpeas:60;onion:10;garlic:2;herbs:5;oils:12
+samosa|D|dish|Samosa / pakora|samosa,samosas,pakora,pakoras,bhaji,onion bhaji|-|fried,spicy-mild|-|each=100|wheat-flour:30;potato:40;peas:10;onion:8;chili:1;oils:12
+gyro|D|dish|Gyro / shawarma / kebab wrap|gyro,gyros,shawarma,doner,doner kebab,kebab wrap,chicken shawarma|-|-|-|each=300|lamb:120;bread-white:80;tzatziki:40;onion:15;tomato:20;lettuce:10
+kebab|D|dish|Grilled kebabs / skewers|kebab,kebabs,shish kebab,skewers,souvlaki,chicken skewers|-|-|-|serving=200|chicken:150;onion:20;bell-pepper:20;oils:5;herbs:2
+hummus|D|legume|Hummus|hummus,houmous,hummus dip|-|whole|-|tbsp=15|chickpeas:9;tahini:2;garlic:0.15;lemon-juice:1;oils:2
+guacamole|D|condiment|Guacamole|guacamole,guac|-|whole|-|tbsp=15|avocado:12;onion:1;garlic:0.1;lime:0.5;chili:0.5
+tzatziki|D|condiment|Tzatziki|tzatziki,tzatziki sauce,raita|-|whole|-|tbsp=15|yogurt:11;cucumber:3;garlic:0.2
+caesar-salad|D|dish|Caesar salad|caesar salad,chicken caesar salad,chicken caesar|-|-|-|serving=250|lettuce:150;caesar-dressing:30;cheese:15;breadcrumbs:20;chicken:35
+salad|D|dish|Green salad with vinaigrette|salad,side salad,green salad,garden salad,house salad,mixed salad|-|-|-|serving=150|lettuce:100;tomato:25;cucumber:25;carrot:10;italian-dressing:15
+cobb-salad|D|dish|Cobb / chef salad (ranch)|cobb salad,chef salad,chicken salad with ranch,ranch salad|-|-|-|serving=350|lettuce:150;chicken:80;bacon:15;eggs:50;cheese-soft:20;avocado:30;ranch:30
+coleslaw|D|dish|Coleslaw|coleslaw,cole slaw,slaw|-|-|-|cup=120|cabbage:90;mayonnaise:20;sugar:5;vinegar:5
+potato-salad|D|dish|Potato salad|potato salad|-|-|-|cup=250|potato:180;mayonnaise:40;eggs:20;onion:10;celery:10;mustard:5
+chicken-soup|D|dish|Chicken noodle soup|chicken noodle soup,chicken soup,chicken and rice soup|-|-|-|cup=245|stock:180;pasta:30;chicken:25;carrot:10;celery:10;onion:5
+tomato-soup|D|dish|Tomato soup|tomato soup,cream of tomato soup,tomato bisque|-|-|-|cup=245|tomato:150;stock:50;cream:20;onion:10;garlic:2;sugar:5
+clam-chowder|D|dish|Clam chowder / creamy soup|clam chowder,new england clam chowder,chowder,potato soup,broccoli cheddar soup,cream of mushroom soup,cream of chicken soup|-|-|-|cup=245|milk:90;cream:30;potato:50;shellfish:30;onion:15;wheat-flour:10;butter:10;celery:10
+veggie-soup|D|dish|Vegetable / minestrone soup|vegetable soup,minestrone,minestrone soup,vegetable beef soup|-|-|-|cup=245|stock:150;tomato:30;carrot:15;celery:10;onion:10;garlic:2;pasta:15;kidney-beans:15
+mashed-potatoes|D|dish|Mashed potatoes|mashed potatoes,mashed potato,mash,potato puree|-|-|-|cup=210|potato:170;milk:25;butter:14
+baked-potato-loaded|D|dish|Loaded baked potato|loaded baked potato,loaded potato,potato skins|-|-|-|each=300|potato:200;sour-cream:30;cheese:30;bacon:10;scallion:5;butter:14
+porridge|D|dish|Oatmeal made with milk|oatmeal with milk,porridge,bowl of oatmeal,overnight oats,oatmeal bowl|-|-|-|bowl=300|oats:40;milk:240;maple-syrup:10
+pancakes|D|dish|Pancakes / waffles / french toast|pancakes,pancake,waffles,waffle,french toast,flapjacks,crepes,crepe|-|-|-|serving=150|wheat-flour:50;milk:50;eggs:25;butter:10;sugar:8;maple-syrup:20
+breakfast-burrito|D|dish|Breakfast burrito|breakfast burrito,breakfast wrap|-|-|-|each=250|tortilla-flour:80;eggs:80;cheese:25;potato:40;salsa:20;onion:5
+breakfast-sandwich|D|dish|Breakfast sandwich|breakfast sandwich,egg mcmuffin,mcmuffin,bacon egg and cheese,egg sandwich,sausage biscuit,croissant sandwich|-|-|-|each=150|english-muffin:57;eggs:50;cheese-processed:20;bacon:10;butter:5
+eggs-and-bacon|D|dish|Eggs and bacon|eggs and bacon,bacon and eggs,eggs bacon and toast,full breakfast,big breakfast,eggs and toast|-|fried-light|-|serving=200|eggs:100;bacon:25;bread-white:30;butter:5
+omelette|D|dish|Omelette|omelette,omelet,cheese omelette,veggie omelette,western omelette,frittata,quiche,scramble,egg scramble|-|-|-|each=180|eggs:120;cheese:20;butter:5;bell-pepper:15;onion:10;mushrooms:10
+biscuits-gravy|D|dish|Biscuits and gravy|biscuits and gravy,biscuit and gravy,biscuits|-|-|-|serving=300|wheat-flour:70;buttermilk:40;butter:25;sausage:50;milk:80
+bagel-cream-cheese|D|dish|Bagel with cream cheese|bagel with cream cheese,bagel and cream cheese,bagel and lox|-|-|-|each=130|bagel:100;cream-cheese:30
+avocado-toast|D|dish|Avocado toast|avocado toast|-|-|-|each=150|sourdough:50;avocado:50;oils:5;red-pepper-flakes:0.5;salt:1
+yogurt-parfait|D|dish|Yogurt parfait / bowl|yogurt parfait,parfait,yogurt bowl,acai bowl,smoothie bowl|-|-|-|bowl=300|yogurt:170;granola:40;strawberries:40;blueberries:30;honey:10
+smoothie|D|beverage|Fruit smoothie|smoothie,fruit smoothie,berry smoothie,banana smoothie,green smoothie,strawberry banana smoothie|-|-|-|cup=350|banana:60;strawberries:60;blueberries:40;yogurt:80;milk:80;honey:7
+protein-shake|D|beverage|Protein shake (whey + milk)|protein shake,whey shake,protein smoothie,premier protein,muscle milk,fairlife shake|-|-|-|serving=350|whey:30;milk:240;banana:50
+latte|D|beverage|Latte / cappuccino (dairy milk)|latte,cappuccino,flat white,cafe latte,mocha,macchiato,caramel macchiato,cortado,frappuccino,iced latte,vanilla latte,pumpkin spice latte|-|caffeine|-|cup=350|coffee:60;milk:280;sugar:10
+oat-latte|D|beverage|Oat milk latte|oat latte,oat milk latte,oatmilk latte,iced oat milk latte,oat cappuccino|-|caffeine|-|cup=350|coffee:60;oat-milk:280
+soy-latte|D|beverage|Soy latte|soy latte,soy milk latte,soy cappuccino|-|caffeine|-|cup=350|coffee:60;soy-milk-whole:280
+almond-latte|D|beverage|Almond milk latte|almond latte,almond milk latte,almondmilk latte|-|caffeine|-|cup=350|coffee:60;almond-milk:280
+coffee-with-milk|D|beverage|Coffee with milk or cream|coffee with milk,coffee with cream,cafe au lait,coffee with half and half,regular coffee|-|caffeine|-|cup=260|coffee:230;half-and-half:30
+chicken-rice|D|dish|Plain chicken and rice|chicken and rice,chicken rice,grilled chicken and rice,chicken with rice,chicken rice bowl|-|-|-|serving=350|chicken:120;rice:200;oils:5;salt:1
+steak-dinner|D|dish|Steak and potatoes|steak and potatoes,steak dinner,steak and fries|-|-|-|serving=400|beef:200;potato:170;butter:10
+salmon-dinner|D|dish|Salmon with rice and vegetables|salmon and vegetables,salmon dinner,salmon with rice,baked salmon,grilled salmon,fish and rice|-|-|-|serving=400|fish:150;rice:150;green-beans:75;oils:5
+roast-dinner|D|dish|Roast dinner (meat, potatoes, veg, gravy)|roast dinner,thanksgiving dinner,sunday roast,pot roast,roast chicken dinner|-|-|-|serving=500|turkey:150;potato:150;carrot:50;green-beans:50;gravy:60;bread-white:30;butter:10
+bbq-plate|D|dish|BBQ plate (ribs, pulled pork)|bbq,barbecue,ribs,bbq ribs,pulled pork sandwich,brisket plate,bbq chicken|-|-|-|serving=400|pork:200;bbq-sauce:40;bread-white:60;coleslaw:60
+meatloaf-dinner|D|dish|Meatloaf with mashed potatoes|meatloaf dinner,meatloaf and mashed potatoes,shepherds pie,shepherd's pie,cottage pie|-|-|-|serving=400|beef:150;breadcrumbs:20;eggs:15;onion:20;ketchup:20;mashed-potatoes:150
+casserole|D|dish|Casserole|casserole,tuna casserole,chicken casserole,green bean casserole,tater tot casserole,hotdish|-|-|-|cup=250|chicken:60;pasta:60;clam-chowder:80;cheese:20;onion:10
+tuna-salad|D|dish|Tuna / chicken salad|tuna salad,chicken salad,egg salad|-|-|-|cup=200|fish:120;mayonnaise:40;celery:20;onion:10;pickles:10
+bean-dish|D|dish|Beans and rice|beans and rice,rice and beans,red beans and rice,black beans and rice|-|-|-|serving=350|rice:180;black-beans:120;onion:15;garlic:3;oils:5
+tofu-stir-fry|D|dish|Tofu stir-fry|tofu stir fry,tofu stir-fry,tofu and vegetables,tofu bowl|-|-|-|serving=350|tofu-firm:150;broccoli:60;bell-pepper:40;soy-sauce:15;garlic:3;rice:0;oils:8
+veggie-burger|D|dish|Veggie burger|veggie burger,impossible burger,beyond burger,black bean burger,plant based burger|-|-|-|each=200|bread-white:60;soy-protein:60;black-beans:20;onion:5;oils:10;ketchup:10
+
+# ---------- Added variants ----------
+butter-flavor|I|additive|Butter flavor|butter flavor,butter flavoring,natural butter flavor,artificial butter flavor,butter flavour|-|maybe-dairy|-|-|-
+fried-tofu|F|protein|Fried tofu / tofu puffs|fried tofu,tofu puffs,deep fried tofu|soybeans|fried,whole|gos:170/340|cup=250|-
+onion-rings|F|snack|Onion rings|onion rings,onion ring|onion|fried|fructans:10/20|serving=100|-
+fried-onions|I|vegetable|Fried / crispy onions|fried onions,crispy onions,french fried onions,crispy fried onions|onion|fried|fructans:3/8|tbsp=5|-
+coconut-aminos|F|condiment|Coconut aminos|coconut aminos|-|-|-|tbsp=15|-
+pancake-syrup|F|sweetener|Pancake syrup (corn-syrup based)|pancake syrup,table syrup,breakfast syrup,log cabin,mrs butterworths|-|added-sugar,corn|fructose:15/30|tbsp=20|-
+oatmeal-cookies|D|snack|Oatmeal cookies|oatmeal cookies,oatmeal raisin cookies,oat cookies|-|oat,added-sugar|-|each=20|oats:6;wheat-flour:5;sugar:5;butter:4;raisins:2
+spicy-chips|F|snack|Spicy chips (Takis, Hot Cheetos)|takis,hot cheetos,flamin hot,flamin hot cheetos,spicy chips,hot chips|corn-grain|fried,spicy,dairy,garlic,onion,allium|fructans:15/30|serving=28|-
+nutella|F|snack|Chocolate hazelnut spread|nutella,chocolate hazelnut spread|hazelnuts|dairy,soy-refined,added-sugar|lactose:30/60|tbsp=19|-

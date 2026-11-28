@@ -218,11 +218,17 @@ class Repository(
         flush()
         val bms = db.bm().allOnce().map { BmLog(it.id, it.time, it.bristol, it.urgency, it.accident, it.pain, it.blood) }
         val symptoms = db.symptoms().allOnce().map { SymptomLog(it.id, it.time, it.type, it.severity) }
-        val days = db.checkins().allOnce().map {
-            DayLog(it.epochDay, it.overall, it.stress, it.sleepQuality, it.sleepHours, Nicotine.byId(it.nicotine), it.alcohol, it.caffeine, it.exercise,
+        val events = db.events().allOnce().map { QuickEvent(it.time, it.type, it.amount) }
+        // "+ Pouch" taps on the Today screen mean more nicotine than usual that day.
+        val extraPouchDays = events.filter { it.type == "nicotine" }.map { epochDay(it.time) }.toSet()
+        val checkins = db.checkins().allOnce().associateBy { it.epochDay }
+        val days = (checkins.keys + extraPouchDays).sorted().map { d ->
+            val it = checkins[d]
+            val nic = Nicotine.byId(it?.nicotine).let { n -> if (d in extraPouchDays && (n == null || n == Nicotine.USUAL)) Nicotine.MORE else n }
+            if (it == null) DayLog(d, nicotine = nic, checkedIn = false)
+            else DayLog(it.epochDay, it.overall, it.stress, it.sleepQuality, it.sleepHours, nic, it.alcohol, it.caffeine, it.exercise,
                 it.period, it.sick, it.travel, it.noBm, checkedIn = true)
         }
-        val events = db.events().allOnce().map { QuickEvent(it.time, it.type, it.amount) }
         Diary(meals, bms, symptoms, days, events, zone)
     }
 

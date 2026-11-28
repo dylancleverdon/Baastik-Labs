@@ -93,8 +93,9 @@ jobs:
           gh release create "$TAG" "$APK" --title "Pickless $VERSION" --notes "$NOTES" --prerelease --latest=false --target "$GITHUB_SHA"
           if ! gh release view pickless-channel > /dev/null 2>&1; then
             gh release create pickless-channel --title "Pickless update channel" \
-              --notes "Rolling manifest read by the Pickless updater. Install the latest APK from the newest pickless-v* release." \
+              --notes "Always the newest Pickless: download Pickless.apk below to install. manifest.json is what the in-app updater reads." \
               --prerelease --latest=false --target "$GITHUB_SHA"
           fi
-          gh release upload pickless-channel manifest.json --clobber
+          cp "$APK" Pickless.apk
+          gh release upload pickless-channel manifest.json Pickless.apk --clobber
           echo "Published $TAG ($SHA)"

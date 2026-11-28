@@ -265,6 +265,20 @@ fun InsightsScreen() {
                 if (p.accidents > 0) KeyValue("Accidents", "${p.accidents}")
             }
         }
+        item {
+            val bms by c.db.bm().all().collectAsState(initial = emptyList())
+            val prefs by c.settings.prefs.collectAsState(initial = null)
+            val rule = prefs?.badBmRule
+            val byWeek = bms.groupBy { c.repo.epochDay(it.time) / 7 }.toSortedMap()
+            if (byWeek.size >= 2 && rule != null) {
+                SectionTitle("Bad BMs per week")
+                InfoCard {
+                    val counts = byWeek.values.map { list -> list.count { rule.isBad(BmLog(it.id, it.time, it.bristol, it.urgency, it.accident)) }.toFloat() }.takeLast(12)
+                    LineChart(counts, (counts.maxOrNull() ?: 1f).coerceAtLeast(3f))
+                    Hint("Last ${counts.size} weeks, oldest on the left. Down is better.")
+                }
+            }
+        }
         if (weekly.size >= 2) item {
             SectionTitle("Weekly severity")
             InfoCard { LineChart(weekly.map { it.total.toFloat() }, 500f); Hint("Lower is better. Under 175 is mild.") }

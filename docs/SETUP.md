@@ -2,8 +2,8 @@
 
 ## 1. Install it on your Samsung phone
 
-1. On the phone, open **github.com/dylancleverdon/Baastik-Labs/releases** and find the newest
-   **Pickless** release (`pickless-v…`). Tap the `Pickless-….apk` file to download it.
+1. On the phone, open this link: **https://github.com/dylancleverdon/Baastik-Labs/releases/download/pickless-channel/Pickless.apk**
+   (it always downloads the newest Pickless).
 2. Open the download. Android asks whether your browser may install apps: tap **Settings**, turn on
    **Allow from this source**, go back, and tap **Install**.
 3. If you see **"Blocked by Auto Blocker"**: Settings > Security and privacy > **Auto Blocker** > off.

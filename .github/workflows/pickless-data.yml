@@ -77,4 +77,4 @@ jobs:
           gh release upload pickless-data out/packs.json --clobber
           # Keep only the newest pack file.
           KEEP=$(python3 -c "import json; print(json.load(open('out/packs.json'))['packs'][0]['url'].rsplit('/',1)[1])")
-          gh release view pickless-data --json assets --jq '.assets[].name' | grep '\.db\.gz$' | grep -v "^$KEEP$" | while read -r old; do gh release delete-asset pickless-data "$old" -y; done
+          gh release view pickless-data --json assets --jq '.assets[].name' | grep '\.db\.gz$' | grep -v "^$KEEP$" | while read -r old; do gh release delete-asset pickless-data "$old" -y; done || true

@@ -74,6 +74,8 @@ android {
                 it.maxHeapSize = "3g"
                 it.systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2")
                 it.systemProperty("pickless.screenshots", rootProject.layout.buildDirectory.dir("screenshots").get().asFile.path)
+                // Show the failing line in the CI log, not only in the uploaded report.
+                it.testLogging { events("failed"); exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
             }
         }
     }

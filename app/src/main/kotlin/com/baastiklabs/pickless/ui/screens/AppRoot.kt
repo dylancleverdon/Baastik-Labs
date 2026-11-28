@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -48,11 +49,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.baastiklabs.pickless.Container
+import com.baastiklabs.pickless.data.Prefs
 import kotlinx.coroutines.flow.MutableStateFlow
 
 val LocalContainer = staticCompositionLocalOf<Container> { error("no container") }
 val LocalNav = staticCompositionLocalOf<NavHostController> { error("no nav") }
 val LocalSnack = staticCompositionLocalOf<SnackbarHostState> { error("no snackbar") }
+
+/** Settings as already loaded by [AppRoot], so screens can lay out fully on their first frame. */
+val LocalPrefs = compositionLocalOf<Prefs> { error("no prefs") }
 
 /** A coroutine scope for click handlers that always resumes on the main thread (navigation needs it). */
 @Composable
@@ -83,7 +88,7 @@ fun AppRoot(container: Container, routes: MutableStateFlow<String?>, locked: Boo
     }
     if (locked) { LockScreen(onUnlock); return }
     val p = prefs ?: return
-    CompositionLocalProvider(LocalContainer provides container, LocalNav provides nav, LocalSnack provides snack) {
+    CompositionLocalProvider(LocalContainer provides container, LocalNav provides nav, LocalSnack provides snack, LocalPrefs provides p) {
         val entry by nav.currentBackStackEntryAsState()
         val current = entry?.destination?.route
         Scaffold(

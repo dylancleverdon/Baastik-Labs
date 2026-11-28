@@ -35,7 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,6 +55,7 @@ import com.baastiklabs.pickless.ui.components.bristolNames
 import com.baastiklabs.pickless.ui.components.severityLabels
 import com.baastiklabs.pickless.ui.components.timeText
 import com.baastiklabs.pickless.ui.theme.Pal
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -68,17 +69,19 @@ fun TodayScreen() {
     val snack = LocalSnack.current
     val scope = rememberUiScope()
     val repo = c.repo
+    val prefs = LocalPrefs.current
     val today = repo.today()
     val start = repo.startOf(today)
     val end = repo.startOf(today + 1)
-    val foods by c.db.food().between(start, end).collectAsState(initial = emptyList())
-    val bms by c.db.bm().all().collectAsState(initial = emptyList())
-    val symptoms by c.db.symptoms().all().collectAsState(initial = emptyList())
-    val events by c.db.events().all().collectAsState(initial = emptyList())
-    val checkin by c.db.checkins().observe(today).collectAsState(initial = null)
+    // Queries are remembered (per day) so recomposing doesn't restart them.
+    val foods by remember(start) { c.db.food().between(start, end) }.collectAsState(initial = emptyList())
+    val bms by remember { c.db.bm().all() }.collectAsState(initial = emptyList())
+    val symptoms by remember { c.db.symptoms().all() }.collectAsState(initial = emptyList())
+    val events by remember { c.db.events().all() }.collectAsState(initial = emptyList())
+    // null until the database answers, so the card never flashes up for someone who already checked in.
+    val checkedIn by remember(today) { c.db.checkins().observe(today).map { it != null } }.collectAsState(initial = null)
     val report by c.insights.report.collectAsState()
-    val prefs by c.settings.prefs.collectAsState(initial = null)
-    val challenge by c.db.challenges().active().collectAsState(initial = null)
+    val challenge by remember { c.db.challenges().active() }.collectAsState(initial = null)
     LaunchedEffect(Unit) { if (c.insights.report.value == null) runCatching { c.insights.refresh() } }
 
     val todaysBms = bms.filter { it.time in start until end }
@@ -119,39 +122,18 @@ fun TodayScreen() {
                 AssistChip(onClick = { quick("coffee", "Coffee") }, label = { Text("+ Coffee") }, leadingIcon = { Icon(Icons.Filled.LocalCafe, null, Modifier.size(18.dp)) })
                 AssistChip(onClick = { quick("alcohol", "Drink") }, label = { Text("+ Alcohol") }, leadingIcon = { Icon(Icons.Filled.LocalDrink, null, Modifier.size(18.dp)) })
                 AssistChip(onClick = { quick("water", "Water") }, label = { Text("+ Water") }, leadingIcon = { Icon(Icons.Filled.WaterDrop, null, Modifier.size(18.dp)) })
-                if (prefs?.nicotineTracking == true) AssistChip(onClick = { quick("nicotine", "Extra pouch") }, label = { Text("+ Pouch") }, leadingIcon = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
+                if (prefs.nicotineTracking) AssistChip(onClick = { quick("nicotine", "Extra pouch") }, label = { Text("+ Pouch") }, leadingIcon = { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)) })
             }
         }
 
         // The latest BM was bad: explain it.
-        val lastBad = todaysBms.firstOrNull()?.takeIf { prefs?.badBmRule?.isBad(com.baastiklabs.pickless.core.detective.BmLog(it.id, it.time, it.bristol, it.urgency, it.accident)) == true }
+        val lastBad = todaysBms.firstOrNull()?.takeIf { prefs.badBmRule.isBad(com.baastiklabs.pickless.core.detective.BmLog(it.id, it.time, it.bristol, it.urgency, it.accident)) }
         if (lastBad != null) item {
             Banner("Why was that one bad?", "See the likely culprits from the last 3 days.", Pal.signals.caution, Pal.signals.cautionBg) { nav.navigate("explain/${lastBad.id}") }
         }
 
-        report?.let { r ->
-            item {
-                val top = r.suspects.firstOrNull { it.tier.rank >= Tier.WEAK.rank }
-                val q = r.quality
-                InfoCard(onClick = { nav.navigate("insights") }) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Trigger detective", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                        if (!q.solid) Pill("Early read", Pal.signals.caution, Pal.signals.cautionBg)
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        when {
-                            top != null -> "Top suspect: ${top.label} (${top.tier.label.lowercase()}). Bad BMs ${"%.1f".format(top.ratio)}× more likely after it."
-                            r.analyzedDays == 0 -> "Log meals and BMs and the detective starts working right away."
-                            else -> "No clear suspect yet after ${r.analyzedDays} day${if (r.analyzedDays == 1) "" else "s"}. Keep logging."
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    if (!q.solid) Hint("Still learning, so this is a little inaccurate for now. To firm it up: ${q.missing.first()}.")
-                }
-            }
-        }
-
+        // Things to tap come before the detective card: its first analysis can land a moment after the
+        // screen opens and changes its height, and that shouldn't move a card from under a finger.
         challenge?.let { e ->
             val p = Coach.protocol(e.protocolId)
             if (p != null) item {
@@ -166,10 +148,35 @@ fun TodayScreen() {
             }
         }
 
-        if (checkin == null) item {
+        if (checkedIn == false) item {
             InfoCard(onClick = { nav.navigate("checkin") }, container = MaterialTheme.colorScheme.primaryContainer) {
                 Text(if (hour >= 17) "Evening check-in" else "Daily check-in", style = MaterialTheme.typography.titleMedium)
                 Text("Sleep, stress, nicotine and anything unusual. About 20 seconds.", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+        item {
+            val r = report
+            InfoCard(onClick = { nav.navigate("insights") }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Trigger detective", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    if (r != null && !r.quality.solid) Pill("Early read", Pal.signals.caution, Pal.signals.cautionBg)
+                }
+                Spacer(Modifier.height(4.dp))
+                if (r == null) {
+                    Text("Working it out…", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    val top = r.suspects.firstOrNull { it.tier.rank >= Tier.WEAK.rank }
+                    Text(
+                        when {
+                            top != null -> "Top suspect: ${top.label} (${top.tier.label.lowercase()}). Bad BMs ${"%.1f".format(top.ratio)}× more likely after it."
+                            r.analyzedDays == 0 -> "Log meals and BMs and the detective starts working right away."
+                            else -> "No clear suspect yet after ${r.analyzedDays} day${if (r.analyzedDays == 1) "" else "s"}. Keep logging."
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (!r.quality.solid) Hint("Still learning, so this is a little inaccurate for now. To firm it up: ${r.quality.missing.first()}.")
+                }
             }
         }
 

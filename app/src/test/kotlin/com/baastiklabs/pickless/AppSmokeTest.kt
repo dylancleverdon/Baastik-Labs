@@ -53,8 +53,15 @@ class AppSmokeTest {
         }
     }
 
-    private fun waitText(text: String, timeout: Long = 8000) {
+    /** Generous timeout: shared CI machines can be many times slower than a laptop. */
+    private fun waitText(text: String, timeout: Long = 20_000) {
         compose.waitUntil(timeout) { compose.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    /** Wait for the detective's first analysis to land, so nothing on Today changes under a tap. */
+    private fun settle() {
+        compose.waitUntil(20_000) { app.container.insights.report.value != null }
+        compose.waitForIdle()
     }
 
     private fun onboarded() = runBlocking { app.container.settings.setOnboarded(true) }
@@ -77,6 +84,7 @@ class AppSmokeTest {
         onboarded()
         ActivityScenario.launch(MainActivity::class.java).also { scenario = it }.use {
             waitText("Log BM")
+            settle()
             shot("03-today-empty")
             compose.onNodeWithText("Check").performClick()
             waitText("Check a food")
@@ -163,7 +171,8 @@ class AppSmokeTest {
     @Test fun checkInAndCard() {
         onboarded()
         ActivityScenario.launch(MainActivity::class.java).also { scenario = it }.use {
-            waitText("Log BM")
+            waitText("About 20 seconds")
+            settle()
             compose.onNodeWithText("About 20 seconds", substring = true).performClick()
             waitText("Overall gut day")
             shot("16-checkin")

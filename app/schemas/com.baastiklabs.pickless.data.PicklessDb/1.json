@@ -1,0 +1,703 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "e278e275937664444162d8f1677aad88",
+    "entities": [
+      {
+        "tableName": "food_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `time` INTEGER NOT NULL, `meal` TEXT NOT NULL, `ref` TEXT NOT NULL, `name` TEXT NOT NULL, `grams` REAL NOT NULL, `portionLabel` TEXT NOT NULL, `featuresJson` TEXT NOT NULL, `avoidHits` TEXT NOT NULL, `verdict` TEXT NOT NULL, `note` TEXT, `challengeDose` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "meal",
+            "columnName": "meal",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ref",
+            "columnName": "ref",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "grams",
+            "columnName": "grams",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "portionLabel",
+            "columnName": "portionLabel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "featuresJson",
+            "columnName": "featuresJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avoidHits",
+            "columnName": "avoidHits",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verdict",
+            "columnName": "verdict",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "challengeDose",
+            "columnName": "challengeDose",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "bm_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `time` INTEGER NOT NULL, `bristol` INTEGER NOT NULL, `urgency` INTEGER NOT NULL, `pain` INTEGER NOT NULL, `straining` INTEGER NOT NULL, `incomplete` INTEGER NOT NULL, `accident` INTEGER NOT NULL, `blood` INTEGER NOT NULL, `mucus` INTEGER NOT NULL, `color` TEXT, `note` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bristol",
+            "columnName": "bristol",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "urgency",
+            "columnName": "urgency",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pain",
+            "columnName": "pain",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "straining",
+            "columnName": "straining",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "incomplete",
+            "columnName": "incomplete",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accident",
+            "columnName": "accident",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blood",
+            "columnName": "blood",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mucus",
+            "columnName": "mucus",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "symptom_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `time` INTEGER NOT NULL, `type` TEXT NOT NULL, `severity` INTEGER NOT NULL, `note` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "severity",
+            "columnName": "severity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "checkin",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`epochDay` INTEGER NOT NULL, `overall` INTEGER, `stress` INTEGER, `sleepQuality` INTEGER, `sleepHours` REAL, `nicotine` TEXT, `nicotineCount` INTEGER, `alcohol` INTEGER, `caffeine` INTEGER, `exercise` INTEGER, `period` INTEGER, `sick` INTEGER NOT NULL, `travel` INTEGER NOT NULL, `noBm` INTEGER, `meds` TEXT NOT NULL, `note` TEXT, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`epochDay`))",
+        "fields": [
+          {
+            "fieldPath": "epochDay",
+            "columnName": "epochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overall",
+            "columnName": "overall",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "stress",
+            "columnName": "stress",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sleepQuality",
+            "columnName": "sleepQuality",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sleepHours",
+            "columnName": "sleepHours",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "nicotine",
+            "columnName": "nicotine",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nicotineCount",
+            "columnName": "nicotineCount",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "alcohol",
+            "columnName": "alcohol",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "caffeine",
+            "columnName": "caffeine",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "exercise",
+            "columnName": "exercise",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "period",
+            "columnName": "period",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sick",
+            "columnName": "sick",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "travel",
+            "columnName": "travel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "noBm",
+            "columnName": "noBm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "meds",
+            "columnName": "meds",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "epochDay"
+          ]
+        }
+      },
+      {
+        "tableName": "quick_event",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `time` INTEGER NOT NULL, `type` TEXT NOT NULL, `amount` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "weekly",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`epochDay` INTEGER NOT NULL, `painSeverity` INTEGER NOT NULL, `painDays` INTEGER NOT NULL, `bloating` INTEGER NOT NULL, `dissatisfaction` INTEGER NOT NULL, `interference` INTEGER NOT NULL, PRIMARY KEY(`epochDay`))",
+        "fields": [
+          {
+            "fieldPath": "epochDay",
+            "columnName": "epochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "painSeverity",
+            "columnName": "painSeverity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "painDays",
+            "columnName": "painDays",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bloating",
+            "columnName": "bloating",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dissatisfaction",
+            "columnName": "dissatisfaction",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interference",
+            "columnName": "interference",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "epochDay"
+          ]
+        }
+      },
+      {
+        "tableName": "product",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `name` TEXT NOT NULL, `json` TEXT NOT NULL, `source` TEXT NOT NULL, `fetchedAt` INTEGER NOT NULL, `favorite` INTEGER NOT NULL, `userVerdict` TEXT, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "json",
+            "columnName": "json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetchedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "favorite",
+            "columnName": "favorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userVerdict",
+            "columnName": "userVerdict",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        }
+      },
+      {
+        "tableName": "custom_food",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `itemsJson` TEXT NOT NULL, `servingGrams` REAL NOT NULL, `favorite` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemsJson",
+            "columnName": "itemsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "servingGrams",
+            "columnName": "servingGrams",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "favorite",
+            "columnName": "favorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "correction",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `limitsJson` TEXT NOT NULL, `source` TEXT NOT NULL, `note` TEXT, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "limitsJson",
+            "columnName": "limitsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        }
+      },
+      {
+        "tableName": "web_lookup",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`query` TEXT NOT NULL, `resultJson` TEXT NOT NULL, `at` INTEGER NOT NULL, PRIMARY KEY(`query`))",
+        "fields": [
+          {
+            "fieldPath": "query",
+            "columnName": "query",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resultJson",
+            "columnName": "resultJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "at",
+            "columnName": "at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "query"
+          ]
+        }
+      },
+      {
+        "tableName": "suggestion",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `kind` TEXT NOT NULL, `text` TEXT NOT NULL, `logPath` TEXT, `createdAt` INTEGER NOT NULL, `sentAt` INTEGER, `lastError` TEXT, `tries` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "text",
+            "columnName": "text",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "logPath",
+            "columnName": "logPath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sentAt",
+            "columnName": "sentAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tries",
+            "columnName": "tries",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "challenge",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `protocolId` TEXT NOT NULL, `itemKey` TEXT NOT NULL, `startEpochDay` INTEGER NOT NULL, `dosesTaken` TEXT NOT NULL, `reactions` TEXT NOT NULL, `stoppedAtDose` INTEGER, `result` TEXT, `active` INTEGER NOT NULL, `finishedAt` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "protocolId",
+            "columnName": "protocolId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemKey",
+            "columnName": "itemKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startEpochDay",
+            "columnName": "startEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dosesTaken",
+            "columnName": "dosesTaken",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reactions",
+            "columnName": "reactions",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stoppedAtDose",
+            "columnName": "stoppedAtDose",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "result",
+            "columnName": "result",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finishedAt",
+            "columnName": "finishedAt",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e278e275937664444162d8f1677aad88')"
+    ]
+  }
+}

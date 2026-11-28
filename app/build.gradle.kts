@@ -27,6 +27,8 @@ android {
         versionCode = buildNumber.coerceAtLeast(1)
         versionName = "$versionBase.$buildNumber"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // The owner's phone is 64-bit ARM; bundling ML Kit's models for every ABI would triple the APK.
+        ndk { abiFilters += listOf("arm64-v8a") }
         buildConfigField("String", "REPO", "\"$repoSlug\"")
         buildConfigField("String", "UPDATE_MANIFEST_URL", "\"https://github.com/$repoSlug/releases/download/pickless-channel/manifest.json\"")
         buildConfigField("String", "DATA_MANIFEST_URL", "\"https://github.com/$repoSlug/releases/download/pickless-data/packs.json\"")
@@ -68,7 +70,11 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
-            all { it.maxHeapSize = "3g" }
+            all {
+                it.maxHeapSize = "3g"
+                it.systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2")
+                it.systemProperty("pickless.screenshots", rootProject.layout.buildDirectory.dir("screenshots").get().asFile.path)
+            }
         }
     }
 
@@ -112,6 +118,7 @@ dependencies {
     implementation(libs.camera.camera2)
     implementation(libs.camera.lifecycle)
     implementation(libs.camera.view)
+    implementation(libs.guava)
     implementation(libs.mlkit.barcode)
     implementation(libs.mlkit.text)
     implementation(libs.glance.appwidget)

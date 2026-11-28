@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pickless</string>
+    <string name="widget_name">Pickless quick log</string>
+    <string name="widget_description">Log a BM or symptom, or scan a food</string>
+</resources>

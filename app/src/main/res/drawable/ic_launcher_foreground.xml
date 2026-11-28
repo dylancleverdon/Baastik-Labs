@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A leaf with a check: "less picky, still careful". -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,26C38,30 30,42 30,56c0,14 10,24 24,24c14,0 24,-10 24,-24C78,42 70,30 54,26z" />
+    <path
+        android:fillColor="#2F6B4F"
+        android:pathData="M54,33c-1.2,0 -2,0.9 -2,2v38c0,1.1 0.8,2 2,2s2,-0.9 2,-2V35C56,33.9 55.2,33 54,33z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E8A33D"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M42,57l8,8l16,-17" />
+</vector>

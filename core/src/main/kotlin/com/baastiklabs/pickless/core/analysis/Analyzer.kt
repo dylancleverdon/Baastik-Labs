@@ -251,6 +251,10 @@ class Analyzer(val kb: KnowledgeBase) {
                 } else e
             }.distinctBy { it.id }
         }
+        // Children of an oil ("vegetable oil (corn, canola)") name the oil's source, not the food itself.
+        if (parent?.entries?.any { it.category == "fat" } == true) {
+            entries = entries.map { e -> if ("soy" in e.tags || "soy-refined" in e.tags) kb.require("soybean-oil") else kb.require("oils") }.distinctBy { it.id }
+        }
         val nm = NodeMatch(node, depth, entries, parent)
         // Fried words on the label itself.
         val w = node.words
@@ -307,9 +311,41 @@ class Analyzer(val kb: KnowledgeBase) {
                 if (s > 0) majors.forEach { shares[it] *= remaining / s }
             }
         }
+        // Seasonings, salt and additives are never a big part of a product even when they're listed
+        // without a percentage; move any excess to the other ingredients.
+        if (majors.size > 1) repeat(3) {
+            var excess = 0.0
+            val capped = mutableSetOf<Int>()
+            for (idx in majors) {
+                val cap = capFor(nodes[idx]) ?: continue
+                if (shares[idx] > cap * total) { excess += shares[idx] - cap * total; shares[idx] = cap * total; capped += idx }
+                else if (shares[idx] >= cap * total * 0.999) capped += idx
+            }
+            val free = majors.filter { it !in capped }
+            val freeSum = free.sumOf { shares[it] }
+            if (excess <= 0 || free.isEmpty() || freeSum <= 0) return@repeat
+            free.forEach { shares[it] += excess * shares[it] / freeSum }
+        }
         for (i in nodes.indices) {
             nodes[i].share = shares[i]
             assignShares(nodes[i].children, shares[i])
+        }
+    }
+
+    /** Most a seasoning-type ingredient is likely to be (fraction of its parent). */
+    private fun capFor(n: NodeMatch): Double? {
+        if (n.entries.isEmpty()) return null
+        return n.entries.mapNotNull { capOf(it) }.minOrNull()
+    }
+
+    private fun capOf(e: FoodEntry): Double? {
+        return when {
+            e.id == "garlic" || e.id == "garlic-powder" || e.id == "onion-powder" -> 0.015
+            e.id == "salt" || e.id == "leavening" || e.id == "natural-flavors" || e.id == "yeast-extract" -> 0.02
+            e.category == "herb-spice" -> 0.02
+            e.id == "onion" || e.id == "shallot" || e.id == "scallion" -> 0.15
+            e.category == "additive" && "fiber-additive" !in e.tags && "polyol" !in e.tags -> 0.02
+            else -> null
         }
     }
 
@@ -337,10 +373,14 @@ class Analyzer(val kb: KnowledgeBase) {
 
     private fun fodmapFromNodes(roots: List<NodeMatch>, identity: FoodEntry?): FodmapProfile {
         val parts = mutableListOf<Pair<FodmapProfile, Double>>()
+        val covered = identity?.let { kb.profile(it).rates.keys } ?: emptySet()
         fun walk(nm: NodeMatch) {
-            val withData = nm.entries.filter { e -> (e.limits.isNotEmpty() || e.components.isNotEmpty()) && (identity == null || !related(e, identity)) }
+            val withData = nm.entries.filter { e ->
+                (e.limits.isNotEmpty() || e.components.isNotEmpty()) && (identity == null || !related(e, identity)) &&
+                    (covered.isEmpty() || !covered.containsAll(kb.profile(e).rates.keys))
+            }
             if (withData.isNotEmpty()) {
-                val each = nm.share / withData.size
+                val each = nm.share / nm.entries.size // "salt and garlic": each gets half
                 withData.forEach { parts += kb.profile(it) to each }
                 return
             }
@@ -500,7 +540,7 @@ class Analyzer(val kb: KnowledgeBase) {
             "spicy-mild" -> "$what can be a little spicy"
             "fried" -> "$what is fried"
             "spicy" -> "$what is spicy"
-            else -> "$what is $cat"
+            else -> "$what counts as $cat"
         }
     }
 

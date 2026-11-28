@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android backup: only the diary database and settings (caches, logs and the product pack are left out). -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="pickless.db" />
+        <include domain="file" path="datastore/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="pickless.db" />
+        <include domain="file" path="datastore/" />
+    </device-transfer>
+</data-extraction-rules>

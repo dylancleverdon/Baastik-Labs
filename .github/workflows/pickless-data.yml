@@ -1,0 +1,80 @@
+# Builds the offline US product pack from USDA FoodData Central (public domain) and publishes it
+# to the `pickless-data` release, which the app downloads on Wi-Fi. Runs on pushes to `pickless`
+# and exits early unless the pack is missing, older than 45 days, or its builder changed.
+name: Pickless data pack
+
+on:
+  push:
+    branches: [pickless]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild even if the pack is fresh
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pickless-data
+  cancel-in-progress: false
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Decide whether to rebuild
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          REBUILD=no
+          if [ "${{ inputs.force }}" = "true" ]; then REBUILD=yes; fi
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -qE '^(tools/usda-pack/|\.github/workflows/pickless-data\.yml)'; then REBUILD=yes; fi
+          if gh release download pickless-data -p packs.json -O old-packs.json 2>/dev/null; then
+            AGE=$(python3 -c "import json,datetime; p=json.load(open('old-packs.json'))['packs'][0]; d=datetime.date.fromisoformat(p['built']); print((datetime.date.today()-d).days)" || echo 999)
+            echo "pack age: $AGE days"
+            if [ "$AGE" -gt 45 ]; then REBUILD=yes; fi
+          else
+            echo "no pack published yet"
+            REBUILD=yes
+          fi
+          echo "rebuild=$REBUILD" >> "$GITHUB_OUTPUT"
+
+      - name: Test the builder
+        if: steps.decide.outputs.rebuild == 'yes'
+        run: |
+          pip install pytest
+          python -m pytest tools/usda-pack -q
+
+      - name: Build the pack
+        if: steps.decide.outputs.rebuild == 'yes'
+        run: python tools/usda-pack/build_pack.py --out out --repo "${{ github.repository }}"
+
+      - name: Publish
+        if: steps.decide.outputs.rebuild == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! gh release view pickless-data > /dev/null 2>&1; then
+            gh release create pickless-data --title "Pickless data" \
+              --notes "Offline US product pack (USDA FoodData Central branded foods, public domain), downloaded by the Pickless app on Wi-Fi." \
+              --prerelease --latest=false --target "$GITHUB_SHA"
+          fi
+          gh release upload pickless-data out/*.db.gz --clobber
+          gh release upload pickless-data out/packs.json --clobber
+          # Keep only the newest pack file.
+          KEEP=$(python3 -c "import json; print(json.load(open('out/packs.json'))['packs'][0]['url'].rsplit('/',1)[1])")
+          gh release view pickless-data --json assets --jq '.assets[].name' | grep '\.db\.gz$' | grep -v "^$KEEP$" | while read -r old; do gh release delete-asset pickless-data "$old" -y; done
